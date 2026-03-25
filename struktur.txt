@@ -1,0 +1,127 @@
+Auflistung der Ordnerpfade für Volume Acer
+Volumeseriennummer : 8EB4-223E
+C:.
+¦   robot.sln
+¦   struktur.txt
+¦   
++---hardware
+¦       Encoder.cpp
+¦       Encoder.h
+¦       Hardware.cpp
+¦       Hardware.h
+¦       Motor.cpp
+¦       Motor.h
+¦       
++---hinten
+¦   ¦   control_rear.h
+¦   ¦   hardware_rear_pins.h
+¦   ¦   hinten.ino
+¦   ¦   hinten.vcxproj
+¦   ¦   hinten.vcxproj.filters
+¦   ¦   hinten.vcxproj.user
+¦   ¦   
+¦   +---src
+¦   ¦       arduino folders read me.txt
+¦   ¦       
+¦   +---__vm
+¦           .hinten.vsarduino.h
+¦           Compile.vmps.xml
+¦           Configuration.Debug.vmps.xml
+¦           Upload.vmps.xml
+¦           
++---shared
+¦       Achse_Hi.cpp
+¦       Achse_Hi.h
+¦       ControlParams.h
+¦       globals.h
+¦       PIRegler.cpp
+¦       PIRegler.h
+¦       Printer.cpp
+¦       Printer.h
+¦       Rad.cpp
+¦       Rad.h
+¦       SpeedWeg.cpp
+¦       SpeedWeg.h
+¦       TestTypes.h
+¦       Utils.cpp
+¦       Utils.h
+¦       VehicleTypes.h
+¦       
++---tools
+¦   ¦   Achse_Hi.cpp
+¦   ¦   Achse_Hi.h
+¦   ¦   AutoTuner.cpp
+¦   ¦   AutoTuner.h
+¦   ¦   Control.cpp
+¦   ¦   Control.h
+¦   ¦   ControlParams.h
+¦   ¦   Encoder.cpp
+¦   ¦   Encoder.h
+¦   ¦   globals.h
+¦   ¦   Hardware.cpp
+¦   ¦   Hardware.h
+¦   ¦   Mixer2W.cpp
+¦   ¦   Mixer2W.h
+¦   ¦   Motor.cpp
+¦   ¦   Motor.h
+¦   ¦   PIRegler.cpp
+¦   ¦   PIRegler.h
+¦   ¦   Printer.cpp
+¦   ¦   Printer.h
+¦   ¦   Rad.cpp
+¦   ¦   Rad.h
+¦   ¦   SpeedWeg.cpp
+¦   ¦   SpeedWeg.h
+¦   ¦   Tests.cpp
+¦   ¦   Tests.h
+¦   ¦   TestTypes.h
+¦   ¦   tools.ino
+¦   ¦   tools.vcxproj
+¦   ¦   tools.vcxproj.filters
+¦   ¦   tools.vcxproj.user
+¦   ¦   Utils.cpp
+¦   ¦   Utils.h
+¦   ¦   VehicleController.cpp
+¦   ¦   VehicleController.h
+¦   ¦   VehicleTypes.h
+¦   ¦   
+¦   +---bin
+¦   ¦   +---x64
+¦   ¦       +---Debug
+¦   +---obj
+¦   ¦   +---x64
+¦   ¦       +---Debug
+¦   ¦           ¦   tools.log
+¦   ¦           ¦   
+¦   ¦           +---tools.tlog
+¦   ¦                   tools.lastbuildstate
+¦   ¦                   unsuccessfulbuild
+¦   ¦                   
+¦   +---src
+¦   ¦       arduino folders read me.txt
+¦   ¦       
+¦   +---__vm
+¦           .tools.vsarduino.h
+¦           Compile.vmps.xml
+¦           Configuration.Debug.vmps.xml
+¦           Upload.vmps.xml
+¦           
++---vorne
+¦   ¦   vorne.ino
+¦   ¦   vorne.vcxproj
+¦   ¦   vorne.vcxproj.filters
+¦   ¦   
+¦   +---src
+¦   ¦       arduino folders read me.txt
+¦   ¦       
+¦   +---__vm
+¦           .vorne.vsarduino.h
+¦           Compile.vmps.xml
+¦           Configuration.Debug.vmps.xml
+¦           Upload.vmps.xml
+¦           
++---x64
+    +---Debug
+            front.pdb
+            rear.pdb
+            
