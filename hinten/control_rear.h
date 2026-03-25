@@ -7,7 +7,7 @@ constexpr int8_t SIGN_R = +1;
 constexpr int8_t SIGN_L = +1;
 
 // Deadband
-constexpr int16_t DEAD_PWM_LI = 80;
+constexpr int16_t  DEAD_PWM_LI = 80;
 constexpr int16_t DEAD_PWM_RE = 60;
 
 // PI-Parameter
