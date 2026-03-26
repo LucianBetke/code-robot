@@ -1,15 +1,16 @@
 // control_rear.h
 #pragma once
+#include "globals.h"
 #include "ControlParams.h"
 
-// Vorzeichen (falls nötig später anpassen)
-constexpr int8_t SIGN_R = +1;
-constexpr int8_t SIGN_L = +1;
+constexpr int8_t SIGN[WHEEL_COUNT] = { +1, +1 };
 
-// Deadband
-constexpr int16_t  DEAD_PWM_LI = 80;
-constexpr int16_t DEAD_PWM_RE = 60;
+constexpr int16_t DEAD_PWM[WHEEL_COUNT] = {
+    80,  // Li
+    60   // Re
+};
 
-// PI-Parameter
-constexpr PIParam PI_LI = { 2.0f, 6.0f };
-constexpr PIParam PI_RE = { 2.0f, 5.5f };
+constexpr PIParam PI_PARAMS[WHEEL_COUNT] = {
+    {2.0f, 6.0f},   // Li
+    {2.0f, 5.5f}    // Re
+};
