@@ -1,7 +1,6 @@
 // Printer.h
 #pragma once
 #include <Arduino.h>
-#include "TestTypes.h"   // für enum class Side
 #include "Rad.h"
 #include "ControlParams.h"
 

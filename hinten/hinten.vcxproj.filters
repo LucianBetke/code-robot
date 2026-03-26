@@ -48,17 +48,14 @@
     <ClCompile Include="..\shared\SpeedWeg.cpp">
       <Filter>Source Files\shared</Filter>
     </ClCompile>
-    <ClCompile Include="..\shared\Utils.cpp">
-      <Filter>Source Files\shared</Filter>
-    </ClCompile>
     <ClCompile Include="..\hardware\Encoder.cpp">
-      <Filter>Source Files\hardware</Filter>
-    </ClCompile>
-    <ClCompile Include="..\hardware\Hardware.cpp">
       <Filter>Source Files\hardware</Filter>
     </ClCompile>
     <ClCompile Include="..\hardware\Motor.cpp">
       <Filter>Source Files\hardware</Filter>
+    </ClCompile>
+    <ClCompile Include="Hardware.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -86,12 +83,6 @@
     <ClInclude Include="..\shared\SpeedWeg.h">
       <Filter>Header Files\shared</Filter>
     </ClInclude>
-    <ClInclude Include="..\shared\TestTypes.h">
-      <Filter>Header Files\shared</Filter>
-    </ClInclude>
-    <ClInclude Include="..\shared\Utils.h">
-      <Filter>Header Files\shared</Filter>
-    </ClInclude>
     <ClInclude Include="..\shared\VehicleTypes.h">
       <Filter>Header Files\shared</Filter>
     </ClInclude>
@@ -101,14 +92,14 @@
     <ClInclude Include="..\hardware\Encoder.h">
       <Filter>Header Files\hardware</Filter>
     </ClInclude>
-    <ClInclude Include="..\hardware\Hardware.h">
-      <Filter>Header Files\hardware</Filter>
-    </ClInclude>
     <ClInclude Include="..\hardware\Motor.h">
       <Filter>Header Files\hardware</Filter>
     </ClInclude>
     <ClInclude Include="..\shared\globals.h">
       <Filter>Header Files\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Hardware.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

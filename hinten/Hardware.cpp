@@ -10,6 +10,7 @@
 
 #include "Hardware.h"
 #include "globals.h"
+#include "hardware_rear_pins.h"
 
 // ============================================================
 // --- Encoder ---

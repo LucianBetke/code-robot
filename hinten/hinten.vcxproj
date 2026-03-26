@@ -81,14 +81,13 @@
   </PropertyGroup>
   <ItemGroup>
     <ClCompile Include="..\hardware\Encoder.cpp" />
-    <ClCompile Include="..\hardware\Hardware.cpp" />
     <ClCompile Include="..\hardware\Motor.cpp" />
     <ClCompile Include="..\shared\Achse_Hi.cpp" />
     <ClCompile Include="..\shared\PIRegler.cpp" />
     <ClCompile Include="..\shared\Printer.cpp" />
     <ClCompile Include="..\shared\Rad.cpp" />
     <ClCompile Include="..\shared\SpeedWeg.cpp" />
-    <ClCompile Include="..\shared\Utils.cpp" />
+    <ClCompile Include="Hardware.cpp" />
     <ClCompile Include="hinten.ino">
       <FileType>CppCode</FileType>
       <DeploymentContent>true</DeploymentContent>
@@ -103,7 +102,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\hardware\Encoder.h" />
-    <ClInclude Include="..\hardware\Hardware.h" />
     <ClInclude Include="..\hardware\Motor.h" />
     <ClInclude Include="..\shared\Achse_Hi.h" />
     <ClInclude Include="..\shared\ControlParams.h" />
@@ -112,10 +110,9 @@
     <ClInclude Include="..\shared\Printer.h" />
     <ClInclude Include="..\shared\Rad.h" />
     <ClInclude Include="..\shared\SpeedWeg.h" />
-    <ClInclude Include="..\shared\TestTypes.h" />
-    <ClInclude Include="..\shared\Utils.h" />
     <ClInclude Include="..\shared\VehicleTypes.h" />
     <ClInclude Include="control_rear.h" />
+    <ClInclude Include="Hardware.h" />
     <ClInclude Include="hardware_rear_pins.h" />
     <ClInclude Include="__vm\.hinten.vsarduino.h" />
   </ItemGroup>
