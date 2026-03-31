@@ -8,9 +8,11 @@
 //    gehört NICHT hierhin, sondern nach Control.cpp (control_begin()).
 // ============================================================
 
+#include <Arduino.h>
+
+//#include "config.h"        // Projektspezifische Konfiguration (Pins!)
 #include "Hardware.h"
-#include "globals.h"
-#include "hardware_rear_pins.h"
+#include "hardware_pins.h"
 
 // ============================================================
 // --- Encoder ---

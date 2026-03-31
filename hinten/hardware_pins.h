@@ -1,4 +1,4 @@
-// hardware_rear_pins.h
+// hardware_pins.h
 #pragma once
 #include <Arduino.h>
 

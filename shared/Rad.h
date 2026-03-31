@@ -1,6 +1,9 @@
+// Rad.h
 #pragma once
 #include <Arduino.h>
-#include "Motor.h"
+#include "globals.h" 
+#include "../hardware/Motor.h"
+//#include "Motor.h"
 #include "SpeedWeg.h"
 #include "PIRegler.h"
 #include "ControlParams.h"

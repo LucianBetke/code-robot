@@ -3,7 +3,7 @@
 // ============================================================
 
 #include "SpeedWeg.h"
-#include "Encoder.h"
+#include <Encoder.h>
 #include "globals.h"
 #include <math.h>
 

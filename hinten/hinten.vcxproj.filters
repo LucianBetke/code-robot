@@ -33,9 +33,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="hinten.ino" />
-    <ClCompile Include="..\shared\Achse_Hi.cpp">
-      <Filter>Source Files\shared</Filter>
-    </ClCompile>
     <ClCompile Include="..\shared\PIRegler.cpp">
       <Filter>Source Files\shared</Filter>
     </ClCompile>
@@ -47,9 +44,6 @@
     </ClCompile>
     <ClCompile Include="..\shared\SpeedWeg.cpp">
       <Filter>Source Files\shared</Filter>
-    </ClCompile>
-    <ClCompile Include="..\hardware\Encoder.cpp">
-      <Filter>Source Files\hardware</Filter>
     </ClCompile>
     <ClCompile Include="..\hardware\Motor.cpp">
       <Filter>Source Files\hardware</Filter>
@@ -64,9 +58,6 @@
     </ClInclude>
     <ClInclude Include="control_rear.h">
       <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\shared\Achse_Hi.h">
-      <Filter>Header Files\shared</Filter>
     </ClInclude>
     <ClInclude Include="..\shared\ControlParams.h">
       <Filter>Header Files\shared</Filter>
@@ -86,17 +77,14 @@
     <ClInclude Include="..\shared\VehicleTypes.h">
       <Filter>Header Files\shared</Filter>
     </ClInclude>
-    <ClInclude Include="hardware_rear_pins.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\hardware\Encoder.h">
-      <Filter>Header Files\hardware</Filter>
-    </ClInclude>
     <ClInclude Include="..\hardware\Motor.h">
       <Filter>Header Files\hardware</Filter>
     </ClInclude>
-    <ClInclude Include="..\shared\globals.h">
-      <Filter>Header Files\shared</Filter>
+    <ClInclude Include="hardware_pins.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="config.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Hardware.h">
       <Filter>Header Files</Filter>

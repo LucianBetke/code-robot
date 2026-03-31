@@ -2,8 +2,8 @@
 #pragma once
 
 #include <Arduino.h>
-#include "globals.h"
-#include "Encoder.h"
+#include <globals.h>
+#include <Encoder.h>
 #include "Motor.h"
 
 // --- Encoder ---

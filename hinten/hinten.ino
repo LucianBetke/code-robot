@@ -3,7 +3,11 @@
  Created:	11.03.2026 22:18:58
  Author:	Acer
 */
-#include "control_rear.h"
+#include <Arduino.h>
+
+#include <globals.h>
+#include <Encoder.h>
+
 
 // the setup function runs once when you press reset or power the board
 void setup() {
