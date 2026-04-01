@@ -23,6 +23,8 @@ public:
     PIParam getPI() const;
     void reset();
     void stop();
+    // Rad.h
+    int16_t deadPwm() const { return _deadPwm; }
 
 private:
     Motor& _motor;

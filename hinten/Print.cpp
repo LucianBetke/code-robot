@@ -1,25 +1,56 @@
 // Print.cpp
 #include "Print.h"
-#include "Printer.h"
+#include "globals.h"
 #include "Control.h"
 
-Printer printer;
+void print_begin()
+{
+    Serial.println("REGEL Hinten");
+
+    PIParam piRe = rad[Re].getPI();
+    PIParam piLi = rad[Li].getPI();
+
+    Serial.print("KpRe=");
+    Serial.print(piRe.Kp, 2);
+    Serial.print(" KiRe=");
+    Serial.print(piRe.Ki, 2);
+    Serial.print(" KpLi=");
+    Serial.print(piLi.Kp, 2);
+    Serial.print(" KiLi=");
+    Serial.println(piLi.Ki, 2);
+
+    Serial.print("DeadRe=");
+    Serial.print(rad[Re].deadPwm());
+    Serial.print(" DeadLi=");
+    Serial.println(rad[Li].deadPwm());
+
+    Serial.println("t_s,vSollLi,vIstLi,pwmLi,vSollRe,vIstRe,pwmRe");
+}
 
 void print_update(uint32_t now)
 {
-    static uint32_t last = 0;
-    if (now - last < 50) return;
-    last = now;
+    static uint32_t lastPrint = 0;
 
-    float t_s = now * 0.001f;
+    if (now - lastPrint < DBG_INTERVAL_MS)
+        return;
 
-    printer.regel_line_both(
-        t_s,
-        rad[Re].soll(),
-        rad[Re].vIst(),
-        rad[Re].lastPwm(),
-        rad[Li].soll(),
-        rad[Li].vIst(),
-        rad[Li].lastPwm()
-    );
+    lastPrint = now;
+
+    float t_s = now / 1000.0f;
+
+    Serial.print(t_s, 3);
+    Serial.print(',');
+
+    Serial.print(rad[Li].soll(), 3);
+    Serial.print(',');
+    Serial.print(rad[Li].vIst(), 3);
+    Serial.print(',');
+    Serial.print(rad[Li].lastPwm());
+    Serial.print(',');
+
+    Serial.print(rad[Re].soll(), 3);
+    Serial.print(',');
+    Serial.print(rad[Re].vIst(), 3);
+    Serial.print(',');
+    Serial.println(rad[Re].lastPwm());
 }

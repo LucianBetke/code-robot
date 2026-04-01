@@ -1,15 +1,6 @@
-// ============================================================
-// File: hinten.ino
-// Zweck:
-//  - Testprogramm Hinterachse
-//  - Räder laufen 5 Sekunden mit Sollgeschwindigkeit
-//  - Danach Stop
-//  - Logging läuft weiter
-// ============================================================
-
+// hinten.ino
 #include "Hardware.h"
 #include "Control.h"
-#include "hardware_pins.h"
 #include "Print.h"
 
 constexpr float V_SOLL_GERADE = 0.30f;
@@ -20,18 +11,13 @@ bool stopped = false;
 void setup()
 {
     Serial.begin(115200);
-    Serial.println("SETUP");
 
-    // Hardware initialisieren (Pins, Encoder, Motoren)
     hardware_begin(true);
-
-    // Control / Regler initialisieren
     control_begin();
+    print_begin();
 
-    // Motor-Treiber aktivieren
     hardware_enableMotors();
 
-    // Sollgeschwindigkeit setzen
     control_setSoll(Li, V_SOLL_GERADE);
     control_setSoll(Re, V_SOLL_GERADE);
 
@@ -42,9 +28,7 @@ void loop()
 {
     uint32_t now = millis();
 
-    // --------------------------------------------------------
-    // 5 Sekunden laufen lassen, dann stoppen
-    // --------------------------------------------------------
+    // Nach 5 Sekunden stoppen
     if (!stopped && (now - startTime >= 5000))
     {
         control_setSoll(Li, 0.0f);
@@ -53,14 +37,10 @@ void loop()
         Serial.println("STOP");
     }
 
-    // --------------------------------------------------------
-    // Regelung aktualisieren
-    // --------------------------------------------------------
+    // Regelung läuft immer weiter
     control_update(now);
 
-    // --------------------------------------------------------
-    // Logging / Debug-Ausgabe
-    // --------------------------------------------------------
+    // Logging nur während der Messphase
     if (!stopped)
     {
         print_update(now);
