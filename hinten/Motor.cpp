@@ -15,11 +15,6 @@ void Motor::init() {
     bremse(false); // Coast
 }
 
-//void Motor::begin(bool resetEnc) {
-//    init();
-//    if (_enc) _enc->begin(resetEnc);
-//}
-
 void Motor::vor(uint8_t pwm) { analogWrite(_pin1, pwm); digitalWrite(_pin2, LOW); }
 void Motor::rueck(uint8_t pwm) { analogWrite(_pin2, pwm); digitalWrite(_pin1, LOW); }
 
