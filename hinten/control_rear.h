@@ -1,6 +1,6 @@
 // control_rear.h
 #pragma once
-#include "globals.h"
+#include <globals.h>
 #include "ControlParams.h"
 
 constexpr int8_t SIGN[WHEEL_COUNT] = { +1, +1 };

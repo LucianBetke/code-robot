@@ -1,23 +1,33 @@
-/*
- Name:		hinten.ino
- Created:	11.03.2026 22:18:58
- Author:	Acer
-*/
-#include <Arduino.h>
+// hinten.ino
+#include "Hardware.h"
+#include "Control.h"
 
-#include <globals.h>
-#include <Encoder.h>
+constexpr float V_SOLL_GERADE = 0.30f;
 
+uint32_t startTime;
+bool stopped = false;
 
-// the setup function runs once when you press reset or power the board
-void setup() {
-	Serial.begin(115200);   // serielle Schnittstelle starten
+void setup()
+{
+    hardware_begin(true);
+    control_begin();
 
-	Serial.println("Arduino gestartet hinten");
+    control_setSoll(Li, V_SOLL_GERADE);
+    control_setSoll(Re, V_SOLL_GERADE);
 
+    startTime = millis();
 }
 
-// the loop function runs over and over again until power down or reset
-void loop() {
-  
+void loop()
+{
+    uint32_t now = millis();
+
+    if (!stopped && (now - startTime > 5000))
+    {
+        control_setSoll(Li, 0.0f);
+        control_setSoll(Re, 0.0f);
+        stopped = true;
+    }
+
+    control_update(now);
 }

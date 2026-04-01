@@ -4,7 +4,7 @@
 //  - Definition der physischen Hardware-Objekte (Encoder, Motoren)
 //  - Zentrale Hardware-Initialisierung (Pins/IO, Treiber-Enable, etc.)
 // Hinweis:
-//  - Reset/Begin von Control-/Regel-Objekten (Achse_Hi, SpeedWeg, Regler)
+//  - Reset/Begin von Control-/Regel-Objekten (SpeedWeg, Regler)
 //    gehört NICHT hierhin, sondern nach Control.cpp (control_begin()).
 // ============================================================
 
