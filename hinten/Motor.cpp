@@ -9,6 +9,7 @@ Motor::Motor(uint8_t pin1, uint8_t pin2, Enc& enc)
 }
 
 void Motor::init() {
+    Serial.println("Motor init");
     pinMode(_pin1, OUTPUT);
     pinMode(_pin2, OUTPUT);
     bremse(false); // Coast

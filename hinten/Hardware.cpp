@@ -50,6 +50,8 @@ void hardware_begin(bool /*resetEnc*/)
 
     enc[Li].begin();
     enc[Re].begin();
+
+
     // --------------------------------------------------------
     // Hier wäre der richtige Ort für weitere echte IO-Init:
     //  - pinMode(...) für zusätzliche Pins
@@ -58,4 +60,9 @@ void hardware_begin(bool /*resetEnc*/)
     // --------------------------------------------------------
 
     
+}
+
+void hardware_enableMotors()
+{
+    digitalWrite(STBY_PIN, HIGH);
 }

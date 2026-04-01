@@ -90,6 +90,7 @@
     </ClCompile>
     <ClCompile Include="Motor.cpp" />
     <ClCompile Include="PIRegler.cpp" />
+    <ClCompile Include="Print.cpp" />
     <ClCompile Include="Printer.cpp" />
     <ClCompile Include="Rad.cpp" />
     <ClCompile Include="SpeedWeg.cpp" />
@@ -110,6 +111,7 @@
     <ClInclude Include="hardware_pins.h" />
     <ClInclude Include="Motor.h" />
     <ClInclude Include="PIRegler.h" />
+    <ClInclude Include="Print.h" />
     <ClInclude Include="Printer.h" />
     <ClInclude Include="Rad.h" />
     <ClInclude Include="SpeedWeg.h" />

@@ -21,7 +21,7 @@ public:
     void setTimeoutMs(uint16_t ms);
 
     // now_ms = millis()
-    void pollEncoder(uint32_t now_ms);
+    void update(uint32_t now_ms);
 
     float mps() const;       // m/s
     float rpm() const;       // U/min

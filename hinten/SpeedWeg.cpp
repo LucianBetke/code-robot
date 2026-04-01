@@ -55,7 +55,7 @@ void SpeedWeg::setTimeoutMs(uint16_t ms) {
 // ------------------------------------------------------------
 // Encoder poll + Berechnung  (Zeitbasis: ms)
 // ------------------------------------------------------------
-void SpeedWeg::pollEncoder(uint32_t now_ms) {
+void SpeedWeg::update(uint32_t now_ms) {
     long cur = _enc.getCounts();
     long d = cur - _last_counts;
 

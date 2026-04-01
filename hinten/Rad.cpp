@@ -38,10 +38,9 @@ void Rad::setSoll(float v_soll)
     }
 }
 
-float Rad::soll() const
-{
-    return _regler.soll();
-}
+float Rad::soll() const {return _regler.soll();}
+
+float Rad::vIst() const {return _speed.mps();}
 
 void Rad::stop()
 {
@@ -52,8 +51,11 @@ void Rad::stop()
     _lastUpdateMs = 0;
 }
 
+// Rad.cpp
 void Rad::update(uint32_t nowMs)
 {
+    _speed.update(nowMs);
+
     if (_lastUpdateMs == 0) {
         _lastUpdateMs = nowMs;
         return;
@@ -62,14 +64,16 @@ void Rad::update(uint32_t nowMs)
     if ((uint32_t)(nowMs - _lastUpdateMs) < _dtMs) {
         return;
     }
-    
+
     const uint16_t dt_ms = (uint16_t)(nowMs - _lastUpdateMs);
     _lastUpdateMs = nowMs;
 
     const float EPS = 1e-6f;
     const float v_soll = _regler.soll();
 
+    // STOP
     if (fabsf(v_soll) < EPS) {
+        _regler.reset();
         _motor.bremse(HIGH);
         _lastPwm = 0;
         return;
@@ -79,17 +83,18 @@ void Rad::update(uint32_t nowMs)
 
     int16_t pwm = _regler.update(v_ist, dt_ms);
 
-    if (pwm > (int16_t)MAX_PWM)  pwm = (int16_t)MAX_PWM;
-    if (pwm < (int16_t)-MAX_PWM) pwm = (int16_t)-MAX_PWM;
+    // Limit
+    if (pwm > MAX_PWM)  pwm = MAX_PWM;
+    if (pwm < -MAX_PWM) pwm = -MAX_PWM;
 
-    int16_t apwm = (pwm >= 0) ? pwm : (int16_t)(-pwm);
-    const int16_t dead = _deadPwm;
-
-    if (apwm > 0 && apwm < dead) {
-        pwm = (pwm >= 0) ? dead : (int16_t)(-dead);
-        apwm = dead;
+    // Deadband
+    int16_t apwm = (pwm >= 0) ? pwm : -pwm;
+    if (apwm > 0 && apwm < _deadPwm) {
+        pwm = (pwm >= 0) ? _deadPwm : -_deadPwm;
+        apwm = _deadPwm;
     }
 
+    // Motor
     if (pwm > 0) {
         _motor.vor((uint8_t)apwm);
     }

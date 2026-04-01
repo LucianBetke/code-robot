@@ -1,6 +1,8 @@
 // hinten.ino
 #include "Hardware.h"
 #include "Control.h"
+#include "hardware_pins.h"
+#include "Print.h"
 
 constexpr float V_SOLL_GERADE = 0.30f;
 
@@ -9,6 +11,9 @@ bool stopped = false;
 
 void setup()
 {
+    Serial.begin(115200);
+    Serial.println("SETUP");
+    
     hardware_begin(true);
     control_begin();
 
@@ -20,14 +25,11 @@ void setup()
 
 void loop()
 {
+    static uint32_t last = 0;
     uint32_t now = millis();
 
-    if (!stopped && (now - startTime > 5000))
-    {
-        control_setSoll(Li, 0.0f);
-        control_setSoll(Re, 0.0f);
-        stopped = true;
-    }
-
     control_update(now);
+    print_update(now);     // Logging
+
+    
 }

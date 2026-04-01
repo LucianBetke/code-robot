@@ -31,10 +31,12 @@ void control_begin()
         speed[i].reset();
         speed[i].setTimeoutMs(500);
     }
+    hardware_enableMotors();
 }
 
 void control_update(uint32_t now)
 {
+    //Serial.println("control_update");
     for (uint8_t i = 0; i < WHEEL_COUNT; i++)
     {
         rad[i].update(now);

@@ -14,6 +14,7 @@ public:
 
     void  setSoll(float v_soll);
     float soll() const;
+    float vIst() const;
 
     void update(uint32_t nowMs);
 
