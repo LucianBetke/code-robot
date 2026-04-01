@@ -12,10 +12,14 @@ SpeedWeg speed[WHEEL_COUNT] =
     SpeedWeg(enc[Re])
 };
 
-PIRegler regler[WHEEL_COUNT] =
-{
-    PIRegler(PI_PARAMS[Li].Kp, PI_PARAMS[Li].Ki, -MAX_PWM, MAX_PWM),
-    PIRegler(PI_PARAMS[Re].Kp, PI_PARAMS[Re].Ki, -MAX_PWM, MAX_PWM)
+PIRegler regler[WHEEL_COUNT] = {
+    PIRegler(PI_PARAMS[Li].Kp, PI_PARAMS[Li].Ki,
+             -MAX_PWM, MAX_PWM,
+             SLEW_LIMIT_PWM),
+
+    PIRegler(PI_PARAMS[Re].Kp, PI_PARAMS[Re].Ki,
+             -MAX_PWM, MAX_PWM,
+             SLEW_LIMIT_PWM)
 };
 
 Rad rad[WHEEL_COUNT] =

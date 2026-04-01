@@ -27,16 +27,10 @@
     <ClCompile Include="Motor.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="PIRegler.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Printer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Rad.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="SpeedWeg.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Control.cpp">
@@ -68,16 +62,10 @@
     <ClInclude Include="Motor.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="PIRegler.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Printer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Rad.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="SpeedWeg.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="VehicleTypes.h">

@@ -1,14 +1,21 @@
 ﻿// PIRegler.cpp  (bidirektional)
 
 #include "PIRegler.h"
-#include "ControlParams.h"
 #include <Arduino.h>
 #include <math.h> // fabsf
 
-PIRegler::PIRegler(float Kp, float Ki, int16_t uMin, int16_t uMax)
-    : _Kp(Kp), _Ki(Ki), _uMin(uMin), _uMax(uMax),
-    _v_soll(0.0f), _integral(0.0f), _uPrev(0), _lastE(0.0f),
-    _lastP(0.0f), _lastI(0.0f)
+PIRegler::PIRegler(float Kp, float Ki,
+    int16_t uMin, int16_t uMax,
+    int16_t slewLimit)
+    : _Kp(Kp), _Ki(Ki),
+    _uMin(uMin), _uMax(uMax),
+    _slewLimit(slewLimit),
+    _v_soll(0.0f),
+    _integral(0.0f),
+    _uPrev(0),
+    _lastE(0.0f),
+    _lastP(0.0f),
+    _lastI(0.0f)
 {
 }
 
@@ -76,11 +83,13 @@ int16_t PIRegler::update(float v_ist, uint16_t dt_ms) {
     return pwm;
 }
 
-int16_t PIRegler::applySlew(int16_t pwm) {
+int16_t PIRegler::applySlew(int16_t pwm)
+{
     const int16_t du = pwm - _uPrev;
 
-    if (du > SLEW_LIMIT_PWM)        pwm = _uPrev + SLEW_LIMIT_PWM;
-    else if (du < -SLEW_LIMIT_PWM)  pwm = _uPrev - SLEW_LIMIT_PWM;
+    if (du > _slewLimit)        pwm = _uPrev + _slewLimit;
+    else if (du < -_slewLimit)  pwm = _uPrev - _slewLimit;
+
     _uPrev = pwm;
     return pwm;
 }
