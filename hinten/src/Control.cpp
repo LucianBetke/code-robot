@@ -36,7 +36,6 @@ void control_begin()
         speed[i].reset();
         speed[i].setTimeoutMs(500);
     }
-    hardware_enableMotors();
 }
 
 void control_update(uint32_t now)

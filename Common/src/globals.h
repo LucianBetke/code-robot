@@ -35,9 +35,6 @@ constexpr uint32_t SPEED_MIN_DT_MS = 5;
 /** Regelperiode pro Rad (ms) */
 constexpr uint16_t RAD_REGEL_DT_MS = 20;
 
-/** Fensterzeit der Achs-Kopplung (ms) */
-constexpr uint16_t HI_COUPLER_WINDOW_MS = 50;
-
 /** Debug-Ausgabe Intervall */
 constexpr uint16_t DBG_INTERVAL_MS = 20;
 
@@ -63,9 +60,6 @@ constexpr float ACHS_ABSTAND_MM = 228.0f;
 // ============================================================
 // ==== Umrechnungsfaktoren ====
 // ============================================================
-
-/** Counts pro mm */
-constexpr float COUNTS_PRO_MM = float(COUNTS_PER_REV) / RAD_UMFANG_MM;
 
 /** Radumfang in Meter */
 constexpr float RAD_UMFANG_M = RAD_UMFANG_MM / 1000.0f;

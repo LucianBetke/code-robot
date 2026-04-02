@@ -16,7 +16,6 @@
   <ItemGroup>
     <Text Include="$(MSBuildThisFileDirectory)readme.txt" />
     <Text Include="$(MSBuildThisFileDirectory)library.properties" />
-    <Text Include="$(MSBuildThisFileDirectory)src\Common.h" />
   </ItemGroup>
   <ItemGroup>
     <!-- <ClInclude Include="$(MSBuildThisFileDirectory)Common.h" /> -->
@@ -29,7 +28,6 @@
     <ClInclude Include="$(MSBuildThisFileDirectory)src\SpeedWeg.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="$(MSBuildThisFileDirectory)src\Common.cpp" />
     <ClCompile Include="$(MSBuildThisFileDirectory)src\Encoder.cpp" />
     <ClCompile Include="$(MSBuildThisFileDirectory)src\Motor.cpp" />
     <ClCompile Include="$(MSBuildThisFileDirectory)src\PIRegler.cpp" />

@@ -3,7 +3,6 @@
 #include <globals.h>
 #include <ControlTypes.h>
 
-constexpr int8_t SIGN[WHEEL_COUNT] = { +1, +1 };
 
 constexpr int16_t DEAD_PWM[WHEEL_COUNT] = {
     80,  // Li

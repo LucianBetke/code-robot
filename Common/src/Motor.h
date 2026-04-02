@@ -25,7 +25,6 @@
  * Beispiel:
  * @code
  * Motor motor[Re](5, 6);
- * motor[Re].begin();
  * motor[Re].vor(180);
  * delay(1000);
  * motor[Re].bremse(true);
@@ -50,12 +49,6 @@ public:
 
     /** @brief Initialisiert die Pins (pinMode-Aufrufe). */
     void init();
-
-    /**
-     * @brief Startet Motor + optional Encoder.
-     * @param resetEnc true = Encoderzähler auf 0 setzen
-     */
-    void begin(bool resetEnc = true);
 
     /** @brief Motor vorwärts mit PWM 0–255. */
     void vor(uint8_t pwm);
