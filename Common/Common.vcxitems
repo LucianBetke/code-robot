@@ -20,15 +20,20 @@
   </ItemGroup>
   <ItemGroup>
     <!-- <ClInclude Include="$(MSBuildThisFileDirectory)Common.h" /> -->
+    <ClInclude Include="$(MSBuildThisFileDirectory)ControlTypes.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)src\Encoder.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)src\globals.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)src\Motor.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)src\PIRegler.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)src\Rad.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)src\SpeedWeg.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="$(MSBuildThisFileDirectory)src\Common.cpp" />
     <ClCompile Include="$(MSBuildThisFileDirectory)src\Encoder.cpp" />
+    <ClCompile Include="$(MSBuildThisFileDirectory)src\Motor.cpp" />
     <ClCompile Include="$(MSBuildThisFileDirectory)src\PIRegler.cpp" />
+    <ClCompile Include="$(MSBuildThisFileDirectory)src\Rad.cpp" />
     <ClCompile Include="$(MSBuildThisFileDirectory)src\SpeedWeg.cpp" />
   </ItemGroup>
 </Project>

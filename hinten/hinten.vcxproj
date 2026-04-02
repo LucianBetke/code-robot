@@ -88,10 +88,8 @@
       <FileType>CppCode</FileType>
       <DeploymentContent>true</DeploymentContent>
     </ClCompile>
-    <ClCompile Include="Motor.cpp" />
     <ClCompile Include="Print.cpp" />
     <ClCompile Include="Printer.cpp" />
-    <ClCompile Include="Rad.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="src\arduino folders read me.txt">
@@ -107,11 +105,8 @@
     <ClInclude Include="control_rear.h" />
     <ClInclude Include="Hardware.h" />
     <ClInclude Include="hardware_pins.h" />
-    <ClInclude Include="Motor.h" />
     <ClInclude Include="Print.h" />
     <ClInclude Include="Printer.h" />
-    <ClInclude Include="Rad.h" />
-    <ClInclude Include="VehicleTypes.h" />
     <ClInclude Include="__vm\.hinten.vsarduino.h" />
   </ItemGroup>
   <PropertyGroup>

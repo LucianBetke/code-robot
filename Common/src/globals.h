@@ -75,3 +75,5 @@ constexpr float METER_PRO_TICK = RAD_UMFANG_M / float(COUNTS_PER_REV);
 
 /** Achsabstand in Meter */
 constexpr float ACHS_ABSTAND_M = ACHS_ABSTAND_MM / 1000.0f;
+
+constexpr int16_t MAX_PWM = 255;
