@@ -20,38 +20,35 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="hinten.ino" />
-    <ClCompile Include="Hardware.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Control.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Print.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
+    <ClInclude Include="src\config.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Control.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\control_rear.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Hardware.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\hardware_pins.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Print.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="__vm\.hinten.vsarduino.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="control_rear.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="hardware_pins.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="config.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Hardware.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Control.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Print.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
+    <ClCompile Include="src\hinten.ino" />
+    <ClCompile Include="src\Control.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Hardware.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Print.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

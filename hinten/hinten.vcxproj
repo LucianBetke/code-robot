@@ -82,29 +82,26 @@
     <TargetOSAndVersion>Arduino</TargetOSAndVersion>
   </PropertyGroup>
   <ItemGroup>
-    <ClCompile Include="Control.cpp" />
-    <ClCompile Include="Hardware.cpp" />
-    <ClCompile Include="hinten.ino">
+    <ClCompile Include="src\Print.cpp" />
+    <None Include="src\arduino folders read me.txt">
+    </None>
+    <ClCompile Include="src\Control.cpp" />
+    <ClCompile Include="src\Hardware.cpp" />
+    <ClCompile Include="src\hinten.ino">
       <FileType>CppCode</FileType>
       <DeploymentContent>true</DeploymentContent>
     </ClCompile>
-    <ClCompile Include="Print.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="src\arduino folders read me.txt">
-    </None>
   </ItemGroup>
   <ItemGroup>
     <ProjectCapability Include="VisualMicro" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="config.h" />
-    <ClInclude Include="Control.h" />
-    <ClInclude Include="control_rear.h" />
-    <ClInclude Include="Hardware.h" />
-    <ClInclude Include="hardware_pins.h" />
-    <ClInclude Include="Print.h" />
-    <ClInclude Include="__vm\.hinten.vsarduino.h" />
+    <ClInclude Include="src\config.h" />
+    <ClInclude Include="src\Control.h" />
+    <ClInclude Include="src\control_rear.h" />
+    <ClInclude Include="src\Hardware.h" />
+    <ClInclude Include="src\hardware_pins.h" />
+    <ClInclude Include="src\Print.h" />
   </ItemGroup>
   <PropertyGroup>
     <DebuggerFlavor>VisualMicroDebugger</DebuggerFlavor>
@@ -116,7 +113,7 @@
     <ValidateArchitecture>false</ValidateArchitecture>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>$(ProjectDir)..\hinten;$(ProjectDir)..\Common\src;$(ProjectDir)..\..\..\..\AppData\Local\arduino15\packages\arduino\hardware\avr\1.8.6\cores\arduino;$(ProjectDir)..\..\..\..\AppData\Local\arduino15\packages\arduino\hardware\avr\1.8.6\variants\eightanaloginputs;$(ProjectDir)..\..\..\..\appdata\local\arduino15\packages\arduino\tools\avr-gcc\7.3.0-atmel3.6.1-arduino7\lib\gcc\avr\7.3.0\include;$(ProjectDir)..\..\..\..\appdata\local\arduino15\packages\arduino\tools\avr-gcc\7.3.0-atmel3.6.1-arduino7\lib\gcc\avr\7.3.0\include-fixed;$(ProjectDir)..\..\..\..\appdata\local\arduino15\packages\arduino\tools\avr-gcc\7.3.0-atmel3.6.1-arduino7\avr\include;$(ProjectDir)..\Common\src</IncludePath>
+    <IncludePath>$(ProjectDir)..\Common\src;$(ProjectDir)..\..\..\..\AppData\Local\arduino15\packages\arduino\hardware\avr\1.8.6\cores\arduino;$(ProjectDir)..\..\..\..\AppData\Local\arduino15\packages\arduino\hardware\avr\1.8.6\variants\eightanaloginputs;$(ProjectDir)..\..\..\..\appdata\local\arduino15\packages\arduino\tools\avr-gcc\7.3.0-atmel3.6.1-arduino7\lib\gcc\avr\7.3.0\include;$(ProjectDir)..\..\..\..\appdata\local\arduino15\packages\arduino\tools\avr-gcc\7.3.0-atmel3.6.1-arduino7\lib\gcc\avr\7.3.0\include-fixed;$(ProjectDir)..\..\..\..\appdata\local\arduino15\packages\arduino\tools\avr-gcc\7.3.0-atmel3.6.1-arduino7\avr\include;$(ProjectDir)..\Common\src</IncludePath>
     <RemoteCCompileToolExe>$(ProjectDir)..\..\..\..\AppData\Local\arduino15\packages\arduino\tools\avr-gcc\7.3.0-atmel3.6.1-arduino7\bin\avr-g++</RemoteCCompileToolExe>
     <RemoteCppCompileToolExe>$(ProjectDir)..\..\..\..\AppData\Local\arduino15\packages\arduino\tools\avr-gcc\7.3.0-atmel3.6.1-arduino7\bin\avr-g++</RemoteCppCompileToolExe>
     <ValidateArchitecture>false</ValidateArchitecture>
@@ -137,7 +134,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\hinten;$(ProjectDir)..\Common\src;$(ProjectDir)..\..\..\..\AppData\Local\arduino15\packages\arduino\hardware\avr\1.8.6\cores\arduino;$(ProjectDir)..\..\..\..\AppData\Local\arduino15\packages\arduino\hardware\avr\1.8.6\variants\eightanaloginputs;$(ProjectDir)..\..\..\..\appdata\local\arduino15\packages\arduino\tools\avr-gcc\7.3.0-atmel3.6.1-arduino7\lib\gcc\avr\7.3.0\include;$(ProjectDir)..\..\..\..\appdata\local\arduino15\packages\arduino\tools\avr-gcc\7.3.0-atmel3.6.1-arduino7\lib\gcc\avr\7.3.0\include-fixed;$(ProjectDir)..\..\..\..\appdata\local\arduino15\packages\arduino\tools\avr-gcc\7.3.0-atmel3.6.1-arduino7\avr\include;$(ProjectDir)..\Common\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\Common\src;$(ProjectDir)..\..\..\..\AppData\Local\arduino15\packages\arduino\hardware\avr\1.8.6\cores\arduino;$(ProjectDir)..\..\..\..\AppData\Local\arduino15\packages\arduino\hardware\avr\1.8.6\variants\eightanaloginputs;$(ProjectDir)..\..\..\..\appdata\local\arduino15\packages\arduino\tools\avr-gcc\7.3.0-atmel3.6.1-arduino7\lib\gcc\avr\7.3.0\include;$(ProjectDir)..\..\..\..\appdata\local\arduino15\packages\arduino\tools\avr-gcc\7.3.0-atmel3.6.1-arduino7\lib\gcc\avr\7.3.0\include-fixed;$(ProjectDir)..\..\..\..\appdata\local\arduino15\packages\arduino\tools\avr-gcc\7.3.0-atmel3.6.1-arduino7\avr\include;$(ProjectDir)..\Common\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <GccToolChain>$(ProjectDir)..\..\..\..\AppData\Local\arduino15\packages\arduino\tools\avr-gcc\7.3.0-atmel3.6.1-arduino7\bin\avr-g++</GccToolChain>
       <CppLanguageStandard>gnu++11</CppLanguageStandard>
       <CLanguageStandard>gnu11</CLanguageStandard>
