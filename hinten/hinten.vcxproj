@@ -89,7 +89,6 @@
       <DeploymentContent>true</DeploymentContent>
     </ClCompile>
     <ClCompile Include="Print.cpp" />
-    <ClCompile Include="Printer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="src\arduino folders read me.txt">
@@ -101,12 +100,10 @@
   <ItemGroup>
     <ClInclude Include="config.h" />
     <ClInclude Include="Control.h" />
-    <ClInclude Include="ControlParams.h" />
     <ClInclude Include="control_rear.h" />
     <ClInclude Include="Hardware.h" />
     <ClInclude Include="hardware_pins.h" />
     <ClInclude Include="Print.h" />
-    <ClInclude Include="Printer.h" />
     <ClInclude Include="__vm\.hinten.vsarduino.h" />
   </ItemGroup>
   <PropertyGroup>

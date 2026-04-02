@@ -5,7 +5,7 @@
 #include "Control.h"
 #include "Hardware.h"
 #include "control_rear.h"
-#include "ControlParams.h"
+#include "globals.h"
 
 SpeedWeg speed[WHEEL_COUNT] =
 {
