@@ -3,8 +3,8 @@
   <PropertyGroup Label="Globals">
     <MSBuildAllProjects>$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
     <HasSharedItems>true</HasSharedItems>
-    <ItemsProjectGuid>{ef035b0f-de50-49cf-86cb-c33096d10d79}</ItemsProjectGuid>
-    <ItemsProjectName>1_Common</ItemsProjectName>
+    <ItemsProjectGuid>{bba5d27b-f2ed-4325-8912-9a6b419b875e}</ItemsProjectGuid>
+    <ItemsProjectName>3_Control</ItemsProjectName>
   </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>
@@ -15,7 +15,13 @@
     <ProjectCapability Include="SourceItemsFromImports" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="$(MSBuildThisFileDirectory)src\ControlTypes.h" />
-    <ClInclude Include="$(MSBuildThisFileDirectory)src\globals.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)src\PIRegler.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)src\Rad.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)src\SpeedWeg.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="$(MSBuildThisFileDirectory)src\PIRegler.cpp" />
+    <ClCompile Include="$(MSBuildThisFileDirectory)src\Rad.cpp" />
+    <ClCompile Include="$(MSBuildThisFileDirectory)src\SpeedWeg.cpp" />
   </ItemGroup>
 </Project>

@@ -3,8 +3,8 @@
   <PropertyGroup Label="Globals">
     <MSBuildAllProjects>$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
     <HasSharedItems>true</HasSharedItems>
-    <ItemsProjectGuid>{ef035b0f-de50-49cf-86cb-c33096d10d79}</ItemsProjectGuid>
-    <ItemsProjectName>1_Common</ItemsProjectName>
+    <ItemsProjectGuid>{2860ca9d-a164-40be-8f64-6e403ff8fe56}</ItemsProjectGuid>
+    <ItemsProjectName>2_Hardware</ItemsProjectName>
   </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>
@@ -15,7 +15,11 @@
     <ProjectCapability Include="SourceItemsFromImports" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="$(MSBuildThisFileDirectory)src\ControlTypes.h" />
-    <ClInclude Include="$(MSBuildThisFileDirectory)src\globals.h" />
+    <ClCompile Include="$(MSBuildThisFileDirectory)src\Encoder.cpp" />
+    <ClCompile Include="$(MSBuildThisFileDirectory)src\Motor.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="$(MSBuildThisFileDirectory)src\Encoder.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)src\Motor.h" />
   </ItemGroup>
 </Project>
