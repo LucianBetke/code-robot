@@ -9,13 +9,23 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "vorne", "vorne\vorne.vcxpro
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "hinten", "hinten\hinten.vcxproj", "{5AC1F5B7-CB40-4E0A-A2A3-8ED4DBEC9376}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "1_Common", "Common\Common.vcxitems", "{EF035B0F-DE50-49CF-86CB-C33096D10D79}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Common", "Common\Common.vcxitems", "{EF035B0F-DE50-49CF-86CB-C33096D10D79}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "2_Hardware", "Hardware\Hardware.vcxitems", "{2860CA9D-A164-40BE-8F64-6E403FF8FE56}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Hardware", "Hardware\Hardware.vcxitems", "{2860CA9D-A164-40BE-8F64-6E403FF8FE56}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "3_Control", "Control\Control.vcxitems", "{BBA5D27B-F2ED-4325-8912-9A6B419B875E}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Control", "Control\Control.vcxitems", "{BBA5D27B-F2ED-4325-8912-9A6B419B875E}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "4_Vehicle", "Vehicle\Vehicle.vcxitems", "{EB840C31-A50E-4F5B-ACAC-CCBDF733163C}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Vehicle", "Vehicle\Vehicle.vcxitems", "{EB840C31-A50E-4F5B-ACAC-CCBDF733163C}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "test", "test\test.vcxproj", "{CB3C3AC9-67B1-4178-93A0-4E15015FFD4E}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "1_Common", "1_Common\1_Common.vcxitems", "{084870EA-CA15-4E81-B20E-34CC3B06409B}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "2_Hardware", "2_Hardware\2_Hardware.vcxitems", "{4FE121DF-D8D5-406F-B19B-60AF7564C675}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "3_Control", "3_Control\3_Control.vcxitems", "{1F3E0459-01D8-4F38-99CD-742725E4BDAC}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "4_Vehicle", "4_Vehicle\4_Vehicle.vcxitems", "{C8CE36AE-18D2-4224-BAFE-6C24C471649A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -61,6 +71,18 @@ Global
 		{5AC1F5B7-CB40-4E0A-A2A3-8ED4DBEC9376}.Release|x86.ActiveCfg = Release|x86
 		{5AC1F5B7-CB40-4E0A-A2A3-8ED4DBEC9376}.Release|x86.Build.0 = Release|x86
 		{5AC1F5B7-CB40-4E0A-A2A3-8ED4DBEC9376}.Release|x86.Deploy.0 = Release|x86
+		{CB3C3AC9-67B1-4178-93A0-4E15015FFD4E}.Debug|x64.ActiveCfg = Debug|x64
+		{CB3C3AC9-67B1-4178-93A0-4E15015FFD4E}.Debug|x64.Build.0 = Debug|x64
+		{CB3C3AC9-67B1-4178-93A0-4E15015FFD4E}.Debug|x64.Deploy.0 = Debug|x64
+		{CB3C3AC9-67B1-4178-93A0-4E15015FFD4E}.Debug|x86.ActiveCfg = Debug|x86
+		{CB3C3AC9-67B1-4178-93A0-4E15015FFD4E}.Debug|x86.Build.0 = Debug|x86
+		{CB3C3AC9-67B1-4178-93A0-4E15015FFD4E}.Debug|x86.Deploy.0 = Debug|x86
+		{CB3C3AC9-67B1-4178-93A0-4E15015FFD4E}.Release|x64.ActiveCfg = Release|x64
+		{CB3C3AC9-67B1-4178-93A0-4E15015FFD4E}.Release|x64.Build.0 = Release|x64
+		{CB3C3AC9-67B1-4178-93A0-4E15015FFD4E}.Release|x64.Deploy.0 = Release|x64
+		{CB3C3AC9-67B1-4178-93A0-4E15015FFD4E}.Release|x86.ActiveCfg = Release|x86
+		{CB3C3AC9-67B1-4178-93A0-4E15015FFD4E}.Release|x86.Build.0 = Release|x86
+		{CB3C3AC9-67B1-4178-93A0-4E15015FFD4E}.Release|x86.Deploy.0 = Release|x86
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -69,11 +91,20 @@ Global
 		SolutionGuid = {AF538774-156C-4374-999E-2CC0B2C25C85}
 	EndGlobalSection
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
+		1_Common\1_Common.vcxitems*{084870ea-ca15-4e81-b20e-34cc3b06409b}*SharedItemsImports = 9
+		3_Control\3_Control.vcxitems*{1f3e0459-01d8-4f38-99cd-742725e4bdac}*SharedItemsImports = 9
 		Hardware\Hardware.vcxitems*{2860ca9d-a164-40be-8f64-6e403ff8fe56}*SharedItemsImports = 9
-		Common\Common.vcxitems*{5ac1f5b7-cb40-4e0a-a2a3-8ed4dbec9376}*SharedItemsImports = 4
-		Control\Control.vcxitems*{5ac1f5b7-cb40-4e0a-a2a3-8ed4dbec9376}*SharedItemsImports = 4
-		Hardware\Hardware.vcxitems*{5ac1f5b7-cb40-4e0a-a2a3-8ed4dbec9376}*SharedItemsImports = 4
+		2_Hardware\2_Hardware.vcxitems*{4fe121df-d8d5-406f-b19b-60af7564c675}*SharedItemsImports = 9
+		1_Common\1_Common.vcxitems*{5ac1f5b7-cb40-4e0a-a2a3-8ed4dbec9376}*SharedItemsImports = 4
+		2_Hardware\2_Hardware.vcxitems*{5ac1f5b7-cb40-4e0a-a2a3-8ed4dbec9376}*SharedItemsImports = 4
+		3_Control\3_Control.vcxitems*{5ac1f5b7-cb40-4e0a-a2a3-8ed4dbec9376}*SharedItemsImports = 4
+		4_Vehicle\4_Vehicle.vcxitems*{5ac1f5b7-cb40-4e0a-a2a3-8ed4dbec9376}*SharedItemsImports = 4
 		Control\Control.vcxitems*{bba5d27b-f2ed-4325-8912-9a6b419b875e}*SharedItemsImports = 9
+		4_Vehicle\4_Vehicle.vcxitems*{c8ce36ae-18d2-4224-bafe-6c24c471649a}*SharedItemsImports = 9
+		Common\Common.vcxitems*{cb3c3ac9-67b1-4178-93a0-4e15015ffd4e}*SharedItemsImports = 4
+		Control\Control.vcxitems*{cb3c3ac9-67b1-4178-93a0-4e15015ffd4e}*SharedItemsImports = 4
+		Hardware\Hardware.vcxitems*{cb3c3ac9-67b1-4178-93a0-4e15015ffd4e}*SharedItemsImports = 4
+		Vehicle\Vehicle.vcxitems*{cb3c3ac9-67b1-4178-93a0-4e15015ffd4e}*SharedItemsImports = 4
 		Vehicle\Vehicle.vcxitems*{eb840c31-a50e-4f5b-acac-ccbdf733163c}*SharedItemsImports = 9
 		Common\Common.vcxitems*{ef035b0f-de50-49cf-86cb-c33096d10d79}*SharedItemsImports = 9
 	EndGlobalSection

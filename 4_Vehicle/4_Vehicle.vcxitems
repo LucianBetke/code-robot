@@ -1,10 +1,9 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup Label="Globals">
     <MSBuildAllProjects>$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
     <HasSharedItems>true</HasSharedItems>
-    <ItemsProjectGuid>{ef035b0f-de50-49cf-86cb-c33096d10d79}</ItemsProjectGuid>
-    <ItemsProjectName>Common</ItemsProjectName>
+    <ItemsProjectGuid>{c8ce36ae-18d2-4224-bafe-6c24c471649a}</ItemsProjectGuid>
   </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>
@@ -15,7 +14,6 @@
     <ProjectCapability Include="SourceItemsFromImports" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="$(MSBuildThisFileDirectory)src\ControlTypes.h" />
-    <ClInclude Include="$(MSBuildThisFileDirectory)src\globals.h" />
+    <Text Include="$(MSBuildThisFileDirectory)readme.txt" />
   </ItemGroup>
-</Project>
+  </Project>

@@ -1,8 +1,9 @@
 // control_rear.h
 #pragma once
-#include <globals.h>
-#include <ControlTypes.h>
-
+#include "../1_Common/src/globals.h"
+#include "../1_Common/src/ControlTypes.h"
+//#include "globals.h"
+//#include "ControlTypes.h"
 
 constexpr int16_t DEAD_PWM[WHEEL_COUNT] = {
     80,  // Li

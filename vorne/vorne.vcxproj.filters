@@ -20,14 +20,17 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="vorne.ino" />
-  </ItemGroup>
-  <ItemGroup>
     <ClInclude Include="__vm\.vorne.vsarduino.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="VehicleTypes.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\VehicleTypes.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\vorne.ino" />
   </ItemGroup>
 </Project>

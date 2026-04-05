@@ -1,6 +1,6 @@
 // Print.cpp
 #include "Print.h"
-#include "globals.h"
+#include "../1_Common/src/globals.h"
 #include "Control.h"
 
 void print_begin()

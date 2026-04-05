@@ -4,7 +4,7 @@
     <MSBuildAllProjects>$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
     <HasSharedItems>true</HasSharedItems>
     <ItemsProjectGuid>{bba5d27b-f2ed-4325-8912-9a6b419b875e}</ItemsProjectGuid>
-    <ItemsProjectName>3_Control</ItemsProjectName>
+    <ItemsProjectName>Control</ItemsProjectName>
   </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>

@@ -4,7 +4,7 @@
     <MSBuildAllProjects>$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
     <HasSharedItems>true</HasSharedItems>
     <ItemsProjectGuid>{2860ca9d-a164-40be-8f64-6e403ff8fe56}</ItemsProjectGuid>
-    <ItemsProjectName>2_Hardware</ItemsProjectName>
+    <ItemsProjectName>Hardware</ItemsProjectName>
   </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>
