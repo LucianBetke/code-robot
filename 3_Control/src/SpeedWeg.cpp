@@ -3,13 +3,10 @@
 // ============================================================
 
 #include "SpeedWeg.h"
-#include "../2_Hardware/src/Encoder.h"
 #include "../1_Common/src/globals.h"
+#include "../2_Hardware/src/Encoder.h"
 #include <math.h>
-//#include "SpeedWeg.h"
-//#include <Encoder.h>
-//#include "globals.h"
-//#include <math.h>
+
 // ------------------------------------------------------------
 // Konstruktor
 // ------------------------------------------------------------

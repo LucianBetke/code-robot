@@ -1,14 +1,11 @@
 // Rad.h
 #pragma once
 #include <Arduino.h>
+#include "../1_Common/src/ControlTypes.h"
 #include "../2_Hardware/src/Motor.h"
 #include "SpeedWeg.h"
 #include "PIRegler.h"
-#include "../1_Common/src/ControlTypes.h"
-//#include "Motor.h"
-//#include "SpeedWeg.h"
-//#include "PIRegler.h"
-//#include "ControlTypes.h"
+
 class Rad {
 public:
     Rad(Motor& motor, SpeedWeg& speed, PIRegler& regler,

@@ -67,6 +67,13 @@ constexpr uint16_t RAD_REGEL_DT_MS = 20;
 constexpr uint16_t DBG_INTERVAL_MS = 20;
 
 // ============================================================
+// ==== Zeitbasis Kommunikation ====
+// ============================================================
+
+/** UART Sendeintervall Front -> Rear (ms) */
+constexpr uint16_t UART_SEND_DT_MS = RAD_REGEL_DT_MS;
+
+// ============================================================
 // ==== Encoder / Rad-Geometrie ====
 // ============================================================
 
@@ -115,3 +122,10 @@ constexpr float MECANUM_K =
 
 constexpr int16_t MAX_PWM = 255;
 constexpr int16_t SLEW_LIMIT_PWM = 255;
+
+// ============================================================
+// ==== Fahrzeug / Geschwindigkeit ====
+// ============================================================
+
+/** Maximale Radgeschwindigkeit (m/s) */
+constexpr float V_WHEEL_MAX = 0.30f;

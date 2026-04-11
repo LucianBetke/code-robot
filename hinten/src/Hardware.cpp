@@ -9,8 +9,6 @@
 // ============================================================
 
 #include <Arduino.h>
-
-//#include "config.h"        // Projektspezifische Konfiguration (Pins!)
 #include "Hardware.h"
 #include "hardware_pins.h"
 
