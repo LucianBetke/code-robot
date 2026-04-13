@@ -57,7 +57,7 @@ void UartLink::update()
         {
             _gotPong = true;
             _link.println("ACK");
-    //        _connected = true; // NEU: Sobald PONG da ist, sind wir verbunden
+            _connected = true; // NEU: Sobald PONG da ist, sind wir verbunden
         }
         else if (strcmp(_buf, "ACK") == 0)
         {
