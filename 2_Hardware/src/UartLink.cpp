@@ -1,10 +1,9 @@
-// UartLink.cpp
-
 #include "UartLink.h"
 #include <string.h>
 
-UartLink::UartLink(Stream& link)
+UartLink::UartLink(Stream& link, bool initiator)
     : _link(link),
+    _initiator(initiator),
     _connected(false),
     _lastPing(0),
     _lastSeen(0),
@@ -19,7 +18,6 @@ void UartLink::begin(unsigned long baud)
     {
         Serial.begin(baud);
     }
-
     _connected = false;
     _lastPing = 0;
     _lastSeen = 0;
@@ -36,17 +34,14 @@ void UartLink::update()
     {
         size_t n = _link.readBytesUntil('\n', _buf, sizeof(_buf) - 1);
         _buf[n] = '\0';
-        
-        // NEU: Wenn die Zeile mit '#' beginnt, sofort ignorieren
+
         if (_buf[0] == '#') {
             continue;
         }
-
         if (n > 0 && _buf[n - 1] == '\r')
         {
             _buf[n - 1] = '\0';
         }
-
         _lastSeen = millis();
 
         if (strcmp(_buf, "PING") == 0)
@@ -57,12 +52,12 @@ void UartLink::update()
         {
             _gotPong = true;
             _link.println("ACK");
-            _connected = true; // NEU: Sobald PONG da ist, sind wir verbunden
+            _connected = true;
         }
         else if (strcmp(_buf, "ACK") == 0)
         {
             _gotAck = true;
-            _connected = true; // NEU: Sobald PONG da ist, sind wir verbunden
+            _connected = true;
         }
     }
 
@@ -77,7 +72,7 @@ void UartLink::update()
     // =========================
     // PING senden
     // =========================
-    if (!_connected)
+    if (!_connected && _initiator)
     {
         if (millis() - _lastPing > PING_INTERVAL)
         {

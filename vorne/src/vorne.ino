@@ -9,12 +9,17 @@
 #include "../2_Hardware/src/UartLink.h"
 
 VehicleController vehicle;
-UartLink uart(Serial);
+
+UartLink uart(Serial, true);   // initiator
 
 void setup()
 {
     Serial.begin(115200);
     uart.begin(115200);
+
+    pinMode(13, OUTPUT);
+    digitalWrite(13, HIGH);
+    delay(1000);
 
     Serial.println("Warte auf Handshake...");
 
@@ -23,6 +28,8 @@ void setup()
         uart.update();
     }
 
+    
+    digitalWrite(13, LOW);
     Serial.println("#Handshake OK");
 }
 

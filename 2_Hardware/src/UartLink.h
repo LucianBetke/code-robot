@@ -1,32 +1,25 @@
-// UartLink.h
-
 #pragma once
 #include <Arduino.h>
 
 class UartLink
 {
 public:
-    UartLink(Stream& link);
-
+    UartLink(Stream& link, bool initiator = false);
     void begin(unsigned long baud);
     void update();
-
     void sendLine(const char* msg);
     bool isConnected() const;
 
 private:
     Stream& _link;
-
+    bool _initiator;
     bool _connected;
-
     // Handshake-Status
     bool _gotPong;
     bool _gotAck;
-
     // Timing
     unsigned long _lastPing;
     unsigned long _lastSeen;
-
     // Buffer
     char _buf[64];
 
