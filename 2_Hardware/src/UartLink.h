@@ -1,28 +1,35 @@
-//UartLink.h
+// UartLink.h
+
 #pragma once
 #include <Arduino.h>
-#include <SoftwareSerial.h>
 
 class UartLink
 {
 public:
-    UartLink(uint8_t rx, uint8_t tx);
+    UartLink(Stream& link);
 
-    void begin(unsigned long baud);   // startet UART + Handshake
-    void update();                    // muss in loop() laufen
+    void begin(unsigned long baud);
+    void update();
+
+    void sendLine(const char* msg);
     bool isConnected() const;
 
 private:
-    SoftwareSerial _link;
+    Stream& _link;
 
     bool _connected;
+
+    // Handshake-Status
+    bool _gotPong;
+    bool _gotAck;
+
+    // Timing
     unsigned long _lastPing;
     unsigned long _lastSeen;
 
-    static const unsigned long PING_INTERVAL = 500;
-    static const unsigned long TIMEOUT = 1500;
+    // Buffer
+    char _buf[64];
 
-    char _buf[32];
-
-    void _handshake();
+    static constexpr unsigned long PING_INTERVAL = 500;
+    static constexpr unsigned long TIMEOUT = 2000;
 };

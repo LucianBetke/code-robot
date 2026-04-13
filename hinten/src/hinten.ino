@@ -1,48 +1,23 @@
-// hinten.ino
-#include "Hardware.h"
-#include "Control.h"
-#include "Print.h"
+﻿// hinten.ino
 
-constexpr float V_SOLL_GERADE = 0.30f;
+#include "../2_Hardware/src/UartLink.h"
 
-uint32_t startTime;
-bool stopped = false;
+UartLink uart(Serial);
 
 void setup()
 {
     Serial.begin(115200);
+    uart.begin(115200);
 
-    hardware_begin(true);
-    control_begin();
-    print_begin();
+    // blockierend warten bis Handshake vollständig (PING/PONG/ACK)
+    while (!uart.isConnected())
+    {
+        uart.update();
+    }
 
-    hardware_enableMotors();
-
-    control_setSoll(Li, V_SOLL_GERADE);
-    control_setSoll(Re, V_SOLL_GERADE);
-
-    startTime = millis();
+    // keine Ausgabe gewünscht → nichts hier
 }
 
 void loop()
 {
-    uint32_t now = millis();
-
-    // Nach 5 Sekunden stoppen
-    if (!stopped && (now - startTime >= 5000))
-    {
-        control_setSoll(Li, 0.0f);
-        control_setSoll(Re, 0.0f);
-        stopped = true;
-        Serial.println("STOP");
-    }
-
-    // Regelung l�uft immer weiter
-    control_update(now);
-
-    // Logging nur w�hrend der Messphase
-    if (!stopped)
-    {
-        print_update(now);
-    }
 }

@@ -1,35 +1,31 @@
 /*
- Name:		vorne.ino
- Created:	11.03.2026 22:17:58
- Author:	Acer
+ Name:      vorne.ino
+ Created:   11.03.2026 22:17:58
+ Author:    Acer
 */
 
 #include "../1_Common/src/globals.h"
 #include "../4_Vehicle/src/VehicleController.h"
-
+#include "../2_Hardware/src/UartLink.h"
 
 VehicleController vehicle;
+UartLink uart(Serial);
 
-// the setup function runs once when you press reset or power the board
 void setup()
 {
     Serial.begin(115200);
-    Serial.println("Front Nano gestartet");
+    uart.begin(115200);
 
-    vehicle.cmd(0.3f, 0.3f, 0.0f);
+    Serial.println("Warte auf Handshake...");
 
-    for (int i = 0; i < WHEEL_VEHICLE_COUNT; i++)
+    while (!uart.isConnected())
     {
-        Serial.print(WHEEL_VEHICLE_NAME[i]);
-        Serial.print(": ");
-        Serial.print(vehicle.getWheelSoll((WheelVehicle)i));
-        Serial.print("  ");
+        uart.update();
     }
 
-    Serial.println();
+    Serial.println("#Handshake OK");
 }
 
-// the loop function runs over and over again until power down or reset
-void loop() {
-  
+void loop()
+{
 }
