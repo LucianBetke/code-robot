@@ -1,4 +1,4 @@
-#include "UartLink.h"
+﻿#include "UartLink.h"
 #include <string.h>
 
 UartLink::UartLink(Stream& link, bool initiator)
@@ -18,9 +18,10 @@ void UartLink::begin(unsigned long baud)
     {
         Serial.begin(baud);
     }
+
     _connected = false;
     _lastPing = 0;
-    _lastSeen = 0;
+    _lastSeen = millis();   // Startwert
     _gotPong = false;
     _gotAck = false;
 }
@@ -35,14 +36,18 @@ void UartLink::update()
         size_t n = _link.readBytesUntil('\n', _buf, sizeof(_buf) - 1);
         _buf[n] = '\0';
 
-        if (_buf[0] == '#') {
+        // Debug-Zeilen ignorieren
+        if (_buf[0] == '#')
+        {
             continue;
         }
+
         if (n > 0 && _buf[n - 1] == '\r')
         {
             _buf[n - 1] = '\0';
         }
-        _lastSeen = millis();
+
+        _lastSeen = millis();   // Empfang = Verbindung lebt
 
         if (strcmp(_buf, "PING") == 0)
         {
@@ -59,10 +64,14 @@ void UartLink::update()
             _gotAck = true;
             _connected = true;
         }
+        else if (strcmp(_buf, "KA") == 0)
+        {
+            // Keepalive empfangen → nichts tun
+        }
     }
 
     // =========================
-    // Verbindung best�tigen
+    // Verbindung bestätigen
     // =========================
     if (!_connected && _gotPong && _gotAck)
     {
@@ -70,14 +79,28 @@ void UartLink::update()
     }
 
     // =========================
-    // PING senden
+    // Senden
     // =========================
-    if (!_connected && _initiator)
+    if (_initiator)
     {
         if (millis() - _lastPing > PING_INTERVAL)
         {
             _lastPing = millis();
-            _link.println("PING");
+
+            if (!_connected)
+            {
+                // Handshake starten
+                _link.println("PING");
+            }
+            else
+            {
+                // Keepalive senden
+                _link.println("KA");
+
+                // ❗ entscheidend:
+                // Initiator hält sich selbst "alive"
+                _lastSeen = millis();
+            }
         }
     }
 
