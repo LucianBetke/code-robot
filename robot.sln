@@ -17,6 +17,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "3_Control", "3_Control\3_Co
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "4_Vehicle", "4_Vehicle\4_Vehicle.vcxitems", "{C8CE36AE-18D2-4224-BAFE-6C24C471649A}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "5_System", "5_System\5_System.vcxitems", "{EC5B9F70-EFD9-48B7-A9AC-B1CDB97029FE}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -76,10 +78,13 @@ Global
 		2_Hardware\2_Hardware.vcxitems*{5ac1f5b7-cb40-4e0a-a2a3-8ed4dbec9376}*SharedItemsImports = 4
 		3_Control\3_Control.vcxitems*{5ac1f5b7-cb40-4e0a-a2a3-8ed4dbec9376}*SharedItemsImports = 4
 		4_Vehicle\4_Vehicle.vcxitems*{5ac1f5b7-cb40-4e0a-a2a3-8ed4dbec9376}*SharedItemsImports = 4
+		5_System\5_System.vcxitems*{5ac1f5b7-cb40-4e0a-a2a3-8ed4dbec9376}*SharedItemsImports = 4
 		4_Vehicle\4_Vehicle.vcxitems*{c8ce36ae-18d2-4224-bafe-6c24c471649a}*SharedItemsImports = 9
 		1_Common\1_Common.vcxitems*{e19821c6-5c82-46c3-9f81-602a413d17ec}*SharedItemsImports = 4
 		2_Hardware\2_Hardware.vcxitems*{e19821c6-5c82-46c3-9f81-602a413d17ec}*SharedItemsImports = 4
 		3_Control\3_Control.vcxitems*{e19821c6-5c82-46c3-9f81-602a413d17ec}*SharedItemsImports = 4
 		4_Vehicle\4_Vehicle.vcxitems*{e19821c6-5c82-46c3-9f81-602a413d17ec}*SharedItemsImports = 4
+		5_System\5_System.vcxitems*{e19821c6-5c82-46c3-9f81-602a413d17ec}*SharedItemsImports = 4
+		5_System\5_System.vcxitems*{ec5b9f70-efd9-48b7-a9ac-b1cdb97029fe}*SharedItemsImports = 9
 	EndGlobalSection
 EndGlobal
