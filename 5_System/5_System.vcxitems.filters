@@ -5,5 +5,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="$(MSBuildThisFileDirectory)src\ConnectionMonitor.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)CommandScript.h" />
   </ItemGroup>
 </Project>

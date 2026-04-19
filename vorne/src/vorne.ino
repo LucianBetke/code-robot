@@ -17,19 +17,9 @@ ConnectionMonitor conn(uart, 13);
 void setup()
 {
     Serial.begin(115200);
-    uart.begin(115200);
-    conn.begin();
 
-    Serial.println("Warte auf Handshake...");
-
-    // blockierend für Test ok
-    while (!uart.isConnected())
-    {
-        uart.update();
-        conn.update();   // 🔥 wichtig!
-    }
-
-    Serial.println("#Handshake1 OK");
+    uart.begin();
+    conn.begin(true);   // 🔥 fertig
 }
 
 void loop()

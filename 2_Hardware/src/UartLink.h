@@ -5,7 +5,7 @@ class UartLink
 {
 public:
     UartLink(Stream& link, bool initiator = false);
-    void begin(unsigned long baud);
+    void begin();
     void update();
     void sendLine(const char* msg);
     bool isConnected() const;

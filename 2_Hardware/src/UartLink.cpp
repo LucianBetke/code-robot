@@ -6,10 +6,8 @@ UartLink::UartLink(Stream& link, bool initiator)
     _connected(false), _lastPing(0), _lastSeen(0), _idx(0) {
 }
 
-void UartLink::begin(unsigned long baud)
+void UartLink::begin()
 {
-    if (&_link == &Serial) Serial.begin(baud);
-
     _connected = false;
     _lastPing = 0;
     _lastSeen = millis();

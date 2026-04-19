@@ -9,8 +9,9 @@ class ConnectionMonitor
 public:
     ConnectionMonitor(UartLink& uart, uint8_t ledPin);
 
-    void begin();
+    void begin(bool wait);
     void update();
+    void waitForConnection();
 
 private:
     UartLink& _uart;

@@ -17,6 +17,7 @@
     <ClCompile Include="$(MSBuildThisFileDirectory)src\ConnectionMonitor.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="$(MSBuildThisFileDirectory)CommandScript.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)src\ConnectionMonitor.h" />
   </ItemGroup>
 </Project>

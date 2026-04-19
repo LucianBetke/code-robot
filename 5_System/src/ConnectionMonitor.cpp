@@ -6,10 +6,34 @@ ConnectionMonitor::ConnectionMonitor(UartLink& uart, uint8_t ledPin)
 {
 }
 
-void ConnectionMonitor::begin()
+void ConnectionMonitor::waitForConnection()
 {
+    Serial.println("Warte auf Handshake...");
+
+    while (!_uart.isConnected())
+    {
+        _uart.update();
+        update();   // eigene Logik
+    }
+
+    Serial.println("#Handshake1 OK");
+}
+
+void ConnectionMonitor::begin(bool wait)
+{
+    // 🔥 Hardware-Init
     pinMode(_ledPin, OUTPUT);
     digitalWrite(_ledPin, HIGH);   // wartet auf Verbindung
+
+    // 🔥 Zustand
+    _lastState = false;
+    _lastOk = millis();
+
+    // 🔥 optional blockierend
+    if (wait)
+    {
+        waitForConnection();
+    }
 }
 
 void ConnectionMonitor::update()

@@ -8,18 +8,9 @@ ConnectionMonitor conn(uart, 13);
 void setup()
 {
     Serial.begin(115200);
-    uart.begin(115200);
-    conn.begin();
 
-    Serial.println("Rear wartet auf Verbindung...");
-
-    while (!uart.isConnected())
-    {
-        uart.update();
-        conn.update();   // 🔥 wichtig
-    }
-
-    Serial.println("#Handshake OK (Rear)");
+    uart.begin();
+    conn.begin(false);   // ❗ nicht blockieren
 }
 
 void loop()
