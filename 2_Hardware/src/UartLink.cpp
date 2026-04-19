@@ -21,7 +21,7 @@ void UartLink::begin(unsigned long baud)
 
     _connected = false;
     _lastPing = 0;
-    _lastSeen = millis();   // Startwert
+    _lastSeen = millis();
     _gotPong = false;
     _gotAck = false;
 }
@@ -36,18 +36,15 @@ void UartLink::update()
         size_t n = _link.readBytesUntil('\n', _buf, sizeof(_buf) - 1);
         _buf[n] = '\0';
 
-        // Debug-Zeilen ignorieren
+        // Debug ignorieren
         if (_buf[0] == '#')
-        {
             continue;
-        }
 
         if (n > 0 && _buf[n - 1] == '\r')
-        {
             _buf[n - 1] = '\0';
-        }
 
-        _lastSeen = millis();   // Empfang = Verbindung lebt
+        // ✅ NUR hier: Verbindung lebt
+        _lastSeen = millis();
 
         if (strcmp(_buf, "PING") == 0)
         {
@@ -66,7 +63,7 @@ void UartLink::update()
         }
         else if (strcmp(_buf, "KA") == 0)
         {
-            // Keepalive empfangen → nichts tun
+            // Keepalive empfangen → reicht schon für _lastSeen
         }
     }
 
@@ -89,23 +86,22 @@ void UartLink::update()
 
             if (!_connected)
             {
-                // Handshake starten
+                // Handshake
                 _link.println("PING");
             }
             else
             {
-                // Keepalive senden
+                // Keepalive
                 _link.println("KA");
 
-                // ❗ entscheidend:
-                // Initiator hält sich selbst "alive"
-                _lastSeen = millis();
+                // ❌ WICHTIG:
+                // KEIN _lastSeen hier!
             }
         }
     }
 
     // =========================
-    // Timeout
+    // Timeout (jetzt wirksam)
     // =========================
     if (_connected && millis() - _lastSeen > TIMEOUT)
     {
