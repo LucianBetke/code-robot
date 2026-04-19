@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include <Arduino.h>
 
 class UartLink
@@ -22,6 +22,7 @@ private:
     unsigned long _lastSeen;
     // Buffer
     char _buf[64];
+    uint8_t _idx;   // 👈 NEU
 
     static constexpr unsigned long PING_INTERVAL = 500;
     static constexpr unsigned long TIMEOUT = 2000;

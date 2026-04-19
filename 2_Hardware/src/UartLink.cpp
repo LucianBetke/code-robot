@@ -7,8 +7,7 @@ UartLink::UartLink(Stream& link, bool initiator)
     _connected(false),
     _lastPing(0),
     _lastSeen(0),
-    _gotPong(false),
-    _gotAck(false)
+    _idx(0)
 {
 }
 
@@ -22,92 +21,96 @@ void UartLink::begin(unsigned long baud)
     _connected = false;
     _lastPing = 0;
     _lastSeen = millis();
-    _gotPong = false;
-    _gotAck = false;
+    _idx = 0;
 }
 
 void UartLink::update()
 {
+    uint32_t now = millis();
+
     // =========================
-    // Empfangen
+    // RX (nicht blockierend)
     // =========================
     while (_link.available())
     {
-        size_t n = _link.readBytesUntil('\n', _buf, sizeof(_buf) - 1);
-        _buf[n] = '\0';
+        char c = _link.read();
 
-        // Debug ignorieren
-        if (_buf[0] == '#')
-            continue;
+        if (c == '\r') continue;
 
-        if (n > 0 && _buf[n - 1] == '\r')
-            _buf[n - 1] = '\0';
-
-        // ✅ NUR hier: Verbindung lebt
-        _lastSeen = millis();
-
-        if (strcmp(_buf, "PING") == 0)
+        if (c == '\n')
         {
-            _link.println("PONG");
-        }
-        else if (strcmp(_buf, "PONG") == 0)
-        {
-            _gotPong = true;
-            _link.println("ACK");
-            _connected = true;
-        }
-        else if (strcmp(_buf, "ACK") == 0)
-        {
-            _gotAck = true;
-            _connected = true;
-        }
-        else if (strcmp(_buf, "KA") == 0)
-        {
-            // Keepalive empfangen → reicht schon für _lastSeen
-        }
-    }
+            _buf[_idx] = '\0';
 
-    // =========================
-    // Verbindung bestätigen
-    // =========================
-    if (!_connected && _gotPong && _gotAck)
-    {
-        _connected = true;
-    }
+            _lastSeen = now;
 
-    // =========================
-    // Senden
-    // =========================
-    if (_initiator)
-    {
-        if (millis() - _lastPing > PING_INTERVAL)
-        {
-            _lastPing = millis();
+            // =========================
+            // PROTOKOLL (entscheidend!)
+            // =========================
 
-            if (!_connected)
+            // 🔴 Responder reagiert auf PING
+            if (!_initiator && strcmp(_buf, "PING") == 0)
             {
-                // Handshake
-                _link.println("PING");
+                _link.println("PONG");
+            }
+            // 🔵 Initiator reagiert auf PONG
+            else if (_initiator && strcmp(_buf, "PONG") == 0)
+            {
+                if (!_connected)
+                {
+                    _link.println("ACK");
+                    _connected = true;
+                }
+            }
+            // 🔴 Responder wird durch ACK verbunden
+            else if (!_initiator && strcmp(_buf, "ACK") == 0)
+            {
+                _connected = true;
+            }
+            // KA → nur Lebenszeichen
+            else if (strcmp(_buf, "KA") == 0)
+            {
+                // nichts tun
+            }
+
+            _idx = 0;
+        }
+        else
+        {
+            if (_idx < sizeof(_buf) - 1)
+            {
+                _buf[_idx++] = c;
             }
             else
             {
-                // Keepalive
-                _link.println("KA");
-
-                // ❌ WICHTIG:
-                // KEIN _lastSeen hier!
+                // Overflow-Schutz
+                _idx = 0;
             }
         }
     }
 
     // =========================
-    // Timeout (jetzt wirksam)
+    // TX
     // =========================
-    if (_connected && millis() - _lastSeen > TIMEOUT)
+    if (_initiator && (now - _lastPing > PING_INTERVAL))
+    {
+        _lastPing = now;
+
+        if (!_connected)
+        {
+            _link.println("PING");
+        }
+        else
+        {
+            _link.println("KA");
+        }
+    }
+
+    // =========================
+    // Timeout
+    // =========================
+    if (_connected && (now - _lastSeen > TIMEOUT))
     {
         _connected = false;
-        _gotPong = false;
-        _gotAck = false;
     }
 }
 
