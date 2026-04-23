@@ -21,33 +21,24 @@ void setup()
 {
     Serial.begin(115200);
     hardware_begin();
+    hardware_enableMotors();
     control_begin();
 
-    uart.begin();
-    conn.begin(true);   
+/*    uart.begin();
+    conn.begin(true); */  
 }
 
 void loop()
 {
-    static bool done = false;
-    uart.update();
-    conn.update();
+    Serial.println("Test läuft");
 
-    static uint8_t i = 0;
+    motor[Li].vor(150);   // linkes Rad vorwärts
+    motor[Re].vor(150);   // rechtes Rad vorwärts
 
-    if (!done && i < CommandScript::size())
-    {
-        const char* line = CommandScript::get(i);
-        TimeCommand cmd;
+    delay(2000);
 
-        // zerlegt "CMDT(...)" in vx, vy, wz und Zeit
-        parser.parseTimeCommand(line, cmd);
-        // berechnet aus vx, vy, wz v0-v3
-        vehicle.cmd(cmd.vx, cmd.vy, cmd.wz);
-        // im loop nur einmal durchlaufen
-        done = true;
-        // überträgt Fahrzeug-Sollwert auf linkes Vorderrad
-		rad[Li].setSoll(vehicle.getWheelSoll(VoLi));
-    }
-    control_update(millis());
+    motor[Li].bremse(true);
+    motor[Re].bremse(true);
+
+    delay(2000);
 }

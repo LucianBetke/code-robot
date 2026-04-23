@@ -1,5 +1,6 @@
 // ============================================================
-// File: Hardware.cpp
+// File: Hardware.cpp 
+// für Tools
 // Zweck:
 //  - Definition der physischen Hardware-Objekte (Encoder, Motoren)
 //  - Zentrale Hardware-Initialisierung (Pins/IO, Treiber-Enable, etc.)
