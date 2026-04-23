@@ -34,10 +34,35 @@ void loop()
 
     if (!done)
     {
-        Serial.println("Rad Test");
+        const char* line = CommandScript::get(0);
+        TimeCommand cmd;
 
-        rad[Li].setSoll(0.3f);
-        rad[Re].setSoll(0.3f);
+        Serial.print("Script: ");
+        Serial.println(line);
+
+        if (parser.parseTimeCommand(line, cmd))
+        {
+            Serial.println("Parser OK");
+
+            Serial.print("vx: "); Serial.println(cmd.vx);
+            Serial.print("vy: "); Serial.println(cmd.vy);
+            Serial.print("wz: "); Serial.println(cmd.wz);
+
+            vehicle.cmd(cmd.vx, cmd.vy, cmd.wz);
+
+            float vLi = vehicle.getWheelSoll(VoLi);
+            float vRe = vehicle.getWheelSoll(VoRe);
+
+            Serial.print("VoLi: "); Serial.println(vLi);
+            Serial.print("VoRe: "); Serial.println(vRe);
+
+            rad[Li].setSoll(vLi);
+            rad[Re].setSoll(vRe);
+        }
+        else
+        {
+            Serial.println("Parser FEHLER");
+        }
 
         done = true;
     }

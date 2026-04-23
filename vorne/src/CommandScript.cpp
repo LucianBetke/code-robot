@@ -4,7 +4,7 @@
 static const char* _script[] = {
     "CMDT(0.3,0,0) 2;",
     "CMDT(0,0.3,0) 2;",
-    "CMDT(-0.3,0,0) 2;"
+    "CMDT(-0.3,0,0)2;"
 };
 
 const char* CommandScript::get(uint8_t index)

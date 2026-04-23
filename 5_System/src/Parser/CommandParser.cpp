@@ -1,26 +1,56 @@
-// CommandParser.cpp
 #include "CommandParser.h"
+#include <Arduino.h>
 #include <string.h>
-#include <stdio.h>
+#include <stdlib.h>
 
+// ------------------------------------------------------------
+// Token lesen
+// ------------------------------------------------------------
+static bool readToken(const char*& p, char delim, char* buf, uint8_t maxLen)
+{
+    uint8_t i = 0;
+
+    while (*p != delim && *p != '\0' && i < maxLen - 1)
+        buf[i++] = *p++;
+
+    buf[i] = '\0';
+
+    if (*p != delim)
+        return false;
+
+    p++;  // Trennzeichen überspringen
+    return true;
+}
+
+// ------------------------------------------------------------
+// Parser
+// ------------------------------------------------------------
 bool CommandParser::parseTimeCommand(const char* line, TimeCommand& cmd)
 {
-    if (!line) return false;
-
-    if (strncmp(line, "CMDT(", 5) != 0)
+    if (!line || strncmp(line, "CMDT(", 5) != 0)
         return false;
 
-    float vx, vy, wz, t;
+    const char* p = line + 5;
+    char buf[32];
 
-    int parsed = sscanf(line, "CMDT(%f,%f,%f) %f;", &vx, &vy, &wz, &t);
+    // vx
+    if (!readToken(p, ',', buf, sizeof(buf))) return false;
+    cmd.vx = atof(buf);
 
-    if (parsed != 4)
-        return false;
+    // vy
+    if (!readToken(p, ',', buf, sizeof(buf))) return false;
+    cmd.vy = atof(buf);
 
-    cmd.vx = vx;
-    cmd.vy = vy;
-    cmd.wz = wz;
-    cmd.t = t;
+    // wz
+    if (!readToken(p, ')', buf, sizeof(buf))) return false;
+    cmd.wz = atof(buf);
+
+    // Leerzeichen überspringen
+    if (*p == ' ') p++;
+
+    // Zeit
+    if (!readToken(p, ';', buf, sizeof(buf))) return false;
+    cmd.t = atof(buf);
 
     return true;
 }
