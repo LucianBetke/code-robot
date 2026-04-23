@@ -1,10 +1,11 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClCompile Include="$(MSBuildThisFileDirectory)src\ConnectionMonitor.cpp" />
+    <ClCompile Include="$(MSBuildThisFileDirectory)src\Connection\ConnectionMonitor.cpp" />
+    <ClCompile Include="$(MSBuildThisFileDirectory)src\Parser\CommandParser.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="$(MSBuildThisFileDirectory)src\ConnectionMonitor.h" />
-    <ClInclude Include="$(MSBuildThisFileDirectory)CommandScript.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)src\Connection\ConnectionMonitor.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)src\Parser\CommandParser.h" />
   </ItemGroup>
 </Project>

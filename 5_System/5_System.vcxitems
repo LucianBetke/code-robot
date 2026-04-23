@@ -14,10 +14,11 @@
     <ProjectCapability Include="SourceItemsFromImports" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="$(MSBuildThisFileDirectory)src\ConnectionMonitor.cpp" />
+    <ClCompile Include="$(MSBuildThisFileDirectory)src\Connection\ConnectionMonitor.cpp" />
+    <ClCompile Include="$(MSBuildThisFileDirectory)src\Parser\CommandParser.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="$(MSBuildThisFileDirectory)CommandScript.h" />
-    <ClInclude Include="$(MSBuildThisFileDirectory)src\ConnectionMonitor.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)src\Connection\ConnectionMonitor.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)src\Parser\CommandParser.h" />
   </ItemGroup>
 </Project>

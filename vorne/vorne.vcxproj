@@ -88,6 +88,9 @@
   <ItemGroup>
     <None Include="src\arduino folders read me.txt">
     </None>
+    <ClCompile Include="src\CommandScript.cpp" />
+    <ClCompile Include="src\Control.cpp" />
+    <ClCompile Include="src\Hardware.cpp" />
     <ClCompile Include="src\vorne.ino">
       <FileType>CppCode</FileType>
       <DeploymentContent>true</DeploymentContent>
@@ -97,6 +100,11 @@
     <ProjectCapability Include="VisualMicro" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\CommandScript.h" />
+    <ClInclude Include="src\Control.h" />
+    <ClInclude Include="src\control_front.h" />
+    <ClInclude Include="src\Hardware.h" />
+    <ClInclude Include="src\hardware_pins.h" />
     <ClInclude Include="src\VehicleTypes.h" />
     <ClInclude Include="__vm\.vorne.vsarduino.h" />
   </ItemGroup>
