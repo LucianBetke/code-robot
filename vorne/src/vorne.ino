@@ -30,15 +30,17 @@ void setup()
 
 void loop()
 {
-    Serial.println("Test läuft");
+    static bool done = false;
 
-    motor[Li].vor(150);   // linkes Rad vorwärts
-    motor[Re].vor(150);   // rechtes Rad vorwärts
+    if (!done)
+    {
+        Serial.println("Rad Test");
 
-    delay(2000);
+        rad[Li].setSoll(0.3f);
+        rad[Re].setSoll(0.3f);
 
-    motor[Li].bremse(true);
-    motor[Re].bremse(true);
+        done = true;
+    }
 
-    delay(2000);
+    control_update(millis());
 }
