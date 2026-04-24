@@ -40,10 +40,17 @@ void loop()
     {
         if (millis() - startTime >= (uint32_t)duration)
         {
+            // vorne stoppen
             rad[Li].setSoll(0);
             rad[Re].setSoll(0);
+
+            // hinten stoppen
+            char buffer[32];
+            snprintf(buffer, sizeof(buffer), "VSOL,%d,%d", 0, 0);
+            uart.sendLine(buffer);
+
             active = false;
-            done = true;   // 🔥 entscheidend
+            done = true;
         }
     }
     else if (!done)
@@ -55,15 +62,22 @@ void loop()
         {
             vehicle.cmd(cmd.vx, cmd.vy, cmd.wz);
 
-            rad[Li].setSoll(vehicle.getWheelSoll(VoLi));
-            rad[Re].setSoll(vehicle.getWheelSoll(VoRe));
-            // Werte für hinteren Nano vorbereiten
-            int16_t v2_i = floatToInt100(vehicle.getWheelSoll(HiLi));
-            int16_t v3_i = floatToInt100(vehicle.getWheelSoll(HiRe));
+            float vFrontL = vehicle.getWheelSoll(VoLi);
+            float vFrontR = vehicle.getWheelSoll(VoRe);
+
+            float vRearL = vehicle.getWheelSoll(HiLi);
+            float vRearR = vehicle.getWheelSoll(HiRe);
+
+            // vorne setzen
+            rad[Li].setSoll(vFrontL);
+            rad[Re].setSoll(vFrontR);
+
+            // hinten senden
+            int16_t v2_i = floatToInt100(vRearL);
+            int16_t v3_i = floatToInt100(vRearR);
 
             char buffer[32];
             snprintf(buffer, sizeof(buffer), "VSOL,%d,%d", v2_i, v3_i);
-
             uart.sendLine(buffer);
 
             duration = cmd.t * 1000.0f;

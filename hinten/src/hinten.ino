@@ -25,28 +25,22 @@ void loop()
 {
     uart.update();
     conn.update();
+
     if (uart.availableLine())
     {
         const char* line = uart.getLine();
 
-        Serial.print("RX: ");
-        Serial.println(line);
         int16_t v2_i, v3_i;
 
-        // 👉 Parsen
         if (sscanf(line, "VSOL,%hd,%hd", &v2_i, &v3_i) == 2)
         {
             float v2 = int100ToFloat(v2_i);
             float v3 = int100ToFloat(v3_i);
 
-            // 👉 Sollwerte setzen
             rad[Li].setSoll(v2);
             rad[Re].setSoll(v3);
-
-            Serial.print("SET: ");
-            Serial.print(v2);
-            Serial.print(" ");
-            Serial.println(v3);
         }
     }
+
+    control_update(millis());
 }
