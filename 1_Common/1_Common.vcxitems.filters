@@ -6,5 +6,6 @@
   <ItemGroup>
     <ClInclude Include="$(MSBuildThisFileDirectory)src\ControlTypes.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)src\globals.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)src\CommUtils.h" />
   </ItemGroup>
 </Project>

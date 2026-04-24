@@ -9,20 +9,23 @@ public:
     void update();
     void sendLine(const char* msg);
     bool isConnected() const;
+    bool availableLine() const;
+    const char* getLine();
 
 private:
     Stream& _link;
     bool _initiator;
     bool _connected;
-    // Handshake-Status
-    bool _gotPong;
-    bool _gotAck;
+
     // Timing
     unsigned long _lastPing;
     unsigned long _lastSeen;
     // Buffer
     char _buf[64];
-    uint8_t _idx;   // 👈 NEU
+    uint8_t _idx;
+    // Empfangene vollständige Zeile (non-handshake)
+    char _line[64];
+    bool _lineAvailable;
 
     static constexpr unsigned long PING_INTERVAL = 500;
     static constexpr unsigned long TIMEOUT = 2000;

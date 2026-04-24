@@ -7,6 +7,7 @@
 #include "Control.h"
 #include "Hardware.h"
 #include "../1_Common/src/globals.h"
+#include "../1_Common/src/CommUtils.h"
 #include "../2_Hardware/src/UartLink.h"
 #include "../4_Vehicle/src/VehicleController.h"
 #include "../5_System/src/Connection/ConnectionMonitor.h"
@@ -24,47 +25,51 @@ void setup()
     hardware_enableMotors();
     control_begin();
 
-/*    uart.begin();
-    conn.begin(true); */  
+    uart.begin();
+    conn.begin(true);   
 }
 
 void loop()
 {
+    static bool active = false;
     static bool done = false;
+    static uint32_t startTime = 0;
+    static float duration = 0.0f;
 
-    if (!done)
+    if (active)
+    {
+        if (millis() - startTime >= (uint32_t)duration)
+        {
+            rad[Li].setSoll(0);
+            rad[Re].setSoll(0);
+            active = false;
+            done = true;   // 🔥 entscheidend
+        }
+    }
+    else if (!done)
     {
         const char* line = CommandScript::get(0);
         TimeCommand cmd;
 
-        Serial.print("Script: ");
-        Serial.println(line);
-
         if (parser.parseTimeCommand(line, cmd))
         {
-            Serial.println("Parser OK");
-
-            Serial.print("vx: "); Serial.println(cmd.vx);
-            Serial.print("vy: "); Serial.println(cmd.vy);
-            Serial.print("wz: "); Serial.println(cmd.wz);
-
             vehicle.cmd(cmd.vx, cmd.vy, cmd.wz);
 
-            float vLi = vehicle.getWheelSoll(VoLi);
-            float vRe = vehicle.getWheelSoll(VoRe);
+            rad[Li].setSoll(vehicle.getWheelSoll(VoLi));
+            rad[Re].setSoll(vehicle.getWheelSoll(VoRe));
+            // Werte für hinteren Nano vorbereiten
+            int16_t v2_i = floatToInt100(vehicle.getWheelSoll(HiLi));
+            int16_t v3_i = floatToInt100(vehicle.getWheelSoll(HiRe));
 
-            Serial.print("VoLi: "); Serial.println(vLi);
-            Serial.print("VoRe: "); Serial.println(vRe);
+            char buffer[32];
+            snprintf(buffer, sizeof(buffer), "VSOL,%d,%d", v2_i, v3_i);
 
-            rad[Li].setSoll(vLi);
-            rad[Re].setSoll(vRe);
+            uart.sendLine(buffer);
+
+            duration = cmd.t * 1000.0f;
+            startTime = millis();
+            active = true;
         }
-        else
-        {
-            Serial.println("Parser FEHLER");
-        }
-
-        done = true;
     }
 
     control_update(millis());

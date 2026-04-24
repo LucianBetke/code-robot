@@ -3,7 +3,11 @@
 
 UartLink::UartLink(Stream& link, bool initiator)
     : _link(link), _initiator(initiator),
-    _connected(false), _lastPing(0), _lastSeen(0), _idx(0) {
+    _connected(false), 
+    _lastPing(0), 
+    _lastSeen(0), 
+    _idx(0), 
+    _lineAvailable(false) {
 }
 
 void UartLink::begin()
@@ -12,6 +16,8 @@ void UartLink::begin()
     _lastPing = 0;
     _lastSeen = millis();
     _idx = 0;
+    _lineAvailable = false;
+    _line[0] = '\0';
 }
 
 void UartLink::update()
@@ -43,6 +49,13 @@ void UartLink::update()
             {
                 _connected = true;
             }
+            else if (strcmp(_buf, "KA") != 0)
+            {
+                // 👉 Nutzdaten speichern
+                strncpy(_line, _buf, sizeof(_line) - 1);
+                _line[sizeof(_line) - 1] = '\0';
+                _lineAvailable = true;
+            }
 
             _idx = 0;
         }
@@ -52,7 +65,7 @@ void UartLink::update()
         }
         else
         {
-            _idx = 0; // Overflow reset
+            _idx = 0; // Overflow-Schutz
         }
     }
 
@@ -77,10 +90,20 @@ void UartLink::update()
         _connected = false;
     }
 }
-
 void UartLink::sendLine(const char* msg)
 {
     if (_connected) _link.println(msg);
+}
+
+bool UartLink::availableLine() const
+{
+    return _lineAvailable;
+}
+
+const char* UartLink::getLine()
+{
+    _lineAvailable = false;
+    return _line;
 }
 
 bool UartLink::isConnected() const
