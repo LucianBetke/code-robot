@@ -14,7 +14,7 @@ extern PIRegler regler[WHEEL_COUNT];
 extern Rad rad[WHEEL_COUNT];
 
 // Init/Reset
-void control_begin();
+void speed_reset_all();
 void control_update(uint32_t nowMs);
 
 // NEU:

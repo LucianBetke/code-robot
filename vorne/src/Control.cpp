@@ -29,7 +29,7 @@ Rad rad[WHEEL_COUNT] =
     Rad(motor[Re], speed[Re], regler[Re], RAD_REGEL_DT_MS, DEAD_PWM[Re])
 };
 
-void control_begin()
+void speed_reset_all()
 {
     for (uint8_t i = 0; i < WHEEL_COUNT; i++)
     {

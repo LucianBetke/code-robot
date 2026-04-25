@@ -15,7 +15,7 @@ void setup()
     Serial.begin(115200);
     hardware_begin();
     hardware_enableMotors();
-    control_begin();
+    speed_reset_all();
 
     uart.begin();
     conn.begin(false);   // ❗ nicht blockieren

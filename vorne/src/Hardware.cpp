@@ -6,7 +6,7 @@
 //  - Zentrale Hardware-Initialisierung (Pins/IO, Treiber-Enable, etc.)
 // Hinweis:
 //  - Reset/Begin von Control-/Regel-Objekten (SpeedWeg, Regler)
-//    gehört NICHT hierhin, sondern nach Control.cpp (control_begin()).
+//    gehört NICHT hierhin, sondern nach Control.cpp (speed_reset_all()).
 // ============================================================
 
 #include <Arduino.h>
