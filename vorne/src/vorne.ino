@@ -13,12 +13,15 @@
 #include "../4_Vehicle/src/VehicleController.h"
 #include "../5_System/src/Connection/ConnectionMonitor.h"
 #include "../5_System/src/Parser/CommandParser.h"
+#include "../5_System/src/CommandRunner/CommandRunner.h"
+
 
 VehicleController vehicle;
 
 UartLink uart(Serial, true);   // Initiator
 ConnectionMonitor conn(uart, 13);
 CommandParser parser;
+CommandRunner commandRunner(vehicle, uart, parser);
 
 void setup()
 {
@@ -27,6 +30,7 @@ void setup()
     hardware_begin();
     hardware_enableMotors();
     speed_reset_all();
+    commandRunner.begin();
 
     uart.begin();
     conn.begin(true);
