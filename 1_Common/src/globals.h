@@ -5,7 +5,11 @@
 //  - KEINE Hardware-Pins!
 // ============================================================
 
+#ifndef GLOBALS_H
+#define GLOBALS_H
+
 #pragma once
+
 #include <Arduino.h>
 
 // ============================================================
@@ -129,3 +133,5 @@ constexpr int16_t SLEW_LIMIT_PWM = 255;
 
 /** Maximale Radgeschwindigkeit (m/s) */
 constexpr float V_WHEEL_MAX = 0.30f;
+
+#endif // GLOBALS_H

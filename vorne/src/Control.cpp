@@ -4,6 +4,7 @@
 
 #include "Control.h"
 #include "control_front.h"
+#include "src/Encoder.h"
 #include "Hardware.h"
 
 SpeedWeg speed[WHEEL_COUNT] =

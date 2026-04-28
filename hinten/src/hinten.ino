@@ -3,6 +3,7 @@
 #include "Hardware.h"
 
 #include "src/CommUtils.h"
+#include "src/UartLink.h"
 #include "src/Connection/ConnectionMonitor.h"
 
 UartLink uart(Serial, false);   // Responder
@@ -16,7 +17,7 @@ void setup()
     speed_reset_all();
 
     uart.begin();
-    conn.begin(false);   // ❗ nicht blockieren
+    conn.begin(false);
 }
 
 void loop()

@@ -4,14 +4,13 @@
 //  - Steuerung eines einzelnen Motors (DRV8833/TB6612, 2-Pin-Modus)
 //  - Richtung, PWM-Leistung, Bremse
 //  - Optionale Encoder-Anbindung
-// Abhängigkeiten: Arduino.h, Encoder.h (forward-deklariert)
+// Abhängigkeiten: Arduino.h, Enc forward-deklariert
 // ============================================================
 
 #pragma once
 #include <Arduino.h>
-#include "Encoder.h"
 
-
+class Enc;
 
 /**
  * @class Motor

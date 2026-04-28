@@ -3,6 +3,7 @@
 // ============================================================
 
 #include "Control.h"
+#include "src/Encoder.h"
 #include "control_rear.h"
 #include "Hardware.h"
 

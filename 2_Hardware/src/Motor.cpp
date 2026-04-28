@@ -1,5 +1,4 @@
 // Motor.cpp
-#include "Encoder.h"  // nur falls Enc::begin() genutzt wird
 #include "Motor.h"
 
 // ===== Motor =====

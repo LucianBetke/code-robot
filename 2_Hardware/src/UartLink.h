@@ -1,4 +1,8 @@
-﻿#pragma once
+﻿//UartLink.h
+#ifndef UARTLINK_H
+#define UARTLINK_H
+
+#pragma once
 #include <Arduino.h>
 
 class UartLink
@@ -20,9 +24,11 @@ private:
     // Timing
     unsigned long _lastPing;
     unsigned long _lastSeen;
+
     // Buffer
     char _buf[64];
     uint8_t _idx;
+
     // Empfangene vollständige Zeile (non-handshake)
     char _line[64];
     bool _lineAvailable;
@@ -30,3 +36,5 @@ private:
     static constexpr unsigned long PING_INTERVAL = 500;
     static constexpr unsigned long TIMEOUT = 2000;
 };
+
+#endif // UARTLINK_H
