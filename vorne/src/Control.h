@@ -1,10 +1,10 @@
 // Control.h
 #pragma once
 
-#include "../1_Common/src/globals.h"
-#include "../3_Control/src/SpeedWeg.h"
-#include "../3_Control/src/PIRegler.h"
-#include "../3_Control/src/Rad.h"
+//#include "src/globals.h"
+#include "src/SpeedWeg.h"
+#include "src/PIRegler.h"
+#include "src/Rad.h"
 
 // --- SpeedWeg ---
 extern SpeedWeg speed[WHEEL_COUNT];

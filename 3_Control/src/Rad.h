@@ -1,8 +1,8 @@
 // Rad.h
 #pragma once
 #include <Arduino.h>
-#include "../1_Common/src/ControlTypes.h"
-#include "../2_Hardware/src/Motor.h"
+#include "src/ControlTypes.h"
+#include "src/Motor.h"
 #include "SpeedWeg.h"
 #include "PIRegler.h"
 

@@ -8,7 +8,7 @@
 #pragma once
 
 #include <Arduino.h>
-#include "../1_Common/src/globals.h"
+#include "src/globals.h"
 //#include "globals.h"
 
 class Enc;

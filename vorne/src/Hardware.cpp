@@ -10,6 +10,9 @@
 // ============================================================
 
 #include <Arduino.h>
+#include "src/globals.h"
+#include "src/Encoder.h"
+#include "src/Motor.h"
 #include "Hardware.h"
 #include "hardware_pins.h"
 

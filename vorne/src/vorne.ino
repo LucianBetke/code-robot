@@ -7,14 +7,10 @@
 #include "CommandScript.h"
 #include "Control.h"
 #include "Hardware.h"
-#include "../1_Common/src/globals.h"
-#include "../1_Common/src/CommUtils.h"
-#include "../2_Hardware/src/UartLink.h"
-#include "../4_Vehicle/src/VehicleController.h"
-#include "../5_System/src/Connection/ConnectionMonitor.h"
-#include "../5_System/src/Parser/CommandParser.h"
-#include "../5_System/src/CommandRunner/CommandRunner.h"
 
+#include "src/CommUtils.h"
+#include "src/Connection/ConnectionMonitor.h"
+#include "src/CommandRunner/CommandRunner.h"
 
 VehicleController vehicle;
 

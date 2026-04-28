@@ -3,7 +3,6 @@
 // ============================================================
 
 #include "Control.h"
-#include "../1_Common/src/globals.h"
 #include "control_front.h"
 #include "Hardware.h"
 

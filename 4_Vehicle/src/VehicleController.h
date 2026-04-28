@@ -7,7 +7,7 @@
 //  - wheelSoll[4]
 // ============================================================
 
-#include "../1_Common/src/globals.h"
+#include "src/globals.h"
 
 class VehicleController
 {

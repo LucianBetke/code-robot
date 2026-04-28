@@ -2,7 +2,7 @@
 #pragma once
 
 #include <Arduino.h>
-#include "../2_Hardware/src/UartLink.h"
+#include "src/UartLink.h"
 
 class ConnectionMonitor
 {
