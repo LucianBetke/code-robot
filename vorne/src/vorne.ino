@@ -9,6 +9,7 @@
 #include "Hardware.h"
 
 #include "src/CommUtils.h"
+#include "src/UartLink.h"
 #include "src/Connection/ConnectionMonitor.h"
 #include "src/CommandRunner/CommandRunner.h"
 
@@ -26,6 +27,7 @@ void setup()
     hardware_begin();
     hardware_enableMotors();
     speed_reset_all();
+
     commandRunner.begin();
 
     uart.begin();
@@ -34,97 +36,54 @@ void setup()
 
 void loop()
 {
-    static uint8_t cmdIndex = 0;
-    static bool active = false;
-    static bool finished = false;
-    static uint32_t startTime = 0;
-    static float duration = 0.0f;
+    uint32_t now = millis();
 
     uart.update();
     conn.update();
 
-    if (finished)
-    {
-        rad[Li].setSoll(0);
-        rad[Re].setSoll(0);
+    static bool active = false;
+    static bool done = false;
+    static uint32_t startTime = 0;
+    static uint32_t lastSend = 0;
 
-        control_update(millis());
-        return;
+    if (!done && !active)
+    {
+        vehicle.cmd(0.20f, 0.0f, 0.0f);   // vx, vy, wz
+        startTime = now;
+        active = true;
+    }
+
+    if (active && (now - startTime >= 2000))
+    {
+        vehicle.cmd(0.0f, 0.0f, 0.0f);
+
+        rad[Li].setSoll(0.0f);
+        rad[Re].setSoll(0.0f);
+
+        uart.sendLine("VSOL,0,0");
+
+        active = false;
+        done = true;
     }
 
     if (active)
     {
-        if (millis() - startTime >= (uint32_t)duration)
-        {
-            // vorne stoppen
-            rad[Li].setSoll(0);
-            rad[Re].setSoll(0);
-
-            // hinten stoppen
-            uart.sendLine("VSOL,0,0");
-
-            active = false;
-        }
+        rad[Li].setSoll(vehicle.getWheelSoll(VoLi));
+        rad[Re].setSoll(vehicle.getWheelSoll(VoRe));
     }
-    else
+
+    if (now - lastSend >= 100)
     {
-        if (cmdIndex >= CommandScript::size())
-        {
-            // Endzustand setzen
-            rad[Li].setSoll(0);
-            rad[Re].setSoll(0);
-            uart.sendLine("VSOL,0,0");
+        lastSend = now;
 
-            finished = true;
-        }
-        else
-        {
-            const char* line = CommandScript::get(cmdIndex);
+        int16_t v2_i = floatToInt100(vehicle.getWheelSoll(HiLi));
+        int16_t v3_i = floatToInt100(vehicle.getWheelSoll(HiRe));
 
-            if (line == nullptr)
-            {
-                cmdIndex++;
-            }
-            else
-            {
-                TimeCommand cmd;
+        char buf[32];
+        snprintf(buf, sizeof(buf), "VSOL,%d,%d", v2_i, v3_i);
 
-                if (parser.parseTimeCommand(line, cmd))
-                {
-                    vehicle.cmd(cmd.vx, cmd.vy, cmd.wz);
-
-                    float vFrontL = vehicle.getWheelSoll(VoLi);
-                    float vFrontR = vehicle.getWheelSoll(VoRe);
-
-                    float vRearL = vehicle.getWheelSoll(HiLi);
-                    float vRearR = vehicle.getWheelSoll(HiRe);
-
-                    // vorne setzen
-                    rad[Li].setSoll(vFrontL);
-                    rad[Re].setSoll(vFrontR);
-
-                    // hinten senden
-                    int16_t v2_i = floatToInt100(vRearL);
-                    int16_t v3_i = floatToInt100(vRearR);
-
-                    char buffer[32];
-                    snprintf(buffer, sizeof(buffer), "VSOL,%d,%d", v2_i, v3_i);
-                    uart.sendLine(buffer);
-
-                    duration = cmd.t * 1000.0f;
-                    startTime = millis();
-                    active = true;
-
-                    cmdIndex++;
-                }
-                else
-                {
-                    // fehlerhaften Befehl überspringen
-                    cmdIndex++;
-                }
-            }
-        }
+        uart.sendLine(buf);
     }
 
-    control_update(millis());
+    control_update(now);
 }

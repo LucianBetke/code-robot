@@ -1,4 +1,5 @@
 ﻿// hinten.ino
+
 #include "Control.h"
 #include "Hardware.h"
 
@@ -12,6 +13,7 @@ ConnectionMonitor conn(uart, 13);
 void setup()
 {
     Serial.begin(115200);
+
     hardware_begin();
     hardware_enableMotors();
     speed_reset_all();
@@ -22,6 +24,8 @@ void setup()
 
 void loop()
 {
+    uint32_t now = millis();
+
     uart.update();
     conn.update();
 
@@ -29,7 +33,8 @@ void loop()
     {
         const char* line = uart.getLine();
 
-        int16_t v2_i, v3_i;
+        int16_t v2_i;
+        int16_t v3_i;
 
         if (sscanf(line, "VSOL,%hd,%hd", &v2_i, &v3_i) == 2)
         {
@@ -41,5 +46,5 @@ void loop()
         }
     }
 
-    control_update(millis());
+    control_update(now);
 }
