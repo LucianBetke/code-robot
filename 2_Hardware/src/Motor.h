@@ -7,6 +7,9 @@
 // Abhängigkeiten: Arduino.h, Enc forward-deklariert
 // ============================================================
 
+#ifndef MOTOR_H
+#define MOTOR_H
+
 #pragma once
 #include <Arduino.h>
 
@@ -78,3 +81,5 @@ private:
     uint8_t _pin2;  ///< PWM-Pin 2 (Richtung B)
     Enc* _enc = nullptr; ///< Optionaler Encoder-Zeiger
 };
+
+#endif // MOTOR_H

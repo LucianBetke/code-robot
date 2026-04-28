@@ -1,8 +1,9 @@
 ﻿// hinten.ino
 
-#include "Control.h"
 #include "Hardware.h"
 
+#include "src/Control.h"
+#include "src/ControlConfig.h"
 #include "src/CommUtils.h"
 #include "src/UartLink.h"
 #include "src/Connection/ConnectionMonitor.h"
@@ -16,6 +17,9 @@ void setup()
 
     hardware_begin();
     hardware_enableMotors();
+
+    control_begin(ConfigRear::CONFIG);
+
     speed_reset_all();
 
     uart.begin();

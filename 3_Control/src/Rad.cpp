@@ -1,16 +1,15 @@
 // Rad.cpp
 #include "Rad.h"
-
 #include <math.h>            // fabsf
 
-Rad::Rad(Motor& motor, SpeedWeg& speed, PIRegler& regler, 
-        uint16_t dtMs,  int16_t deadPwm)
-        : _motor(motor), _speed(speed), _regler(regler),
-        _dtMs(dtMs), _deadPwm(deadPwm),
-        _lastUpdateMs(0),
-        _lastPwm(0)
-{}
-
+Rad::Rad(Motor& motor, SpeedWeg& speed, PIRegler& regler,
+    uint16_t dtMs, int16_t deadPwm)
+    : _motor(motor), _speed(speed), _regler(regler),
+    _dtMs(dtMs), _deadPwm(deadPwm),
+    _lastUpdateMs(0),
+    _lastPwm(0)
+{
+}
 
 void Rad::setSoll(float v_soll)
 {
@@ -18,7 +17,6 @@ void Rad::setSoll(float v_soll)
     _regler.setSoll(v_soll);
 
     const float EPS = 1e-6f;
-
     const bool wasZero = (fabsf(v_alt) < EPS);
     const bool nowZero = (fabsf(v_soll) < EPS);
 
@@ -38,9 +36,9 @@ void Rad::setSoll(float v_soll)
     }
 }
 
-float Rad::soll() const {return _regler.soll();}
+float Rad::soll() const { return _regler.soll(); }
 
-float Rad::vIst() const {return _speed.mps();}
+float Rad::vIst() const { return _speed.mps(); }
 
 void Rad::stop()
 {
@@ -51,7 +49,6 @@ void Rad::stop()
     _lastUpdateMs = 0;
 }
 
-// Rad.cpp
 void Rad::update(uint32_t nowMs)
 {
     _speed.update(nowMs);
@@ -119,4 +116,10 @@ void Rad::reset()
     _regler.setSoll(0.0f);
     _lastUpdateMs = 0;
     _lastPwm = 0;
+}
+
+// DeadPWM zur Laufzeit neu setzen
+void Rad::setDeadPwm(int16_t deadPwm)
+{
+    _deadPwm = deadPwm;
 }

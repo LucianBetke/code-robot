@@ -54,7 +54,6 @@ int16_t PIRegler::update(float v_ist, uint16_t dt_ms) {
     _lastI = _integral;
 
     // --- PWM signed in [-255..+255] ---
-    // korrekt runden mit Vorzeichen:
     float pwm_f = u * 255.0f;
     if (pwm_f >= 0.0f) pwm_f += 0.5f;
     else               pwm_f -= 0.5f;
@@ -62,17 +61,11 @@ int16_t PIRegler::update(float v_ist, uint16_t dt_ms) {
     int16_t pwm = (int16_t)pwm_f;
 
     // --- Grenzen: signed ---
-    // Interpretation:
-    //  - _uMax ist der positive Maximalwert
-    //  - _uMin kann negativ sein (z.B. -MAX_PWM) oder 0 (wenn du ihn nicht nutzt)
-    // Sicherer Standard: [-_uMax..+_uMax], aber respektiere _uMin, falls negativ gesetzt.
     int16_t pwmMax = _uMax;
     int16_t pwmMin = _uMin;
 
-    if (pwmMax < 0) pwmMax = (int16_t)(-pwmMax); // defensiv
-    if (pwmMin > 0) pwmMin = (int16_t)(-pwmMax); // wenn jemand uMin falsch positiv setzt, mach symmetrisch
-
-    // Wenn uMin nicht negativ gesetzt ist, mache symmetrisch:
+    if (pwmMax < 0) pwmMax = (int16_t)(-pwmMax);
+    if (pwmMin > 0) pwmMin = (int16_t)(-pwmMax);
     if (pwmMin >= 0) pwmMin = (int16_t)(-pwmMax);
 
     pwm = constrain(pwm, pwmMin, pwmMax);
@@ -95,7 +88,6 @@ int16_t PIRegler::applySlew(int16_t pwm)
 }
 
 void PIRegler::presetOutput(float u0_pwm) {
-    // bidirektional clamp auf [-uMax..+uMax] (oder uMin, wenn negativ gesetzt)
     int16_t pwmMax = _uMax;
     int16_t pwmMin = _uMin;
 
@@ -105,13 +97,9 @@ void PIRegler::presetOutput(float u0_pwm) {
     if (u0_pwm > (float)pwmMax) u0_pwm = (float)pwmMax;
     if (u0_pwm < (float)pwmMin) u0_pwm = (float)pwmMin;
 
-    // Normierung auf [-1..+1]
     const float u0_norm = u0_pwm / 255.0f;
-
-    // Integrator-Vorbelegung (Arbeitspunkt)
     _integral = u0_norm;
 
-    // Slew-Startwert auf diesen Ausgang setzen (signed)
     float pwm_f = u0_pwm;
     if (pwm_f >= 0.0f) pwm_f += 0.5f;
     else               pwm_f -= 0.5f;
@@ -129,4 +117,11 @@ void PIRegler::reset() {
     _lastE = 0.0f;
     _lastP = 0.0f;
     _lastI = 0.0f;
+}
+
+// PI-Parameter zur Laufzeit neu setzen
+void PIRegler::setParams(float Kp, float Ki)
+{
+    _Kp = Kp;
+    _Ki = Ki;
 }

@@ -6,7 +6,6 @@
 //  - Anti-Windup (Clamping)
 //  - Slew-Rate Begrenzung
 // ============================================================
-
 #pragma once
 #include <Arduino.h>
 
@@ -29,6 +28,9 @@ public:
     float Ki() const { return _Ki; }
 
     void reset();
+
+    // PI-Parameter zur Laufzeit neu setzen
+    void setParams(float Kp, float Ki);
 
     // --- Debug / Monitoring ---
     float lastError() const { return _lastE; }

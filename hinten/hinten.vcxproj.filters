@@ -20,12 +20,6 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\Control.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\control_rear.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\Hardware.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -41,9 +35,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\hinten.ino" />
-    <ClCompile Include="src\Control.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\Hardware.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

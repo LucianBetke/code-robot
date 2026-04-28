@@ -89,7 +89,6 @@
     <ClCompile Include="src\Print.cpp" />
     <None Include="src\arduino folders read me.txt">
     </None>
-    <ClCompile Include="src\Control.cpp" />
     <ClCompile Include="src\Hardware.cpp" />
     <ClCompile Include="src\hinten.ino">
       <FileType>CppCode</FileType>
@@ -100,8 +99,6 @@
     <ProjectCapability Include="VisualMicro" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\Control.h" />
-    <ClInclude Include="src\control_rear.h" />
     <ClInclude Include="src\Hardware.h" />
     <ClInclude Include="src\hardware_pins.h" />
     <ClInclude Include="src\Print.h" />

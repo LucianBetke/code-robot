@@ -22,8 +22,9 @@ public:
     PIParam getPI() const;
     void reset();
     void stop();
-    // Rad.h
+
     int16_t deadPwm() const { return _deadPwm; }
+    void setDeadPwm(int16_t deadPwm);
 
 private:
     Motor& _motor;
@@ -33,5 +34,5 @@ private:
     uint16_t _dtMs;
     uint32_t _lastUpdateMs;
     int16_t _lastPwm;
-    int16_t _deadPwm;   // neu
+    int16_t _deadPwm;
 };

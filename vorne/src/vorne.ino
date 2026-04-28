@@ -5,16 +5,16 @@
 */
 
 #include "CommandScript.h"
-#include "Control.h"
 #include "Hardware.h"
 
+#include "src/Control.h"
+#include "src/ControlConfig.h"
 #include "src/CommUtils.h"
 #include "src/UartLink.h"
 #include "src/Connection/ConnectionMonitor.h"
 #include "src/CommandRunner/CommandRunner.h"
 
 VehicleController vehicle;
-
 UartLink uart(Serial, true);   // Initiator
 ConnectionMonitor conn(uart, 13);
 CommandParser parser;
@@ -26,8 +26,10 @@ void setup()
 
     hardware_begin();
     hardware_enableMotors();
-    speed_reset_all();
 
+    control_begin(ConfigFront::CONFIG);
+
+    speed_reset_all();
     commandRunner.begin();
 
     uart.begin();
