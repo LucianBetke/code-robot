@@ -1,12 +1,9 @@
 ﻿// hinten.ino
-#include "Hardware.h"
 #include "Control.h"
+#include "Hardware.h"
 
-#include "../1_Common/src/globals.h"
-#include "../1_Common/src/CommUtils.h"
-#include "../2_Hardware/src/UartLink.h"
-#include "../5_System/src/Connection/ConnectionMonitor.h"
-
+#include "src/CommUtils.h"
+#include "src/Connection/ConnectionMonitor.h"
 
 UartLink uart(Serial, false);   // Responder
 ConnectionMonitor conn(uart, 13);
