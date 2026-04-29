@@ -1,13 +1,12 @@
-// Hardware.h (vorne)
-#ifndef VORNE_HARDWARE_H
-#define VORNE_HARDWARE_H
-
-#pragma once
+// Hardware.h
+#ifndef HARDWARE_H
+#define HARDWARE_H
 
 #include <Arduino.h>
 #include "src/globals.h"
-#include "src/Encoder.h"
-#include "src/Motor.h"
+
+class Enc;
+class Motor;
 
 // --- Encoder ---
 extern Enc enc[WHEEL_COUNT];
@@ -19,4 +18,4 @@ extern Motor motor[WHEEL_COUNT];
 void hardware_begin(bool resetEnc = true);
 void hardware_enableMotors();
 
-#endif // VORNE_HARDWARE_H
+#endif // HARDWARE_H

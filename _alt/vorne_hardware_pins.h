@@ -3,7 +3,7 @@
 #include <Arduino.h>
 
 // ==========================
-// Motor hinten
+// Motor vorne
 // ==========================
 constexpr uint8_t M_Re_AIN1 = 9;
 constexpr uint8_t M_Re_AIN2 = 10;
@@ -14,7 +14,7 @@ constexpr uint8_t M_Li_BIN2 = 5;
 constexpr uint8_t STBY_PIN = 8;
 
 // ==========================
-// Encoder hinten
+// Encoder vorne
 // ==========================
 constexpr uint8_t ENC_Re_PIN_A = A2;
 constexpr uint8_t ENC_Re_PIN_B = A3;

@@ -12,5 +12,6 @@
     <ClInclude Include="$(MSBuildThisFileDirectory)src\Encoder.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)src\Motor.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)src\UartLink.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)src\hardware_pins.h" />
   </ItemGroup>
 </Project>

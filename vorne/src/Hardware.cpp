@@ -8,31 +8,29 @@
 //  - Reset/Begin von Control-/Regel-Objekten (SpeedWeg, Regler)
 //    gehört NICHT hierhin, sondern nach Control.cpp (speed_reset_all()).
 // ============================================================
-
 #include <Arduino.h>
 #include "src/globals.h"
 #include "src/Encoder.h"
 #include "src/Motor.h"
 #include "Hardware.h"
-#include "hardware_pins.h"
+#include "src/hardware_pins.h"
 
 // ============================================================
 // --- Encoder ---
 // ============================================================
-
 Enc enc[WHEEL_COUNT] =
 {
-    Enc(ENC_Li_PIN_A,  ENC_Li_PIN_B),   // Li
-    Enc(ENC_Re_PIN_A, ENC_Re_PIN_B)   // Re
+    Enc(PinsFront::ENC_Li_PIN_A, PinsFront::ENC_Li_PIN_B),   // Li
+    Enc(PinsFront::ENC_Re_PIN_A, PinsFront::ENC_Re_PIN_B)    // Re
 };
-    
+
 // ============================================================
 // --- Motoren ---
 // ============================================================
 Motor motor[WHEEL_COUNT] =
 {
-    Motor(M_Li_BIN1, M_Li_BIN2, enc[Li]),
-    Motor(M_Re_AIN1, M_Re_AIN2, enc[Re])
+    Motor(PinsFront::M_Li_BIN1, PinsFront::M_Li_BIN2, enc[Li]),
+    Motor(PinsFront::M_Re_AIN1, PinsFront::M_Re_AIN2, enc[Re])
 };
 
 // ============================================================
@@ -40,12 +38,8 @@ Motor motor[WHEEL_COUNT] =
 // ============================================================
 void hardware_begin(bool /*resetEnc*/)
 {
-    // --------------------------------------------------------
-    // Treiber-Standby / Enable
-    // (STBY-Pin ist in globals.h definiert)
-    // --------------------------------------------------------
-    pinMode(STBY_PIN, OUTPUT);
-    digitalWrite(STBY_PIN, LOW);  // Treiber AUS (sicherer Start)
+    pinMode(PinsFront::STBY_PIN, OUTPUT);
+    digitalWrite(PinsFront::STBY_PIN, LOW);  // Treiber AUS (sicherer Start)
 
     motor[Li].init();
     motor[Re].init();
@@ -53,18 +47,15 @@ void hardware_begin(bool /*resetEnc*/)
     enc[Li].begin();
     enc[Re].begin();
 
-
     // --------------------------------------------------------
     // Hier wäre der richtige Ort für weitere echte IO-Init:
     //  - pinMode(...) für zusätzliche Pins
     //  - I2C/SPI begin
     //  - Interrupt-Setup, falls das rein hardwareseitig ist
     // --------------------------------------------------------
-
-    
 }
 
 void hardware_enableMotors()
 {
-    digitalWrite(STBY_PIN, HIGH);
+    digitalWrite(PinsFront::STBY_PIN, HIGH);
 }
