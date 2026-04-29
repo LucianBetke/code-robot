@@ -100,7 +100,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Hardware.h" />
-    <ClInclude Include="src\hardware_pins.h" />
     <ClInclude Include="src\Print.h" />
     <ClInclude Include="__vm\.hinten.vsarduino.h" />
   </ItemGroup>

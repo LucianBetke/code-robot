@@ -23,9 +23,6 @@
     <ClInclude Include="src\Hardware.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\hardware_pins.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\Print.h">
       <Filter>Header Files</Filter>
     </ClInclude>
