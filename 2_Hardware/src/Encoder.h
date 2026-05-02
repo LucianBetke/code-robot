@@ -15,7 +15,6 @@
 class Enc {
 public:
     Enc();                                              // leerer Konstruktor
-    Enc(uint8_t pinA, uint8_t pinB);                    // bleibt bis _alt-Migration
 
     void begin(uint8_t pinA, uint8_t pinB,              // NEU: Pins als Parameter
         bool resetCounts = true);

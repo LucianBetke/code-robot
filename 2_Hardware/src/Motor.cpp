@@ -5,10 +5,6 @@
 Motor::Motor() : _pin1(0), _pin2(0), _enc(nullptr)
 {
 }
-Motor::Motor(uint8_t in1, uint8_t in2) : _pin1(in1), _pin2(in2) {}
-Motor::Motor(uint8_t pin1, uint8_t pin2, Enc& enc)
-    : _pin1(pin1), _pin2(pin2), _enc(&enc) {
-}
 
 void Motor::init() {
     pinMode(_pin1, OUTPUT);

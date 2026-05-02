@@ -35,8 +35,6 @@ class Enc;
 class Motor {
 public:
     Motor();                                            // NEU: leerer Konstruktor
-    Motor(uint8_t pin1, uint8_t pin2);                  // bleibt bis _alt-Migration
-    Motor(uint8_t pin1, uint8_t pin2, Enc& enc);        // bleibt bis _alt-Migration
 
     void begin(uint8_t pin1, uint8_t pin2, Enc& enc);   // NEU
 

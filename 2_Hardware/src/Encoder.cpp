@@ -15,16 +15,6 @@ Enc::Enc()
 {
 }
 
-
-Enc::Enc(uint8_t pinA, uint8_t pinB)
-    : _pinA(pinA), _pinB(pinB), _counts(0), _prevState(0)
-{
-    _bitA = uint8_t(_pinA - A0);        // A0..A5 → 0..5
-    _bitB = uint8_t(_pinB - A0);
-    _maskA = uint8_t(1u << _bitA);
-    _maskB = uint8_t(1u << _bitB);
-}
-
 void Enc::begin(uint8_t pinA, uint8_t pinB, bool resetCounts)
 {
     _pinA = pinA;
