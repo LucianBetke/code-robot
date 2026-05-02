@@ -23,9 +23,6 @@
     <ClInclude Include="__vm\.vorne.vsarduino.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\VehicleTypes.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\CommandScript.h">
       <Filter>Header Files</Filter>
     </ClInclude>
