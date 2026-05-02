@@ -1,6 +1,7 @@
 ﻿// hinten.ino
 
-#include "Hardware.h"
+#include "src/Hardware.h"
+#include "src/hardware_pins.h"
 
 #include "src/Control.h"
 #include "src/ControlConfig.h"
@@ -15,7 +16,7 @@ void setup()
 {
     Serial.begin(115200);
 
-    hardware_begin();
+    hardware_begin(PinsRear::PINS);
     hardware_enableMotors();
 
     control_begin(ConfigRear::CONFIG);

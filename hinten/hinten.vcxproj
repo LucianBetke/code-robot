@@ -86,7 +86,6 @@
     <TargetOSAndVersion>Arduino</TargetOSAndVersion>
   </PropertyGroup>
   <ItemGroup>
-    <ClCompile Include="src\Print.cpp" />
     <None Include="src\arduino folders read me.txt">
     </None>
     <ClCompile Include="src\hinten.ino">
@@ -98,8 +97,6 @@
     <ProjectCapability Include="VisualMicro" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\board_config.h" />
-    <ClInclude Include="src\Print.h" />
     <ClInclude Include="__vm\.hinten.vsarduino.h" />
   </ItemGroup>
   <PropertyGroup>

@@ -34,52 +34,23 @@ class Enc;
  */
 class Motor {
 public:
-    /**
-     * @brief Konstruktor ohne Encoder.
-     * @param pin1 PWM-Pin für Richtung A
-     * @param pin2 PWM-Pin für Richtung B
-     */
-    Motor(uint8_t pin1, uint8_t pin2);
+    Motor();                                            // NEU: leerer Konstruktor
+    Motor(uint8_t pin1, uint8_t pin2);                  // bleibt bis _alt-Migration
+    Motor(uint8_t pin1, uint8_t pin2, Enc& enc);        // bleibt bis _alt-Migration
 
-    /**
-     * @brief Konstruktor mit Encoder-Referenz.
-     * @param pin1 PWM-Pin für Richtung A
-     * @param pin2 PWM-Pin für Richtung B
-     * @param enc  Referenz auf zugehörigen Encoder
-     */
-    Motor(uint8_t pin1, uint8_t pin2, Enc& enc);
+    void begin(uint8_t pin1, uint8_t pin2, Enc& enc);   // NEU
 
-    /** @brief Initialisiert die Pins (pinMode-Aufrufe). */
     void init();
-
-    /** @brief Motor vorwärts mit PWM 0–255. */
     void vor(uint8_t pwm);
-
-    /** @brief Motor rückwärts mit PWM 0–255. */
     void rueck(uint8_t pwm);
-
-    /**
-     * @brief Bremst den Motor.
-     * @param art true = Brake (HIGH/HIGH), false = Coast (LOW/LOW)
-     */
     void bremse(bool art);
-
-    /**
-     * @brief Encoder anhängen (nachträglich).
-     * @param enc Referenz auf Encoder
-     */
     void attachEnc(Enc& enc);
-
-    /**
-     * @brief Gibt Zeiger auf Encoder zurück (oder nullptr, falls keiner).
-     * @return Encoder-Zeiger oder nullptr
-     */
     Enc* enc() const;
 
 private:
-    uint8_t _pin1;  ///< PWM-Pin 1 (Richtung A)
-    uint8_t _pin2;  ///< PWM-Pin 2 (Richtung B)
-    Enc* _enc = nullptr; ///< Optionaler Encoder-Zeiger
+    uint8_t _pin1;
+    uint8_t _pin2;
+    Enc* _enc = nullptr;
 };
 
 #endif // MOTOR_H

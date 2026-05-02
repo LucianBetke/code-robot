@@ -9,6 +9,13 @@ const int8_t Enc::s_qlut[4][4] = {
     {  0, -1, +1,  0 }
 };
 
+Enc::Enc()
+    : _pinA(0), _pinB(0), _counts(0), _prevState(0)
+    , _bitA(0), _bitB(0), _maskA(0), _maskB(0)
+{
+}
+
+
 Enc::Enc(uint8_t pinA, uint8_t pinB)
     : _pinA(pinA), _pinB(pinB), _counts(0), _prevState(0)
 {
@@ -18,18 +25,24 @@ Enc::Enc(uint8_t pinA, uint8_t pinB)
     _maskB = uint8_t(1u << _bitB);
 }
 
-void Enc::begin(bool resetCounts)
+void Enc::begin(uint8_t pinA, uint8_t pinB, bool resetCounts)
 {
+    _pinA = pinA;
+    _pinB = pinB;
+    _bitA = uint8_t(_pinA - A0);
+    _bitB = uint8_t(_pinB - A0);
+    _maskA = uint8_t(1u << _bitA);
+    _maskB = uint8_t(1u << _bitB);
+
+    // ab hier identisch mit dem bisherigen begin():
     pinMode(_pinA, INPUT_PULLUP);
     pinMode(_pinB, INPUT_PULLUP);
-
-    // Anfangszustand auslesen
     uint8_t pinc = PINC;
     uint8_t a = (pinc & _maskA) ? 1 : 0;
     uint8_t b = (pinc & _maskB) ? 1 : 0;
     _prevState = (b << 1) | a;
-    if (resetCounts) this->resetCounts();      // Zähler definiert, vor Enable
-    PCIFR |= _BV(PCIF1);                       // pending Flag löschen
+    if (resetCounts) this->resetCounts();
+    PCIFR |= _BV(PCIF1);
     PCINT1_Dispatcher::add(this);
     enablePcintGroup1_SelectedPins();
 }

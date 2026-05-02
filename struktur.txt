@@ -1,0 +1,221 @@
+Auflistung der Ordnerpfade für Volume Acer
+Volumeseriennummer : 8EB4-223E
+C:\USERS\ACER\SOURCE\REPOS\ROBOT
+¦   .gitattributes
+¦   .gitignore
+¦   dateistruktur.txt
+¦   quellcode.zip
+¦   robot.sln
+¦   robot_full.zip
+¦   robot_h_cpp.zip
+¦   struktur.txt
+¦   
++---1_Common
+¦   ¦   1_Common.vcxitems
+¦   ¦   1_Common.vcxitems.filters
+¦   ¦   readme.txt
+¦   ¦   
+¦   +---src
+¦       ¦   CommUtils.h
+¦       ¦   ControlTypes.h
+¦       ¦   globals.h
+¦       ¦   
+¦       +---1_Common
++---2_Hardware
+¦   ¦   2_Hardware.vcxitems
+¦   ¦   2_Hardware.vcxitems.filters
+¦   ¦   readme.txt
+¦   ¦   
+¦   +---src
+¦       ¦   Encoder.cpp
+¦       ¦   Encoder.h
+¦       ¦   Hardware.cpp
+¦       ¦   Hardware.h
+¦       ¦   hardware_pins.h
+¦       ¦   Motor.cpp
+¦       ¦   Motor.h
+¦       ¦   UartLink.cpp
+¦       ¦   UartLink.h
+¦       ¦   
+¦       +---2_Hardware
++---3_Control
+¦   ¦   3_Control.vcxitems
+¦   ¦   3_Control.vcxitems.filters
+¦   ¦   readme.txt
+¦   ¦   
+¦   +---src
+¦       ¦   Control.cpp
+¦       ¦   Control.h
+¦       ¦   ControlConfig.h
+¦       ¦   PIRegler.cpp
+¦       ¦   PIRegler.h
+¦       ¦   Rad.cpp
+¦       ¦   Rad.h
+¦       ¦   SpeedWeg.cpp
+¦       ¦   SpeedWeg.h
+¦       ¦   
+¦       +---3_Control
++---4_Vehicle
+¦   ¦   4_Vehicle.vcxitems
+¦   ¦   4_Vehicle.vcxitems.filters
+¦   ¦   readme.txt
+¦   ¦   
+¦   +---src
+¦       ¦   VehicleController.cpp
+¦       ¦   VehicleController.h
+¦       ¦   
+¦       +---4_Vehicle
++---5_System
+¦   ¦   5_System.vcxitems
+¦   ¦   5_System.vcxitems.filters
+¦   ¦   5_System.vcxitems.user
+¦   ¦   
+¦   +---src
+¦       +---CommandRunner
+¦       ¦       CommandRunner.cpp
+¦       ¦       CommandRunner.h
+¦       ¦       
+¦       +---Connection
+¦       ¦       ConnectionMonitor.cpp
+¦       ¦       ConnectionMonitor.h
+¦       ¦       
+¦       +---Parser
+¦               CommandParser.cpp
+¦               CommandParser.h
+¦               
++---hinten
+¦   ¦   hinten.vcxproj
+¦   ¦   hinten.vcxproj.filters
+¦   ¦   hinten.vcxproj.user
+¦   ¦   
+¦   +---obj
+¦   ¦   +---x64
+¦   ¦       +---Debug
+¦   ¦       ¦       hinten.log
+¦   ¦       ¦       hinten.vcxproj.FileListAbsolute.txt
+¦   ¦       ¦       
+¦   ¦       +---Release
+¦   ¦               hinten.log
+¦   ¦               hinten.vcxproj.FileListAbsolute.txt
+¦   ¦               
+¦   +---src
+¦   ¦       arduino folders read me.txt
+¦   ¦       hinten.ino
+¦   ¦       Print.cpp
+¦   ¦       Print.h
+¦   ¦       
+¦   +---__vm
+¦           .hinten.vsarduino.h
+¦           Compile.vmps.xml
+¦           Configuration.Debug.vmps.xml
+¦           Configuration.Release.vmps.xml
+¦           Upload.vmps.xml
+¦           
++---tools
+¦   ¦   Achse_Hi.cpp
+¦   ¦   Achse_Hi.h
+¦   ¦   AutoTuner.cpp
+¦   ¦   AutoTuner.h
+¦   ¦   Control.cpp
+¦   ¦   Control.h
+¦   ¦   ControlParams.h
+¦   ¦   Encoder.cpp
+¦   ¦   Encoder.h
+¦   ¦   globals.h
+¦   ¦   Hardware.cpp
+¦   ¦   Hardware.h
+¦   ¦   Mixer2W.cpp
+¦   ¦   Mixer2W.h
+¦   ¦   Motor.cpp
+¦   ¦   Motor.h
+¦   ¦   PIRegler.cpp
+¦   ¦   PIRegler.h
+¦   ¦   Printer.cpp
+¦   ¦   Printer.h
+¦   ¦   Rad.cpp
+¦   ¦   Rad.h
+¦   ¦   SpeedWeg.cpp
+¦   ¦   SpeedWeg.h
+¦   ¦   Tests.cpp
+¦   ¦   Tests.h
+¦   ¦   TestTypes.h
+¦   ¦   tools.ino
+¦   ¦   tools.vcxproj
+¦   ¦   tools.vcxproj.filters
+¦   ¦   tools.vcxproj.user
+¦   ¦   tools.zip
+¦   ¦   Utils.cpp
+¦   ¦   Utils.h
+¦   ¦   VehicleController.cpp
+¦   ¦   VehicleController.h
+¦   ¦   VehicleTypes.h
+¦   ¦   
+¦   +---bin
+¦   ¦   +---x64
+¦   ¦       +---Debug
+¦   +---obj
+¦   ¦   +---x64
+¦   ¦       +---Debug
+¦   ¦           ¦   tools.log
+¦   ¦           ¦   tools.vcxproj.FileListAbsolute.txt
+¦   ¦           ¦   
+¦   ¦           +---tools.tlog
+¦   ¦                   unsuccessfulbuild
+¦   ¦                   
+¦   +---src
+¦   ¦       arduino folders read me.txt
+¦   ¦       
+¦   +---__vm
+¦           .tools.vsarduino.h
+¦           Compile.vmps.xml
+¦           Configuration.Debug.vmps.xml
+¦           Configuration.Release.vmps.xml
+¦           Upload.vmps.xml
+¦           
++---vorne
+¦   ¦   vorne.vcxproj
+¦   ¦   vorne.vcxproj.filters
+¦   ¦   vorne.vcxproj.user
+¦   ¦   
+¦   +---obj
+¦   ¦   +---x64
+¦   ¦       +---Debug
+¦   ¦       ¦       vorne.log
+¦   ¦       ¦       vorne.vcxproj.FileListAbsolute.txt
+¦   ¦       ¦       
+¦   ¦       +---Release
+¦   ¦               vorne.log
+¦   ¦               vorne.vcxproj.FileListAbsolute.txt
+¦   ¦               
+¦   +---src
+¦   ¦       arduino folders read me.txt
+¦   ¦       CommandScript.cpp
+¦   ¦       CommandScript.h
+¦   ¦       control_front.h
+¦   ¦       VehicleTypes.h
+¦   ¦       vorne.ino
+¦   ¦       
+¦   +---__vm
+¦           .vorne.vsarduino.h
+¦           Compile.vmps.xml
+¦           Configuration.Debug.vmps.xml
+¦           Configuration.Release.vmps.xml
+¦           Upload.vmps.xml
+¦           
++---x64
+¦   +---Debug
+¦           front.pdb
+¦           rear.pdb
+¦           
++---_alt
+        Hardware-hinten.h
+        Hardware-vorne.h
+        Hardware_alt.cpp.txt
+        hinten_Control.cpp
+        hinten_Control.h
+        hinten_control_rear.h
+        hinten_hardware_pins.h
+        vorne_Control.cpp
+        vorne_Control.h
+        vorne_hardware_pins.h
+        

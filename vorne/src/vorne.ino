@@ -6,6 +6,7 @@
 
 #include "CommandScript.h"                     
 #include "src/Hardware.h"                       //2_Hardware
+#include "src/hardware_pins.h"                  //2_Hardware
 
 #include "src/Control.h"                        //3_Control
 #include "src/ControlConfig.h"                  //3_Control
@@ -23,15 +24,11 @@ CommandRunner commandRunner(vehicle, uart, parser);
 void setup()
 {
     Serial.begin(115200);
-
-    hardware_begin();
+    hardware_begin(PinsFront::PINS);   // ← geändert
     hardware_enableMotors();
-
     control_begin(ConfigFront::CONFIG);
-
     speed_reset_all();
     commandRunner.begin();
-
     uart.begin();
     conn.begin(true);
 }
