@@ -1,56 +1,51 @@
+// CommandParser.cpp    
 #include "CommandParser.h"
 #include <Arduino.h>
 #include <string.h>
 #include <stdlib.h>
 
-// ------------------------------------------------------------
-// Token lesen
-// ------------------------------------------------------------
 static bool readToken(const char*& p, char delim, char* buf, uint8_t maxLen)
 {
     uint8_t i = 0;
-
     while (*p != delim && *p != '\0' && i < maxLen - 1)
         buf[i++] = *p++;
-
     buf[i] = '\0';
-
-    if (*p != delim)
-        return false;
-
-    p++;  // Trennzeichen überspringen
+    if (*p != delim) return false;
+    p++;
     return true;
 }
 
-// ------------------------------------------------------------
-// Parser
-// ------------------------------------------------------------
-bool CommandParser::parseTimeCommand(const char* line, TimeCommand& cmd)
+static bool parseVxVyWzParam(const char* p, ParsedCommand& cmd)
 {
-    if (!line || strncmp(line, "CMDT(", 5) != 0)
-        return false;
-
-    const char* p = line + 5;
     char buf[32];
-
-    // vx
     if (!readToken(p, ',', buf, sizeof(buf))) return false;
     cmd.vx = atof(buf);
-
-    // vy
     if (!readToken(p, ',', buf, sizeof(buf))) return false;
     cmd.vy = atof(buf);
-
-    // wz
     if (!readToken(p, ')', buf, sizeof(buf))) return false;
     cmd.wz = atof(buf);
-
-    // Leerzeichen überspringen
     if (*p == ' ') p++;
-
-    // Zeit
     if (!readToken(p, ';', buf, sizeof(buf))) return false;
-    cmd.t = atof(buf);
-
+    cmd.param = atof(buf);
     return true;
+}
+
+bool CommandParser::parse(const char* line, ParsedCommand& cmd)
+{
+    cmd.type = CMD_NONE;
+    if (!line) return false;
+
+    if (strncmp(line, "CMDT(", 5) == 0)
+    {
+        if (!parseVxVyWzParam(line + 5, cmd)) return false;
+        cmd.type = CMD_TIME;
+        return true;
+    }
+    if (strncmp(line, "CMDP(", 5) == 0)
+    {
+        if (!parseVxVyWzParam(line + 5, cmd)) return false;
+        cmd.type = CMD_PATH;
+        return true;
+    }
+    return false;
 }

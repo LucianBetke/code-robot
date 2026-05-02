@@ -1,16 +1,31 @@
+// ============================================================
 // CommandParser.h
-#pragma once
+// ============================================================
+#ifndef COMMAND_PARSER_H
+#define COMMAND_PARSER_H
 
-struct TimeCommand
+#include <Arduino.h>
+
+enum CmdType : uint8_t
 {
+    CMD_NONE = 0,
+    CMD_TIME = 1,
+    CMD_PATH = 2,   // später
+};
+
+struct ParsedCommand
+{
+    CmdType type;
     float vx;
     float vy;
     float wz;
-    float t;
+    float param;     // CMD_TIME: Sekunden, CMD_PATH: cm
 };
 
 class CommandParser
 {
 public:
-    static bool parseTimeCommand(const char* line, TimeCommand& cmd);
+    static bool parse(const char* line, ParsedCommand& cmd);
 };
+
+#endif

@@ -6,8 +6,6 @@ C:\USERS\ACER\SOURCE\REPOS\ROBOT
 ¦   dateistruktur.txt
 ¦   quellcode.zip
 ¦   robot.sln
-¦   robot_full.zip
-¦   robot_h_cpp.zip
 ¦   struktur.txt
 ¦   
 +---1_Common
@@ -16,55 +14,51 @@ C:\USERS\ACER\SOURCE\REPOS\ROBOT
 ¦   ¦   readme.txt
 ¦   ¦   
 ¦   +---src
-¦       ¦   CommUtils.h
-¦       ¦   ControlTypes.h
-¦       ¦   globals.h
-¦       ¦   
-¦       +---1_Common
+¦           CommUtils.h
+¦           ControlTypes.h
+¦           globals.h
+¦           
 +---2_Hardware
 ¦   ¦   2_Hardware.vcxitems
 ¦   ¦   2_Hardware.vcxitems.filters
 ¦   ¦   readme.txt
 ¦   ¦   
 ¦   +---src
-¦       ¦   Encoder.cpp
-¦       ¦   Encoder.h
-¦       ¦   Hardware.cpp
-¦       ¦   Hardware.h
-¦       ¦   hardware_pins.h
-¦       ¦   Motor.cpp
-¦       ¦   Motor.h
-¦       ¦   UartLink.cpp
-¦       ¦   UartLink.h
-¦       ¦   
-¦       +---2_Hardware
+¦           Encoder.cpp
+¦           Encoder.h
+¦           Hardware.cpp
+¦           Hardware.h
+¦           hardware_pins.h
+¦           Motor.cpp
+¦           Motor.h
+¦           UartLink.cpp
+¦           UartLink.h
+¦           
 +---3_Control
 ¦   ¦   3_Control.vcxitems
 ¦   ¦   3_Control.vcxitems.filters
 ¦   ¦   readme.txt
 ¦   ¦   
 ¦   +---src
-¦       ¦   Control.cpp
-¦       ¦   Control.h
-¦       ¦   ControlConfig.h
-¦       ¦   PIRegler.cpp
-¦       ¦   PIRegler.h
-¦       ¦   Rad.cpp
-¦       ¦   Rad.h
-¦       ¦   SpeedWeg.cpp
-¦       ¦   SpeedWeg.h
-¦       ¦   
-¦       +---3_Control
+¦           Control.cpp
+¦           Control.h
+¦           ControlConfig.h
+¦           PIRegler.cpp
+¦           PIRegler.h
+¦           Rad.cpp
+¦           Rad.h
+¦           SpeedWeg.cpp
+¦           SpeedWeg.h
+¦           
 +---4_Vehicle
 ¦   ¦   4_Vehicle.vcxitems
 ¦   ¦   4_Vehicle.vcxitems.filters
 ¦   ¦   readme.txt
 ¦   ¦   
 ¦   +---src
-¦       ¦   VehicleController.cpp
-¦       ¦   VehicleController.h
-¦       ¦   
-¦       +---4_Vehicle
+¦           VehicleController.cpp
+¦           VehicleController.h
+¦           
 +---5_System
 ¦   ¦   5_System.vcxitems
 ¦   ¦   5_System.vcxitems.filters
@@ -101,8 +95,6 @@ C:\USERS\ACER\SOURCE\REPOS\ROBOT
 ¦   +---src
 ¦   ¦       arduino folders read me.txt
 ¦   ¦       hinten.ino
-¦   ¦       Print.cpp
-¦   ¦       Print.h
 ¦   ¦       
 ¦   +---__vm
 ¦           .hinten.vsarduino.h
@@ -191,8 +183,6 @@ C:\USERS\ACER\SOURCE\REPOS\ROBOT
 ¦   ¦       arduino folders read me.txt
 ¦   ¦       CommandScript.cpp
 ¦   ¦       CommandScript.h
-¦   ¦       control_front.h
-¦   ¦       VehicleTypes.h
 ¦   ¦       vorne.ino
 ¦   ¦       
 ¦   +---__vm
@@ -208,6 +198,7 @@ C:\USERS\ACER\SOURCE\REPOS\ROBOT
 ¦           rear.pdb
 ¦           
 +---_alt
+        control_front.h
         Hardware-hinten.h
         Hardware-vorne.h
         Hardware_alt.cpp.txt
@@ -215,6 +206,9 @@ C:\USERS\ACER\SOURCE\REPOS\ROBOT
         hinten_Control.h
         hinten_control_rear.h
         hinten_hardware_pins.h
+        Print.cpp
+        Print.h
+        VehicleTypes.h
         vorne_Control.cpp
         vorne_Control.h
         vorne_hardware_pins.h
