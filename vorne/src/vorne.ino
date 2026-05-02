@@ -4,15 +4,15 @@
  Author:    Acer
 */
 
-#include "CommandScript.h"
-#include "Hardware.h"
+#include "CommandScript.h"                     
+#include "src/Hardware.h"                       //2_Hardware
 
-#include "src/Control.h"
-#include "src/ControlConfig.h"
-#include "src/CommUtils.h"
-#include "src/UartLink.h"
-#include "src/Connection/ConnectionMonitor.h"
-#include "src/CommandRunner/CommandRunner.h"
+#include "src/Control.h"                        //3_Control
+#include "src/ControlConfig.h"                  //3_Control
+#include "src/CommUtils.h"                      //1_Common
+#include "src/UartLink.h"                       //2_Hardware
+#include "src/Connection/ConnectionMonitor.h"   //5_System
+#include "src/CommandRunner/CommandRunner.h"    //5_System
 
 VehicleController vehicle;
 UartLink uart(Serial, true);   // Initiator

@@ -18,11 +18,13 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="$(MSBuildThisFileDirectory)src\Encoder.cpp" />
+    <ClCompile Include="$(MSBuildThisFileDirectory)src\Hardware.cpp" />
     <ClCompile Include="$(MSBuildThisFileDirectory)src\Motor.cpp" />
     <ClCompile Include="$(MSBuildThisFileDirectory)src\UartLink.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="$(MSBuildThisFileDirectory)src\Encoder.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)src\Hardware.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)src\hardware_pins.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)src\Motor.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)src\UartLink.h" />

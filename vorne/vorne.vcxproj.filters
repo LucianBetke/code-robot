@@ -29,15 +29,12 @@
     <ClInclude Include="src\CommandScript.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\Hardware.h">
+    <ClInclude Include="src\board_config.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\vorne.ino" />
-    <ClCompile Include="src\Hardware.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\CommandScript.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
