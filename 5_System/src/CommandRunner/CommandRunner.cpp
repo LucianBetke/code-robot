@@ -70,7 +70,5 @@ float CommandRunner::getWheelSoll(WheelVehicle w) const
     return _vehicle.getWheelSoll(w);
 }
 
-bool CommandRunner::isActive() const
-{
-    return _active;
-}
+bool CommandRunner::isActive() const { return _active; }
+bool CommandRunner::isFinished() const { return _finished; }

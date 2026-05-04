@@ -22,6 +22,7 @@ public:
 
     float getWheelSoll(WheelVehicle w) const;
     bool  isActive() const;
+    bool isFinished() const;
 
 private:
     void startCmd(const ParsedCommand& cmd, uint32_t now);

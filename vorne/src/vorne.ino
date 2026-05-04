@@ -89,9 +89,11 @@ void loop()
         snprintf(buf, sizeof(buf), "VSOL,%d,%d", v2_i, v3_i);
         uart.sendLine(buf);
     }
+
     control_update(now);
+
     static uint32_t lastDbg = 0;
-    if (now - lastDbg >= VEHICLE_DT_MS)
+    if (!commandRunner.isFinished() && now - lastDbg >= VEHICLE_DT_MS)
     {
         lastDbg = now;
         printer.printWheels(vehicle, g_v2_ist, g_v3_ist, g_pwm2, g_pwm3);
