@@ -67,15 +67,11 @@ constexpr uint32_t SPEED_MIN_DT_MS = 5;
 /** Regelperiode pro Rad (ms) */
 constexpr uint16_t RAD_REGEL_DT_MS = 20;
 
+/** Regelperiode Fahrzeug + UART VSOL/VIST (ms) */
+constexpr uint16_t VEHICLE_DT_MS = 100;
+
 /** Debug-Ausgabe Intervall */
 constexpr uint16_t DBG_INTERVAL_MS = 20;
-
-// ============================================================
-// ==== Zeitbasis Kommunikation ====
-// ============================================================
-
-/** UART Sendeintervall Front -> Rear (ms) */
-constexpr uint16_t UART_SEND_DT_MS = RAD_REGEL_DT_MS;
 
 // ============================================================
 // ==== Encoder / Rad-Geometrie ====

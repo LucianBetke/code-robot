@@ -18,8 +18,10 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="$(MSBuildThisFileDirectory)src\VehicleController.cpp" />
+    <ClCompile Include="$(MSBuildThisFileDirectory)src\VehicleRegler.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="$(MSBuildThisFileDirectory)src\VehicleController.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)src\VehicleRegler.h" />
   </ItemGroup>
 </Project>

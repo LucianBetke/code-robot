@@ -51,5 +51,19 @@ void loop()
         }
     }
 
+    // VIST senden: v2_ist, v3_ist alle 100ms
+    static uint32_t lastVist = 0;
+    if (now - lastVist >= VEHICLE_DT_MS)
+    {
+        lastVist = now;
+        int16_t v2_i = floatToInt100(speed[Li].mps());
+        int16_t v3_i = floatToInt100(speed[Re].mps());
+        int16_t pwm2 = rad[Li].lastPwm();
+        int16_t pwm3 = rad[Re].lastPwm();
+        char buf[32];
+        snprintf(buf, sizeof(buf), "VIST,%d,%d,%d,%d", v2_i, v3_i, pwm2, pwm3);
+        uart.sendLine(buf);
+    }
+
     control_update(now);
 }

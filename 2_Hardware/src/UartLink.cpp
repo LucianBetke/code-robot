@@ -49,7 +49,7 @@ void UartLink::update()
             {
                 _connected = true;
             }
-            else if (strcmp(_buf, "KA") != 0)
+            else if (strcmp(_buf, "KA") != 0 && _buf[0] != '#')
             {
                 // 👉 Nutzdaten speichern
                 strncpy(_line, _buf, sizeof(_line) - 1);

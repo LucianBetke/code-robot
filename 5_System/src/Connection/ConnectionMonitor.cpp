@@ -8,7 +8,7 @@ ConnectionMonitor::ConnectionMonitor(UartLink& uart, uint8_t ledPin)
 
 void ConnectionMonitor::waitForConnection()
 {
-    Serial.println("Warte auf Handshake...");
+    Serial.println("#Warte auf Handshake...");
 
     while (!_uart.isConnected())
     {

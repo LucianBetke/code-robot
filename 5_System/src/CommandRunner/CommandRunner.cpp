@@ -29,6 +29,10 @@ void CommandRunner::stopAll()
 
 void CommandRunner::startCmd(const ParsedCommand& cmd, uint32_t now)
 {
+    Serial.print(F("#startCmd param="));
+    Serial.print(cmd.param);
+    Serial.print(F(" durationMs="));
+    Serial.println((uint32_t)(cmd.param * 1000.0f));
     _vehicle.cmd(cmd.vx, cmd.vy, cmd.wz);
     _startTime = now;
     _durationMs = (uint32_t)(cmd.param * 1000.0f);
@@ -37,35 +41,27 @@ void CommandRunner::startCmd(const ParsedCommand& cmd, uint32_t now)
 
 void CommandRunner::update(uint32_t now)
 {
-    if (_finished) return;
-
-    if (_active)
+    if (!_finished)
     {
-        if (now - _startTime >= _durationMs)
+        if (_active)
         {
-            stopAll();
-            _active = false;
-            _cmdIndex++;
+            if (now - _startTime >= _durationMs)
+            {
+                stopAll();
+                _active = false;
+                _cmdIndex++;
+            }
         }
-        return;
-    }
-
-    if (_cmdIndex >= _size())
-    {
-        _finished = true;
-        return;
-    }
-
-    ParsedCommand cmd;
-    if (!CommandParser::parse(_getCmd(_cmdIndex), cmd))
-    {
-        _cmdIndex++;
-        return;
-    }
-
-    if (cmd.type == CMD_TIME)
-    {
-        startCmd(cmd, now);
+        else
+        {
+            if (_cmdIndex >= _size()) _finished = true;
+            else
+            {
+                ParsedCommand cmd;
+                if (!CommandParser::parse(_getCmd(_cmdIndex), cmd)) _cmdIndex++;
+                else if (cmd.type == CMD_TIME) startCmd(cmd, now);
+            }
+        }
     }
 }
 
