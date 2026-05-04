@@ -19,7 +19,10 @@ static float g_v2_ist = 0.0f;
 static float g_v3_ist = 0.0f;
 static int16_t g_pwm2 = 0;
 static int16_t g_pwm3 = 0;
+static uint32_t g_startMs = 0;
+static bool g_timerStarted = false;
 
+// globale Objekte
 VehicleController vehicle;
 UartLink uart(Serial, true);
 ConnectionMonitor conn(uart, 13);
@@ -48,13 +51,22 @@ void setup()
     printer.printHeader();
 }
 
+
 void loop()
 {
     uint32_t now = millis();
+
     uart.update();
     conn.update();
+
     if (uart.isConnected())
         commandRunner.update(now);
+
+    if (commandRunner.isActive() && !g_timerStarted)
+    {
+        g_startMs = now;
+        g_timerStarted = true;
+    }
 
     if (uart.availableLine())
     {
@@ -68,17 +80,16 @@ void loop()
     }
 
     vehicle.updateIst(
-        speed[Re].mps(),   // v0 = VoRe
-        speed[Li].mps(),   // v1 = VoLi
-        g_v2_ist,          // v2 = HiLi
-        g_v3_ist           // v3 = HiRe
+        speed[Re].mps(),
+        speed[Li].mps(),
+        g_v2_ist,
+        g_v3_ist
     );
-
     vehicle.update(now);
 
     rad[VoLi].setSoll(commandRunner.getWheelSoll(VoLi));
     rad[VoRe].setSoll(commandRunner.getWheelSoll(VoRe));
-    
+
     static uint32_t lastSend = 0;
     if (now - lastSend >= VEHICLE_DT_MS)
     {
@@ -96,6 +107,7 @@ void loop()
     if (!commandRunner.isFinished() && now - lastDbg >= VEHICLE_DT_MS)
     {
         lastDbg = now;
-        printer.printWheels(vehicle, g_v2_ist, g_v3_ist, g_pwm2, g_pwm3);
+        uint32_t t = g_timerStarted ? (now - g_startMs) : 0;
+        printer.printWheels(vehicle, g_v2_ist, g_v3_ist, g_pwm2, g_pwm3, t);
     }
 }

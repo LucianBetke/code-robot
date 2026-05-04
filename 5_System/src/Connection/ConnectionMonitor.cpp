@@ -54,12 +54,5 @@ void ConnectionMonitor::update()
         digitalWrite(_ledPin, LOW);
     }
 
-    // 🟢 läuft stabil
-    if (now && millis() - _lastOk > 1000)
-    {
-        Serial.println("#OK");
-        _lastOk = millis();
-    }
-
     _lastState = now;
 }
