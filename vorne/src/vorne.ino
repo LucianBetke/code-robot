@@ -1,8 +1,6 @@
-﻿/*
- Name:      vorne.ino
- Created:   11.03.2026 22:17:58
- Author:    Dr. Faust
-*/
+﻿// vorne.ino
+ 
+
 #include "CommandScript.h"
 #include "src/Hardware.h"
 #include "src/hardware_pins.h"
