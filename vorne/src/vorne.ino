@@ -54,58 +54,69 @@ void loop()
 {
     uint32_t now = millis();
 
-    uart.update();
-    conn.update();
-
-    if (uart.isConnected())
-        commandRunner.update(now);
-
-    if (commandRunner.isActive() && !g_timerStarted)
-    {
-        g_startMs = now;
-        g_timerStarted = true;
-    }
-
-    if (uart.availableLine())
-    {
-        const char* line = uart.getLine();
-        int16_t v2_i, v3_i;
-        if (sscanf(line, "VIST,%hd,%hd,%hd,%hd", &v2_i, &v3_i, &g_pwm2, &g_pwm3) == 4)
-        {
-            g_v2_ist = int100ToFloat(v2_i);
-            g_v3_ist = int100ToFloat(v3_i);
-        }
-    }
-
-    vehicle.updateIst(
-        speed[Re].mps(),
-        speed[Li].mps(),
-        g_v2_ist,
-        g_v3_ist
-    );
-    vehicle.update(now);
-
-    rad[VoLi].setSoll(commandRunner.getWheelSoll(VoLi));
-    rad[VoRe].setSoll(commandRunner.getWheelSoll(VoRe));
-
-    static uint32_t lastSend = 0;
-    if (now - lastSend >= VEHICLE_DT_MS)
-    {
-        lastSend = now;
-        int16_t v2_i = floatToInt100(commandRunner.getWheelSoll(HiLi));
-        int16_t v3_i = floatToInt100(commandRunner.getWheelSoll(HiRe));
-        char buf[32];
-        snprintf(buf, sizeof(buf), "VSOL,%d,%d", v2_i, v3_i);
-        uart.sendLine(buf);
-    }
+    // TEST: 
+    rad[Re].setSoll(0.2f);
+    rad[Li].setSoll(0.2f);
 
     control_update(now);
-
-    static uint32_t lastDbg = 0;
-    if (!commandRunner.isFinished() && now - lastDbg >= VEHICLE_DT_MS)
-    {
-        lastDbg = now;
-        uint32_t t = g_timerStarted ? (now - g_startMs) : 0;
-        printer.printWheels(vehicle, g_v2_ist, g_v3_ist, g_pwm2, g_pwm3, t);
-    }
 }
+
+//void loop()
+//{
+//    uint32_t now = millis();
+//
+//    uart.update();
+//    conn.update();
+//
+//    if (uart.isConnected())
+//        commandRunner.update(now);
+//
+//    if (commandRunner.isActive() && !g_timerStarted)
+//    {
+//        g_startMs = now;
+//        g_timerStarted = true;
+//    }
+//
+//    if (uart.availableLine())
+//    {
+//        const char* line = uart.getLine();
+//        int16_t v2_i, v3_i;
+//        if (sscanf(line, "VIST,%hd,%hd,%hd,%hd", &v2_i, &v3_i, &g_pwm2, &g_pwm3) == 4)
+//        {
+//            g_v2_ist = int100ToFloat(v2_i);
+//            g_v3_ist = int100ToFloat(v3_i);
+//        }
+//    }
+//
+//    vehicle.updateIst(
+//        speed[Re].mps(),
+//        speed[Li].mps(),
+//        g_v2_ist,
+//        g_v3_ist
+//    );
+//    vehicle.update(now);
+//
+//    rad[VoLi].setSoll(commandRunner.getWheelSoll(VoLi));
+//    rad[VoRe].setSoll(commandRunner.getWheelSoll(VoRe));
+//
+//    static uint32_t lastSend = 0;
+//    if (now - lastSend >= VEHICLE_DT_MS)
+//    {
+//        lastSend = now;
+//        int16_t v2_i = floatToInt100(commandRunner.getWheelSoll(HiLi));
+//        int16_t v3_i = floatToInt100(commandRunner.getWheelSoll(HiRe));
+//        char buf[32];
+//        snprintf(buf, sizeof(buf), "VSOL,%d,%d", v2_i, v3_i);
+//        uart.sendLine(buf);
+//    }
+//
+//    control_update(now);
+//
+//    static uint32_t lastDbg = 0;
+//    if (!commandRunner.isFinished() && now - lastDbg >= VEHICLE_DT_MS)
+//    {
+//        lastDbg = now;
+//        uint32_t t = g_timerStarted ? (now - g_startMs) : 0;
+//        printer.printWheels(vehicle, g_v2_ist, g_v3_ist, g_pwm2, g_pwm3, t);
+//    }
+//}
