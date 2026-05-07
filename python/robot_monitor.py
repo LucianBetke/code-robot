@@ -254,9 +254,9 @@ def start_plot():
                 ax_pwm.plot(t[:n_p], pwm[:n_p], linestyle="-", color=col,
                             label=f"{name} PWM")
 
-        ax_v.legend(loc="upper right", fontsize=7, ncol=4)
+        ax_v.legend(loc="lower right", fontsize=7, ncol=4)
         ax_e.legend(loc="upper right", fontsize=7, ncol=4)
-        ax_pwm.legend(loc="upper right", fontsize=7, ncol=4)
+        ax_pwm.legend(loc="lower right", fontsize=7, ncol=4)
 
         n_pts = len(t)
         ax_v.set_title(f"{n_pts} Messpunkte  –  t = {t[-1]:.1f} s" if n_pts else "warte …",
