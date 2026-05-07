@@ -1,262 +1,4 @@
-===== DATEISTRUKTUR =====
-Auflistung der Ordnerpfade für Volume Acer
-Volumeseriennummer : 00000001 8EB4:223E
-C:.
-|   .gitattributes
-|   .gitignore
-|   alles.txt
-|   alle_programme.txt
-|   flash_beide.ps1
-|   robot.sln
-|   solution_code.txt
-|   
-+---1_Common
-|   |   1_Common.vcxitems
-|   |   1_Common.vcxitems.filters
-|   |   readme.txt
-|   |   
-|   \---src
-|           CommUtils.h
-|           ControlTypes.h
-|           globals.h
-|           
-+---2_Hardware
-|   |   2_Hardware.vcxitems
-|   |   2_Hardware.vcxitems.filters
-|   |   readme.txt
-|   |   
-|   \---src
-|           Encoder.cpp
-|           Encoder.h
-|           Hardware.cpp
-|           Hardware.h
-|           hardware_pins.h
-|           Motor.cpp
-|           Motor.h
-|           UartLink.cpp
-|           UartLink.h
-|           
-+---3_Control
-|   |   3_Control.vcxitems
-|   |   3_Control.vcxitems.filters
-|   |   readme.txt
-|   |   
-|   \---src
-|           Control.cpp
-|           Control.h
-|           ControlConfig.h
-|           PIRegler.cpp
-|           PIRegler.h
-|           Rad.cpp
-|           Rad.h
-|           SpeedWeg.cpp
-|           SpeedWeg.h
-|           
-+---4_Vehicle
-|   |   4_Vehicle.vcxitems
-|   |   4_Vehicle.vcxitems.filters
-|   |   readme.txt
-|   |   
-|   \---src
-|           VehicleController.cpp
-|           VehicleController.h
-|           VehicleRegler.cpp
-|           VehicleRegler.h
-|           
-+---5_System
-|   |   5_System.vcxitems
-|   |   5_System.vcxitems.filters
-|   |   5_System.vcxitems.user
-|   |   
-|   \---src
-|       |   Printer.cpp
-|       |   Printer.h
-|       |   
-|       +---CommandRunner
-|       |       CommandRunner.cpp
-|       |       CommandRunner.h
-|       |       
-|       +---Connection
-|       |       ConnectionMonitor.cpp
-|       |       ConnectionMonitor.h
-|       |       
-|       \---Parser
-|               CommandParser.cpp
-|               CommandParser.h
-|               
-+---hinten
-|   |   hinten.vcxproj
-|   |   hinten.vcxproj.filters
-|   |   hinten.vcxproj.user
-|   |   
-|   +---bin
-|   |   \---x64
-|   |       \---Release
-|   +---obj
-|   |   \---x64
-|   |       +---Debug
-|   |       |       hinten.log
-|   |       |       hinten.vcxproj.FileListAbsolute.txt
-|   |       |       
-|   |       \---Release
-|   |           |   hinten.log
-|   |           |   hinten.vcxproj.FileListAbsolute.txt
-|   |           |   
-|   |           \---hinten.tlog
-|   |                   hinten.lastbuildstate
-|   |                   unsuccessfulbuild
-|   |                   
-|   +---src
-|   |       arduino folders read me.txt
-|   |       hinten.ino
-|   |       
-|   \---__vm
-|           .hinten.vsarduino.h
-|           Compile.vmps.xml
-|           Configuration.Debug.vmps.xml
-|           Configuration.Release.vmps.xml
-|           Upload.vmps.xml
-|           
-+---tools
-|   |   Achse_Hi.cpp
-|   |   Achse_Hi.h
-|   |   AutoTuner.cpp
-|   |   AutoTuner.h
-|   |   Control.cpp
-|   |   Control.h
-|   |   ControlParams.h
-|   |   Encoder.cpp
-|   |   Encoder.h
-|   |   globals.h
-|   |   Hardware.cpp
-|   |   Hardware.h
-|   |   Mixer2W.cpp
-|   |   Mixer2W.h
-|   |   Motor.cpp
-|   |   Motor.h
-|   |   PIRegler.cpp
-|   |   PIRegler.h
-|   |   Printer.cpp
-|   |   Printer.h
-|   |   Rad.cpp
-|   |   Rad.h
-|   |   SpeedWeg.cpp
-|   |   SpeedWeg.h
-|   |   Tests.cpp
-|   |   Tests.h
-|   |   TestTypes.h
-|   |   tools.ino
-|   |   tools.vcxproj
-|   |   tools.vcxproj.filters
-|   |   tools.vcxproj.user
-|   |   tools.zip
-|   |   Utils.cpp
-|   |   Utils.h
-|   |   VehicleController.cpp
-|   |   VehicleController.h
-|   |   VehicleTypes.h
-|   |   
-|   +---bin
-|   |   \---x64
-|   |       +---Debug
-|   |       \---Release
-|   +---obj
-|   |   \---x64
-|   |       +---Debug
-|   |       |   |   tools.log
-|   |       |   |   tools.vcxproj.FileListAbsolute.txt
-|   |       |   |   
-|   |       |   \---tools.tlog
-|   |       |           unsuccessfulbuild
-|   |       |           
-|   |       \---Release
-|   |           \---tools.tlog
-|   |                   tools.lastbuildstate
-|   |                   unsuccessfulbuild
-|   |                   
-|   +---src
-|   |       arduino folders read me.txt
-|   |       
-|   \---__vm
-|           .tools.vsarduino.h
-|           Compile.vmps.xml
-|           Configuration.Debug.vmps.xml
-|           Configuration.Release.vmps.xml
-|           Upload.vmps.xml
-|           
-+---vorne
-|   |   vorne.vcxproj
-|   |   vorne.vcxproj.filters
-|   |   vorne.vcxproj.user
-|   |   
-|   +---bin
-|   |   \---x64
-|   |       \---Release
-|   +---obj
-|   |   \---x64
-|   |       +---Debug
-|   |       |       vorne.log
-|   |       |       vorne.vcxproj.FileListAbsolute.txt
-|   |       |       
-|   |       \---Release
-|   |           |   vorne.log
-|   |           |   vorne.vcxproj.FileListAbsolute.txt
-|   |           |   
-|   |           \---vorne.tlog
-|   |                   unsuccessfulbuild
-|   |                   vorne.lastbuildstate
-|   |                   
-|   +---src
-|   |       arduino folders read me.txt
-|   |       CommandScript.cpp
-|   |       CommandScript.h
-|   |       vorne.ino
-|   |       
-|   \---__vm
-|           .vorne.vsarduino.h
-|           Compile.vmps.xml
-|           Configuration.Debug.vmps.xml
-|           Configuration.Release.vmps.xml
-|           Upload.vmps.xml
-|           
-+---x64
-|   \---Debug
-|           front.pdb
-|           rear.pdb
-|           
-\---_alt
-        control_front.h
-        Hardware-hinten.h
-        Hardware-vorne.h
-        Hardware_alt.cpp.txt
-        hinten_Control.cpp
-        hinten_Control.h
-        hinten_control_rear.h
-        hinten_hardware_pins.h
-        Print.cpp
-        Print.h
-        VehicleTypes.h
-        vorne_Control.cpp
-        vorne_Control.h
-        vorne_hardware_pins.h
-        
-
-===== DATEIINHALTE =====
-
-C:\Users\Acer\source\repos\robot>(
-echo C:\Users\Acer\source\repos\robot\1_Common\src\CommUtils.h   | findstr /I "\\tools\\"  1>nul  
- if errorlevel 1 (
-echo. 
- echo ==================================================  
- echo DATEI: C:\Users\Acer\source\repos\robot\1_Common\src\CommUtils.h  
- echo ==================================================  
- type "C:\Users\Acer\source\repos\robot\1_Common\src\CommUtils.h" 
-) 
-) 
-
-==================================================
-DATEI: C:\Users\Acer\source\repos\robot\1_Common\src\CommUtils.h
-==================================================
+// ===== C:\Users\Acer\source\repos\robot\1_Common\src\CommUtils.h =====
 // CommUtils.h
 #pragma once
 #include <stdint.h>
@@ -270,20 +12,9 @@ inline float int100ToFloat(int16_t v)
 {
     return (float)v / 100.0f;
 }
-C:\Users\Acer\source\repos\robot>(
-echo C:\Users\Acer\source\repos\robot\1_Common\src\ControlTypes.h   | findstr /I "\\tools\\"  1>nul  
- if errorlevel 1 (
-echo. 
- echo ==================================================  
- echo DATEI: C:\Users\Acer\source\repos\robot\1_Common\src\ControlTypes.h  
- echo ==================================================  
- type "C:\Users\Acer\source\repos\robot\1_Common\src\ControlTypes.h" 
-) 
-) 
 
-==================================================
-DATEI: C:\Users\Acer\source\repos\robot\1_Common\src\ControlTypes.h
-==================================================
+
+// ===== C:\Users\Acer\source\repos\robot\1_Common\src\ControlTypes.h =====
 // ControlTypes.h
 #pragma once
 struct PIParam {
@@ -291,24 +22,13 @@ struct PIParam {
     float Ki;
 };
 
-C:\Users\Acer\source\repos\robot>(
-echo C:\Users\Acer\source\repos\robot\1_Common\src\globals.h   | findstr /I "\\tools\\"  1>nul  
- if errorlevel 1 (
-echo. 
- echo ==================================================  
- echo DATEI: C:\Users\Acer\source\repos\robot\1_Common\src\globals.h  
- echo ==================================================  
- type "C:\Users\Acer\source\repos\robot\1_Common\src\globals.h" 
-) 
-) 
 
-==================================================
-DATEI: C:\Users\Acer\source\repos\robot\1_Common\src\globals.h
-==================================================
-ï»¿// ============================================================
+
+// ===== C:\Users\Acer\source\repos\robot\1_Common\src\globals.h =====
+// ============================================================
 // File: globals.h
 // Zweck:
-//  - Zentrale Definitionen fÃ¼r Logik, Geometrie und Zeit
+//  - Zentrale Definitionen für Logik, Geometrie und Zeit
 //  - KEINE Hardware-Pins!
 // ============================================================
 
@@ -320,8 +40,8 @@ DATEI: C:\Users\Acer\source\repos\robot\1_Common\src\globals.h
 #include <Arduino.h>
 
 // ============================================================
-// Wheel Index â€“ Fahrzeug (alle 4 RÃ¤der)
-// FÃ¼r Vehicle Controller / Mecanum / Fahrzeuglogik
+// Wheel Index – Fahrzeug (alle 4 Räder)
+// Für Vehicle Controller / Mecanum / Fahrzeuglogik
 // Feste Reihenfolge:
 //   0 = Vorne Rechts
 //   1 = Vorne Links
@@ -347,8 +67,8 @@ constexpr const char* WHEEL_VEHICLE_NAME[WHEEL_VEHICLE_COUNT] =
 };
 
 // ============================================================
-// Wheel Index â€“ Lokal (pro Nano: links / rechts)
-// FÃ¼r Motor, Encoder, PI, Rad
+// Wheel Index – Lokal (pro Nano: links / rechts)
+// Für Motor, Encoder, PI, Rad
 // ============================================================
 
 enum Wheel : uint8_t
@@ -368,7 +88,7 @@ constexpr const char* WHEEL_NAME[WHEEL_COUNT] =
 // ==== Zeitkonstanten ====
 // ============================================================
 
-/** Minimaler Messabstand fÃ¼r Drehzahl (ms) */
+/** Minimaler Messabstand für Drehzahl (ms) */
 constexpr uint32_t SPEED_MIN_DT_MS = 5;
 
 /** Regelperiode pro Rad (ms) */
@@ -406,10 +126,10 @@ constexpr float METER_PRO_TICK = RAD_UMFANG_M / float(COUNTS_PER_REV);
 // ==== Fahrzeug-Geometrie ====
 // ============================================================
 
-/** Spurweite links â†” rechts (mm) */
+/** Spurweite links ? rechts (mm) */
 constexpr float TRACK_WIDTH_MM = 200.0f;
 
-/** Radstand vorne â†” hinten (mm) */
+/** Radstand vorne ? hinten (mm) */
 constexpr float WHEEL_BASE_MM = 100.0f;
 
 /** Spurweite in Meter */
@@ -438,318 +158,10 @@ constexpr int16_t SLEW_LIMIT_PWM = 255;
 constexpr float V_WHEEL_MAX = 0.30f;
 
 #endif // GLOBALS_H
-C:\Users\Acer\source\repos\robot>(
-echo C:\Users\Acer\source\repos\robot\2_Hardware\src\Encoder.h   | findstr /I "\\tools\\"  1>nul  
- if errorlevel 1 (
-echo..  
- echo ==================================================  
- echo DATEI: C:\Users\Acer\source\repos\robot\2_Hardware\src\Encoder.h  
- echo ==================================================  
- type "C:\Users\Acer\source\repos\robot\2_Hardware\src\Encoder.h" 
-) 
-) 
-.
-==================================================
-DATEI: C:\Users\Acer\source\repos\robot\2_Hardware\src\Encoder.h
-==================================================
-ï»¿// ============================================================
-/* File: Encoder.h
- * Zweck:
- *  - Quadratur-Encoder (Port C / PCINT1: A0..A5) zÃ¤hlen
- *  - Atomarer Zugriff auf ZÃ¤hlerstand
- *  - Dispatcher ruft handleIsr() mit PINC-Snapshot
- * AbhÃ¤ngigkeiten: Arduino.h, <avr/io.h>, <avr/interrupt.h>
- */
- // ============================================================
-#pragma once
-#include <Arduino.h>
-#include <avr/io.h>
-#include <avr/interrupt.h>
 
-class Enc {
-public:
-    Enc();                                              // leerer Konstruktor
 
-    void begin(uint8_t pinA, uint8_t pinB,              // NEU: Pins als Parameter
-        bool resetCounts = true);
-    void begin(bool resetCounts = true);                // bleibt (alter Aufruf)
-
-    void    resetCounts();
-    int32_t getCounts() const;
-    void    setCounts(int32_t v);
-    void    handleIsr(uint8_t pinc_snapshot);
-
-private:
-    static const int8_t s_qlut[4][4];
-
-    uint8_t  _pinA;
-    uint8_t  _pinB;
-    uint8_t  _bitA;
-    uint8_t  _bitB;
-    uint8_t  _maskA;
-    uint8_t  _maskB;
-    volatile int32_t _counts;
-    volatile uint8_t _prevState;
-
-    void enablePcintGroup1_SelectedPins();
-};
-
-namespace PCINT1_Dispatcher {
-    void add(Enc* enc);
-    void isr(uint8_t pinc_snapshot);
-}
-C:\Users\Acer\source\repos\robot>(
-echo C:\Users\Acer\source\repos\robot\2_Hardware\src\Hardware.h   | findstr /I "\\tools\\"  1>nul  
- if errorlevel 1 (
-echo..  
- echo ==================================================  
- echo DATEI: C:\Users\Acer\source\repos\robot\2_Hardware\src\Hardware.h  
- echo ==================================================  
- type "C:\Users\Acer\source\repos\robot\2_Hardware\src\Hardware.h" 
-) 
-) 
-.
-==================================================
-DATEI: C:\Users\Acer\source\repos\robot\2_Hardware\src\Hardware.h
-==================================================
-#ifndef HARDWARE_H
-#define HARDWARE_H
-#include <Arduino.h>
-#include "src/globals.h"
-#include "src/hardware_pins.h"
-
-class Enc;
-class Motor;
-
-extern Enc   enc[WHEEL_COUNT];
-extern Motor motor[WHEEL_COUNT];
-
-void hardware_begin(const HardwarePinSet& pins, bool resetEnc = true);
-void hardware_enableMotors();
-void hardware_disableMotors();
-
-#endif // HARDWARE_H
-C:\Users\Acer\source\repos\robot>(
-echo C:\Users\Acer\source\repos\robot\2_Hardware\src\hardware_pins.h   | findstr /I "\\tools\\"  1>nul  
- if errorlevel 1 (
-echo..  
- echo ==================================================  
- echo DATEI: C:\Users\Acer\source\repos\robot\2_Hardware\src\hardware_pins.h  
- echo ==================================================  
- type "C:\Users\Acer\source\repos\robot\2_Hardware\src\hardware_pins.h" 
-) 
-) 
-.
-==================================================
-DATEI: C:\Users\Acer\source\repos\robot\2_Hardware\src\hardware_pins.h
-==================================================
-// hardware_pins.h
-#ifndef HARDWARE_PINS_H
-#define HARDWARE_PINS_H
-#include <Arduino.h>
-
-// ============================================================
-// HardwarePinSet — fasst alle Pins für hardware_begin() zusammen
-// ============================================================
-struct HardwarePinSet
-{
-    uint8_t encLiA;
-    uint8_t encLiB;
-    uint8_t encReA;
-    uint8_t encReB;
-    uint8_t motorLi1;
-    uint8_t motorLi2;
-    uint8_t motorRe1;
-    uint8_t motorRe2;
-    uint8_t stby;
-};
-
-// ============================================================
-// namespace PinsFront
-// ============================================================
-namespace PinsFront
-{
-    constexpr uint8_t M_Re_AIN1 = 9;
-    constexpr uint8_t M_Re_AIN2 = 10;
-    constexpr uint8_t M_Li_BIN1 = 6;
-    constexpr uint8_t M_Li_BIN2 = 5;
-    constexpr uint8_t STBY_PIN = 8;
-    constexpr uint8_t ENC_Re_PIN_A = A2;
-    constexpr uint8_t ENC_Re_PIN_B = A3;
-    constexpr uint8_t ENC_Li_PIN_A = A0;
-    constexpr uint8_t ENC_Li_PIN_B = A1;
-
-    constexpr HardwarePinSet PINS = {
-        ENC_Li_PIN_A, ENC_Li_PIN_B,
-        ENC_Re_PIN_A, ENC_Re_PIN_B,
-        M_Li_BIN1,    M_Li_BIN2,
-        M_Re_AIN1,    M_Re_AIN2,
-        STBY_PIN
-    };
-}
-
-// ============================================================
-// namespace PinsRear
-// ============================================================
-namespace PinsRear
-{
-    constexpr uint8_t M_Re_AIN1 = 9;
-    constexpr uint8_t M_Re_AIN2 = 10;
-    constexpr uint8_t M_Li_BIN1 = 6;
-    constexpr uint8_t M_Li_BIN2 = 5;
-    constexpr uint8_t STBY_PIN = 8;
-    constexpr uint8_t ENC_Re_PIN_A = A2;
-    constexpr uint8_t ENC_Re_PIN_B = A3;
-    constexpr uint8_t ENC_Li_PIN_A = A0;
-    constexpr uint8_t ENC_Li_PIN_B = A1;
-
-    constexpr HardwarePinSet PINS = {
-        ENC_Li_PIN_A, ENC_Li_PIN_B,
-        ENC_Re_PIN_A, ENC_Re_PIN_B,
-        M_Li_BIN1,    M_Li_BIN2,
-        M_Re_AIN1,    M_Re_AIN2,
-        STBY_PIN
-    };
-}
-
-#endif // HARDWARE_PINS_H
-C:\Users\Acer\source\repos\robot>(
-echo C:\Users\Acer\source\repos\robot\2_Hardware\src\Motor.h   | findstr /I "\\tools\\"  1>nul  
- if errorlevel 1 (
-echo..  
- echo ==================================================  
- echo DATEI: C:\Users\Acer\source\repos\robot\2_Hardware\src\Motor.h  
- echo ==================================================  
- type "C:\Users\Acer\source\repos\robot\2_Hardware\src\Motor.h" 
-) 
-) 
-.
-==================================================
-DATEI: C:\Users\Acer\source\repos\robot\2_Hardware\src\Motor.h
-==================================================
-// ============================================================
-// File: Motor.h
-// Zweck:
-//  - Steuerung eines einzelnen Motors (DRV8833/TB6612, 2-Pin-Modus)
-//  - Richtung, PWM-Leistung, Bremse
-//  - Optionale Encoder-Anbindung
-// Abhängigkeiten: Arduino.h, Enc forward-deklariert
-// ============================================================
-
-#ifndef MOTOR_H
-#define MOTOR_H
-
-#pragma once
-#include <Arduino.h>
-
-class Enc;
-
-/**
- * @class Motor
- * @brief Steuert einen Motor mit 2-Pin-Ansteuerung (z. B. DRV8833).
- *
- * Unterstützt:
- *  - Vorwärts- und Rückwärtsfahrt über PWM
- *  - Bremse (Brake oder Coast)
- *  - Optionale Verbindung zu einem Encoder (Enc)
- *
- * Beispiel:
- * @code
- * Motor motor[Re](5, 6);
- * motor[Re].vor(180);
- * delay(1000);
- * motor[Re].bremse(true);
- * @endcode
- */
-class Motor {
-public:
-    Motor();                                            // NEU: leerer Konstruktor
-
-    void begin(uint8_t pin1, uint8_t pin2, Enc& enc);   // NEU
-
-    void init();
-    void vor(uint8_t pwm);
-    void rueck(uint8_t pwm);
-    void bremse(bool art);
-    void attachEnc(Enc& enc);
-    Enc* enc() const;
-
-private:
-    uint8_t _pin1;
-    uint8_t _pin2;
-    Enc* _enc = nullptr;
-};
-
-#endif // MOTOR_H
-C:\Users\Acer\source\repos\robot>(
-echo C:\Users\Acer\source\repos\robot\2_Hardware\src\UartLink.h   | findstr /I "\\tools\\"  1>nul  
- if errorlevel 1 (
-echo..  
- echo ==================================================  
- echo DATEI: C:\Users\Acer\source\repos\robot\2_Hardware\src\UartLink.h  
- echo ==================================================  
- type "C:\Users\Acer\source\repos\robot\2_Hardware\src\UartLink.h" 
-) 
-) 
-.
-==================================================
-DATEI: C:\Users\Acer\source\repos\robot\2_Hardware\src\UartLink.h
-==================================================
-ï»¿//UartLink.h
-#ifndef UARTLINK_H
-#define UARTLINK_H
-
-#pragma once
-#include <Arduino.h>
-
-class UartLink
-{
-public:
-    UartLink(Stream& link, bool initiator = false);
-    void begin();
-    void update();
-    void sendLine(const char* msg);
-    bool isConnected() const;
-    bool availableLine() const;
-    const char* getLine();
-
-private:
-    Stream& _link;
-    bool _initiator;
-    bool _connected;
-
-    // Timing
-    unsigned long _lastPing;
-    unsigned long _lastSeen;
-
-    // Buffer
-    char _buf[64];
-    uint8_t _idx;
-
-    // Empfangene vollstÃ¤ndige Zeile (non-handshake)
-    char _line[64];
-    bool _lineAvailable;
-
-    static constexpr unsigned long PING_INTERVAL = 500;
-    static constexpr unsigned long TIMEOUT = 2000;
-};
-
-#endif // UARTLINK_H
-C:\Users\Acer\source\repos\robot>(
-echo C:\Users\Acer\source\repos\robot\2_Hardware\src\Encoder.cpp   | findstr /I "\\tools\\"  1>nul  
- if errorlevel 1 (
-echo..  
- echo ==================================================  
- echo DATEI: C:\Users\Acer\source\repos\robot\2_Hardware\src\Encoder.cpp  
- echo ==================================================  
- type "C:\Users\Acer\source\repos\robot\2_Hardware\src\Encoder.cpp" 
-) 
-) 
-.
-==================================================
-DATEI: C:\Users\Acer\source\repos\robot\2_Hardware\src\Encoder.cpp
-==================================================
-ï»¿// Encoder.cpp
+// ===== C:\Users\Acer\source\repos\robot\2_Hardware\src\Encoder.cpp =====
+// Encoder.cpp
 #include "Encoder.h"
 
 // Quadratur-LUT: prev \ curr: 00 01 10 11  (A=LSB, B=MSB)
@@ -852,20 +264,58 @@ ISR(PCINT1_vect)
     PCINT1_Dispatcher::isr(pinc);         // an alle Encoder verteilen
 }
 
-C:\Users\Acer\source\repos\robot>(
-echo C:\Users\Acer\source\repos\robot\2_Hardware\src\Hardware.cpp   | findstr /I "\\tools\\"  1>nul  
- if errorlevel 1 (
-echo..  
- echo ==================================================  
- echo DATEI: C:\Users\Acer\source\repos\robot\2_Hardware\src\Hardware.cpp  
- echo ==================================================  
- type "C:\Users\Acer\source\repos\robot\2_Hardware\src\Hardware.cpp" 
-) 
-) 
-.
-==================================================
-DATEI: C:\Users\Acer\source\repos\robot\2_Hardware\src\Hardware.cpp
-==================================================
+
+
+// ===== C:\Users\Acer\source\repos\robot\2_Hardware\src\Encoder.h =====
+// ============================================================
+/* File: Encoder.h
+ * Zweck:
+ *  - Quadratur-Encoder (Port C / PCINT1: A0..A5) zählen
+ *  - Atomarer Zugriff auf Zählerstand
+ *  - Dispatcher ruft handleIsr() mit PINC-Snapshot
+ * Abhängigkeiten: Arduino.h, <avr/io.h>, <avr/interrupt.h>
+ */
+ // ============================================================
+#pragma once
+#include <Arduino.h>
+#include <avr/io.h>
+#include <avr/interrupt.h>
+
+class Enc {
+public:
+    Enc();                                              // leerer Konstruktor
+
+    void begin(uint8_t pinA, uint8_t pinB,              // NEU: Pins als Parameter
+        bool resetCounts = true);
+    void begin(bool resetCounts = true);                // bleibt (alter Aufruf)
+
+    void    resetCounts();
+    int32_t getCounts() const;
+    void    setCounts(int32_t v);
+    void    handleIsr(uint8_t pinc_snapshot);
+
+private:
+    static const int8_t s_qlut[4][4];
+
+    uint8_t  _pinA;
+    uint8_t  _pinB;
+    uint8_t  _bitA;
+    uint8_t  _bitB;
+    uint8_t  _maskA;
+    uint8_t  _maskB;
+    volatile int32_t _counts;
+    volatile uint8_t _prevState;
+
+    void enablePcintGroup1_SelectedPins();
+};
+
+namespace PCINT1_Dispatcher {
+    void add(Enc* enc);
+    void isr(uint8_t pinc_snapshot);
+}
+
+
+// ===== C:\Users\Acer\source\repos\robot\2_Hardware\src\Hardware.cpp =====
 // Hardware.cpp
 #include <Arduino.h>
 #include "src/globals.h"
@@ -906,20 +356,100 @@ void hardware_disableMotors()
     digitalWrite(s_stby_pin, LOW);
 }
 
-C:\Users\Acer\source\repos\robot>(
-echo C:\Users\Acer\source\repos\robot\2_Hardware\src\Motor.cpp   | findstr /I "\\tools\\"  1>nul  
- if errorlevel 1 (
-echo..  
- echo ==================================================  
- echo DATEI: C:\Users\Acer\source\repos\robot\2_Hardware\src\Motor.cpp  
- echo ==================================================  
- type "C:\Users\Acer\source\repos\robot\2_Hardware\src\Motor.cpp" 
-) 
-) 
-.
-==================================================
-DATEI: C:\Users\Acer\source\repos\robot\2_Hardware\src\Motor.cpp
-==================================================
+
+
+// ===== C:\Users\Acer\source\repos\robot\2_Hardware\src\Hardware.h =====
+#ifndef HARDWARE_H
+#define HARDWARE_H
+#include <Arduino.h>
+#include "src/globals.h"
+#include "src/hardware_pins.h"
+
+class Enc;
+class Motor;
+
+extern Enc   enc[WHEEL_COUNT];
+extern Motor motor[WHEEL_COUNT];
+
+void hardware_begin(const HardwarePinSet& pins, bool resetEnc = true);
+void hardware_enableMotors();
+void hardware_disableMotors();
+
+#endif // HARDWARE_H
+
+
+// ===== C:\Users\Acer\source\repos\robot\2_Hardware\src\hardware_pins.h =====
+// hardware_pins.h
+#ifndef HARDWARE_PINS_H
+#define HARDWARE_PINS_H
+#include <Arduino.h>
+// ============================================================
+// HardwarePinSet — fasst alle Pins für hardware_begin() zusammen
+// ============================================================
+struct HardwarePinSet
+{
+    uint8_t encLiA;
+    uint8_t encLiB;
+    uint8_t encReA;
+    uint8_t encReB;
+    uint8_t motorLi1;
+    uint8_t motorLi2;
+    uint8_t motorRe1;
+    uint8_t motorRe2;
+    uint8_t stby;
+};
+// ============================================================
+// namespace PinsFront
+// ============================================================
+namespace PinsFront
+{
+    constexpr uint8_t M_Li_BIN1 = 9;   // D9  BIN1 ? physisch LINKS
+    constexpr uint8_t M_Li_BIN2 = 10;  // D10 BIN2 ? physisch LINKS
+    constexpr uint8_t M_Re_AIN1 = 6;   // D6  AIN1 ? physisch RECHTS
+    constexpr uint8_t M_Re_AIN2 = 5;   // D5  AIN2 ? physisch RECHTS
+    constexpr uint8_t STBY_PIN = 8;
+
+    constexpr uint8_t ENC_Li_PIN_A = A2;  // A2 ? Encoder LINKS,  Kanal A
+    constexpr uint8_t ENC_Li_PIN_B = A3;  // A3 ? Encoder LINKS,  Kanal B
+    constexpr uint8_t ENC_Re_PIN_A = A0;  // A0 ? Encoder RECHTS, Kanal A
+    constexpr uint8_t ENC_Re_PIN_B = A1;  // A1 ? Encoder RECHTS, Kanal B
+
+    constexpr HardwarePinSet PINS = {
+        ENC_Li_PIN_A, ENC_Li_PIN_B,
+        ENC_Re_PIN_A, ENC_Re_PIN_B,
+        M_Li_BIN1,    M_Li_BIN2,
+        M_Re_AIN1,    M_Re_AIN2,
+        STBY_PIN
+    };
+}
+// ============================================================
+// namespace PinsRear
+// ============================================================
+namespace PinsRear
+{
+    constexpr uint8_t M_Re_AIN1 = 9;
+    constexpr uint8_t M_Re_AIN2 = 10;
+    constexpr uint8_t M_Li_BIN1 = 6;
+    constexpr uint8_t M_Li_BIN2 = 5;
+    constexpr uint8_t STBY_PIN = 8;
+
+    constexpr uint8_t ENC_Re_PIN_A = A2;
+    constexpr uint8_t ENC_Re_PIN_B = A3;
+    constexpr uint8_t ENC_Li_PIN_A = A0;
+    constexpr uint8_t ENC_Li_PIN_B = A1;
+
+    constexpr HardwarePinSet PINS = {
+        ENC_Li_PIN_A, ENC_Li_PIN_B,
+        ENC_Re_PIN_A, ENC_Re_PIN_B,
+        M_Li_BIN1,    M_Li_BIN2,
+        M_Re_AIN1,    M_Re_AIN2,
+        STBY_PIN
+    };
+}
+#endif // HARDWARE_PINS_H
+
+
+// ===== C:\Users\Acer\source\repos\robot\2_Hardware\src\Motor.cpp =====
 // Motor.cpp
 #include "Motor.h"
 
@@ -951,21 +481,67 @@ void Motor::bremse(bool art) {
 
 void Motor::attachEnc(Enc& enc) { _enc = &enc; }
 Enc* Motor::enc() const { return _enc; }
-C:\Users\Acer\source\repos\robot>(
-echo C:\Users\Acer\source\repos\robot\2_Hardware\src\UartLink.cpp   | findstr /I "\\tools\\"  1>nul  
- if errorlevel 1 (
-echo..  
- echo ==================================================  
- echo DATEI: C:\Users\Acer\source\repos\robot\2_Hardware\src\UartLink.cpp  
- echo ==================================================  
- type "C:\Users\Acer\source\repos\robot\2_Hardware\src\UartLink.cpp" 
-) 
-) 
-.
-==================================================
-DATEI: C:\Users\Acer\source\repos\robot\2_Hardware\src\UartLink.cpp
-==================================================
-ï»¿#include "UartLink.h"
+
+
+// ===== C:\Users\Acer\source\repos\robot\2_Hardware\src\Motor.h =====
+// ============================================================
+// File: Motor.h
+// Zweck:
+//  - Steuerung eines einzelnen Motors (DRV8833/TB6612, 2-Pin-Modus)
+//  - Richtung, PWM-Leistung, Bremse
+//  - Optionale Encoder-Anbindung
+// Abhängigkeiten: Arduino.h, Enc forward-deklariert
+// ============================================================
+
+#ifndef MOTOR_H
+#define MOTOR_H
+
+#pragma once
+#include <Arduino.h>
+
+class Enc;
+
+/**
+ * @class Motor
+ * @brief Steuert einen Motor mit 2-Pin-Ansteuerung (z. B. DRV8833).
+ *
+ * Unterstützt:
+ *  - Vorwärts- und Rückwärtsfahrt über PWM
+ *  - Bremse (Brake oder Coast)
+ *  - Optionale Verbindung zu einem Encoder (Enc)
+ *
+ * Beispiel:
+ * @code
+ * Motor motor[Re](5, 6);
+ * motor[Re].vor(180);
+ * delay(1000);
+ * motor[Re].bremse(true);
+ * @endcode
+ */
+class Motor {
+public:
+    Motor();                                            // NEU: leerer Konstruktor
+
+    void begin(uint8_t pin1, uint8_t pin2, Enc& enc);   // NEU
+
+    void init();
+    void vor(uint8_t pwm);
+    void rueck(uint8_t pwm);
+    void bremse(bool art);
+    void attachEnc(Enc& enc);
+    Enc* enc() const;
+
+private:
+    uint8_t _pin1;
+    uint8_t _pin2;
+    Enc* _enc = nullptr;
+};
+
+#endif // MOTOR_H
+
+
+// ===== C:\Users\Acer\source\repos\robot\2_Hardware\src\UartLink.cpp =====
+#include "UartLink.h"
 #include <string.h>
 
 UartLink::UartLink(Stream& link, bool initiator)
@@ -1018,7 +594,7 @@ void UartLink::update()
             }
             else if (strcmp(_buf, "KA") != 0 && _buf[0] != '#')
             {
-                // ðŸ‘‰ Nutzdaten speichern
+                // ?? Nutzdaten speichern
                 strncpy(_line, _buf, sizeof(_line) - 1);
                 _line[sizeof(_line) - 1] = '\0';
                 _lineAvailable = true;
@@ -1077,369 +653,52 @@ bool UartLink::isConnected() const
 {
     return _connected;
 }
-C:\Users\Acer\source\repos\robot>(
-echo C:\Users\Acer\source\repos\robot\3_Control\src\Control.h   | findstr /I "\\tools\\"  1>nul  
- if errorlevel 1 (
-echo..  
- echo ==================================================  
- echo DATEI: C:\Users\Acer\source\repos\robot\3_Control\src\Control.h  
- echo ==================================================  
- type "C:\Users\Acer\source\repos\robot\3_Control\src\Control.h" 
-) 
-) 
-.
-==================================================
-DATEI: C:\Users\Acer\source\repos\robot\3_Control\src\Control.h
-==================================================
-// ============================================================
-// File: Control.h (3_Control)
-// Zweck:
-//  - Gemeinsame Steuerungs-Schnittstelle fuer vorne und hinten
-//  - Apps geben ihre Konfiguration via control_begin(cfg) mit
-// ============================================================
 
-#ifndef CONTROL_H
-#define CONTROL_H
+
+// ===== C:\Users\Acer\source\repos\robot\2_Hardware\src\UartLink.h =====
+//UartLink.h
+#ifndef UARTLINK_H
+#define UARTLINK_H
 
 #pragma once
-
 #include <Arduino.h>
-#include "src/globals.h"
-#include "src/SpeedWeg.h"
-#include "src/PIRegler.h"
-#include "src/Rad.h"
-#include "ControlConfig.h"
 
-// --- SpeedWeg (Geschwindigkeit/Weg pro Rad) ---
-extern SpeedWeg speed[WHEEL_COUNT];
-
-// --- Regler / Rad ---
-extern PIRegler regler[WHEEL_COUNT];
-extern Rad rad[WHEEL_COUNT];
-
-// ============================================================
-// Initialisierung
-//
-// Die App ruft control_begin(cfg) im setup() auf und uebergibt
-// ihre gewuenschte Konfiguration (z.B. ConfigFront::CONFIG
-// oder ConfigRear::CONFIG).
-// ============================================================
-void control_begin(const ControlConfig& cfg);
-
-// SpeedWeg fuer alle Raeder zuruecksetzen
-void speed_reset_all();
-
-// Regelschleife pro Loop-Durchlauf aufrufen
-void control_update(uint32_t nowMs);
-
-// Sollwert eines bestimmten Rades setzen
-void control_setSoll(uint8_t wheel, float v);
-
-// Alle Raeder stoppen
-void control_stopAll();
-
-#endif // CONTROL_H
-C:\Users\Acer\source\repos\robot>(
-echo C:\Users\Acer\source\repos\robot\3_Control\src\ControlConfig.h   | findstr /I "\\tools\\"  1>nul  
- if errorlevel 1 (
-echo..  
- echo ==================================================  
- echo DATEI: C:\Users\Acer\source\repos\robot\3_Control\src\ControlConfig.h  
- echo ==================================================  
- type "C:\Users\Acer\source\repos\robot\3_Control\src\ControlConfig.h" 
-) 
-) 
-.
-==================================================
-DATEI: C:\Users\Acer\source\repos\robot\3_Control\src\ControlConfig.h
-==================================================
-// ============================================================
-// File: ControlConfig.h
-// Zweck:
-//  - Datentyp ControlConfig fuer PI-Parameter und DeadPWM
-//  - Vordefinierte Konfigurationen fuer vorne und hinten
-//
-//  Apps (vorne, hinten) waehlen ihre Konfiguration aus und
-//  uebergeben sie an control_begin().
-//  3_Control selbst kennt vorne/hinten nicht.
-// ============================================================
-
-#ifndef CONTROLCONFIG_H
-#define CONTROLCONFIG_H
-
-#pragma once
-
-#include <Arduino.h>
-#include "src/globals.h"
-#include "src/ControlTypes.h"   // PIParam
-
-// ============================================================
-// Datentyp: enthaelt alles, was Control zur Initialisierung
-// braucht.
-// ============================================================
-struct ControlConfig
+class UartLink
 {
-    int16_t deadPwm[WHEEL_COUNT];   // Mindest-PWM zum Anfahren
-    PIParam pi[WHEEL_COUNT];        // Kp und Ki je Rad
-};
-
-// ============================================================
-// namespace ConfigFront
-//
-// Der namespace ist nur eine "Schublade" mit einem Namen.
-// Variablen darin spricht man mit "ConfigFront::CONFIG" an.
-// Damit koennen ConfigFront und ConfigRear je ein eigenes
-// CONFIG haben, ohne sich gegenseitig zu stoeren.
-// ============================================================
-namespace ConfigFront
-{
-    constexpr ControlConfig CONFIG =
-    {
-        // deadPwm: Li, Re
-        { 80, 60 },
-
-        // PI-Parameter: Li, Re
-        {
-            { 2.0f, 6.0f },   // Li: Kp, Ki
-            { 2.0f, 5.5f }    // Re: Kp, Ki
-        }
-    };
-}
-
-// ============================================================
-// namespace ConfigRear
-//
-// Aktuell identisch mit ConfigFront, aber als eigene
-// Schublade -> spaeter unabhaengig anpassbar.
-// ============================================================
-namespace ConfigRear
-{
-    constexpr ControlConfig CONFIG =
-    {
-        // deadPwm: Li, Re
-        { 80, 60 },
-
-        // PI-Parameter: Li, Re
-        {
-            { 2.0f, 6.0f },   // Li: Kp, Ki
-            { 2.0f, 5.5f }    // Re: Kp, Ki
-        }
-    };
-}
-
-#endif // CONTROLCONFIG_H
-
-C:\Users\Acer\source\repos\robot>(
-echo C:\Users\Acer\source\repos\robot\3_Control\src\PIRegler.h   | findstr /I "\\tools\\"  1>nul  
- if errorlevel 1 (
-echo..  
- echo ==================================================  
- echo DATEI: C:\Users\Acer\source\repos\robot\3_Control\src\PIRegler.h  
- echo ==================================================  
- type "C:\Users\Acer\source\repos\robot\3_Control\src\PIRegler.h" 
-) 
-) 
-.
-==================================================
-DATEI: C:\Users\Acer\source\repos\robot\3_Control\src\PIRegler.h
-==================================================
-// ============================================================
-// File: PIRegler.h
-// Beschreibung:
-//  - Bidirektionaler PI-Regler für Drehzahlregelung
-//  - Ausgang: signed PWM [-uMax .. +uMax]
-//  - Anti-Windup (Clamping)
-//  - Slew-Rate Begrenzung
-// ============================================================
-#pragma once
-#include <Arduino.h>
-
-class PIRegler {
 public:
-    PIRegler(float Kp, float Ki,
-        int16_t uMin, int16_t uMax,
-        int16_t slewLimit);
-
-    // v_ist in m/s, dt_ms = Zeit seit letztem Aufruf
-    int16_t update(float v_ist, uint16_t dt_ms);
-
-    // Start-PWM vorgeben (Feedforward / Arbeitspunkt-Vorbelegung)
-    void presetOutput(float u0_pwm);
-
-    void setSoll(float v_soll);
-    float soll() const;
-
-    float Kp() const { return _Kp; }
-    float Ki() const { return _Ki; }
-
-    void reset();
-
-    // PI-Parameter zur Laufzeit neu setzen
-    void setParams(float Kp, float Ki);
-
-    // --- Debug / Monitoring ---
-    float lastError() const { return _lastE; }
-    float lastP()     const { return _lastP; }
-    float lastI()     const { return _lastI; }
+    UartLink(Stream& link, bool initiator = false);
+    void begin();
+    void update();
+    void sendLine(const char* msg);
+    bool isConnected() const;
+    bool availableLine() const;
+    const char* getLine();
 
 private:
-    int16_t applySlew(int16_t pwm);
+    Stream& _link;
+    bool _initiator;
+    bool _connected;
 
-    float   _Kp;
-    float   _Ki;
+    // Timing
+    unsigned long _lastPing;
+    unsigned long _lastSeen;
 
-    int16_t _uMin;
-    int16_t _uMax;
-    int16_t _slewLimit;
+    // Buffer
+    char _buf[64];
+    uint8_t _idx;
 
-    float   _v_soll;
-    float   _integral;
+    // Empfangene vollständige Zeile (non-handshake)
+    char _line[64];
+    bool _lineAvailable;
 
-    int16_t _uPrev;
-
-    // Debug
-    float _lastE;
-    float _lastP;
-    float _lastI;
-};
-C:\Users\Acer\source\repos\robot>(
-echo C:\Users\Acer\source\repos\robot\3_Control\src\Rad.h   | findstr /I "\\tools\\"  1>nul  
- if errorlevel 1 (
-echo..  
- echo ==================================================  
- echo DATEI: C:\Users\Acer\source\repos\robot\3_Control\src\Rad.h  
- echo ==================================================  
- type "C:\Users\Acer\source\repos\robot\3_Control\src\Rad.h" 
-) 
-) 
-.
-==================================================
-DATEI: C:\Users\Acer\source\repos\robot\3_Control\src\Rad.h
-==================================================
-// Rad.h
-#pragma once
-#include <Arduino.h>
-#include "src/ControlTypes.h"
-#include "src/Motor.h"
-#include "SpeedWeg.h"
-#include "PIRegler.h"
-
-class Rad {
-public:
-    Rad(Motor& motor, SpeedWeg& speed, PIRegler& regler,
-        uint16_t dtMs, int16_t deadPwm);
-
-    void  setSoll(float v_soll);
-    float soll() const;
-    float vIst() const;
-
-    void update(uint32_t nowMs);
-
-    int16_t lastPwm() const { return _lastPwm; }
-
-    PIParam getPI() const;
-    void reset();
-    void stop();
-
-    int16_t deadPwm() const { return _deadPwm; }
-    void setDeadPwm(int16_t deadPwm);
-
-private:
-    Motor& _motor;
-    SpeedWeg& _speed;
-    PIRegler& _regler;
-
-    uint16_t _dtMs;
-    uint32_t _lastUpdateMs;
-    int16_t _lastPwm;
-    int16_t _deadPwm;
-};
-C:\Users\Acer\source\repos\robot>(
-echo C:\Users\Acer\source\repos\robot\3_Control\src\SpeedWeg.h   | findstr /I "\\tools\\"  1>nul  
- if errorlevel 1 (
-echo..  
- echo ==================================================  
- echo DATEI: C:\Users\Acer\source\repos\robot\3_Control\src\SpeedWeg.h  
- echo ==================================================  
- type "C:\Users\Acer\source\repos\robot\3_Control\src\SpeedWeg.h" 
-) 
-) 
-.
-==================================================
-DATEI: C:\Users\Acer\source\repos\robot\3_Control\src\SpeedWeg.h
-==================================================
-// ============================================================
-// File: SpeedWeg.h
-// Zweck: Geschwindigkeit (m/s) & Weg aus Encoder-Ticks
-//        inkl. Tiefpass-Filter für stabile v_Ist-Werte
-//        -> Zeitbasis: Millisekunden (ms)
-// ============================================================
-
-#pragma once
-
-#include <Arduino.h>
-#include "src/globals.h"
-
-class Enc;
-
-class SpeedWeg {
-public:
-    explicit SpeedWeg(Enc& enc);
-
-    void reset();
-    void setAlpha(float a);
-    void setTimeoutMs(uint16_t ms);
-
-    // now_ms = millis()
-    void update(uint32_t now_ms);
-
-    float mps() const;       // m/s
-    float rpm() const;       // U/min
-    float weg_mm() const;    // mm (signed)
-    float weg_abs_mm() const;
-
-    float weg_mm_total() const { return _weg_mm_total; }
-    float weg_abs_mm_total() const { return _weg_abs_mm_total; }
-    long  counts_total() const { return _counts_total; }
-
-private:
-    void updateFromTicks(int16_t dcounts, uint32_t now_ms);
-    void timeoutCheck(uint32_t now_ms);
-
-private:
-    Enc& _enc;
-
-    // Weg & Zähler
-    long  _last_counts = 0;
-    long  _counts_total = 0;
-    float _weg_mm_total = 0.0f;
-    float _weg_abs_mm_total = 0.0f;
-
-    // Tick-Sammelpuffer für das Geschwindigkeitsfenster
-    int32_t _acc_counts = 0;
-
-    // Filter & Zeit (in ms)
-    float    _rps_filt = 0.0f;
-    float    _alpha = 0.2f;
-    uint32_t _last_time_ms = 0;    // Zeitpunkt der letzten Geschwindigkeitsmessung
-    uint32_t _timeout_ms = 60;   // Stillstand nach 60 ms
-    uint32_t _last_tick_ms = 0;    // Zeitpunkt des letzten Ticks (für Timeout)
+    static constexpr unsigned long PING_INTERVAL = 500;
+    static constexpr unsigned long TIMEOUT = 2000;
 };
 
-C:\Users\Acer\source\repos\robot>(
-echo C:\Users\Acer\source\repos\robot\3_Control\src\Control.cpp   | findstr /I "\\tools\\"  1>nul  
- if errorlevel 1 (
-echo..  
- echo ==================================================  
- echo DATEI: C:\Users\Acer\source\repos\robot\3_Control\src\Control.cpp  
- echo ==================================================  
- type "C:\Users\Acer\source\repos\robot\3_Control\src\Control.cpp" 
-) 
-) 
-.
-==================================================
-DATEI: C:\Users\Acer\source\repos\robot\3_Control\src\Control.cpp
-==================================================
+#endif // UARTLINK_H
+
+
+// ===== C:\Users\Acer\source\repos\robot\3_Control\src\Control.cpp =====
 // ============================================================
 // File: Control.cpp (3_Control)
 // Zweck:
@@ -1533,21 +792,140 @@ void control_stopAll()
     for (uint8_t i = 0; i < WHEEL_COUNT; i++)
         rad[i].stop();
 }
-C:\Users\Acer\source\repos\robot>(
-echo C:\Users\Acer\source\repos\robot\3_Control\src\PIRegler.cpp   | findstr /I "\\tools\\"  1>nul  
- if errorlevel 1 (
-echo..  
- echo ==================================================  
- echo DATEI: C:\Users\Acer\source\repos\robot\3_Control\src\PIRegler.cpp  
- echo ==================================================  
- type "C:\Users\Acer\source\repos\robot\3_Control\src\PIRegler.cpp" 
-) 
-) 
-.
-==================================================
-DATEI: C:\Users\Acer\source\repos\robot\3_Control\src\PIRegler.cpp
-==================================================
-ï»¿// PIRegler.cpp  (bidirektional)
+
+
+// ===== C:\Users\Acer\source\repos\robot\3_Control\src\Control.h =====
+// ============================================================
+// File: Control.h (3_Control)
+// Zweck:
+//  - Gemeinsame Steuerungs-Schnittstelle fuer vorne und hinten
+//  - Apps geben ihre Konfiguration via control_begin(cfg) mit
+// ============================================================
+
+#ifndef CONTROL_H
+#define CONTROL_H
+
+#pragma once
+
+#include <Arduino.h>
+#include "src/globals.h"
+#include "src/SpeedWeg.h"
+#include "src/PIRegler.h"
+#include "src/Rad.h"
+#include "ControlConfig.h"
+
+// --- SpeedWeg (Geschwindigkeit/Weg pro Rad) ---
+extern SpeedWeg speed[WHEEL_COUNT];
+
+// --- Regler / Rad ---
+extern PIRegler regler[WHEEL_COUNT];
+extern Rad rad[WHEEL_COUNT];
+
+// ============================================================
+// Initialisierung
+//
+// Die App ruft control_begin(cfg) im setup() auf und uebergibt
+// ihre gewuenschte Konfiguration (z.B. ConfigFront::CONFIG
+// oder ConfigRear::CONFIG).
+// ============================================================
+void control_begin(const ControlConfig& cfg);
+
+// SpeedWeg fuer alle Raeder zuruecksetzen
+void speed_reset_all();
+
+// Regelschleife pro Loop-Durchlauf aufrufen
+void control_update(uint32_t nowMs);
+
+// Sollwert eines bestimmten Rades setzen
+void control_setSoll(uint8_t wheel, float v);
+
+// Alle Raeder stoppen
+void control_stopAll();
+
+#endif // CONTROL_H
+
+
+// ===== C:\Users\Acer\source\repos\robot\3_Control\src\ControlConfig.h =====
+// ============================================================
+// File: ControlConfig.h
+// Zweck:
+//  - Datentyp ControlConfig fuer PI-Parameter und DeadPWM
+//  - Vordefinierte Konfigurationen fuer vorne und hinten
+//
+//  Apps (vorne, hinten) waehlen ihre Konfiguration aus und
+//  uebergeben sie an control_begin().
+//  3_Control selbst kennt vorne/hinten nicht.
+// ============================================================
+
+#ifndef CONTROLCONFIG_H
+#define CONTROLCONFIG_H
+
+#pragma once
+
+#include <Arduino.h>
+#include "src/globals.h"
+#include "src/ControlTypes.h"   // PIParam
+
+// ============================================================
+// Datentyp: enthaelt alles, was Control zur Initialisierung
+// braucht.
+// ============================================================
+struct ControlConfig
+{
+    int16_t deadPwm[WHEEL_COUNT];   // Mindest-PWM zum Anfahren
+    PIParam pi[WHEEL_COUNT];        // Kp und Ki je Rad
+};
+
+// ============================================================
+// namespace ConfigFront
+//
+// Der namespace ist nur eine "Schublade" mit einem Namen.
+// Variablen darin spricht man mit "ConfigFront::CONFIG" an.
+// Damit koennen ConfigFront und ConfigRear je ein eigenes
+// CONFIG haben, ohne sich gegenseitig zu stoeren.
+// ============================================================
+namespace ConfigFront
+{
+    constexpr ControlConfig CONFIG =
+    {
+        // deadPwm: Li, Re
+        { 80, 60 },
+
+        // PI-Parameter: Li, Re
+        {
+            { 2.0f, 6.0f },   // Li: Kp, Ki
+            { 2.0f, 5.5f }    // Re: Kp, Ki
+        }
+    };
+}
+
+// ============================================================
+// namespace ConfigRear
+//
+// Aktuell identisch mit ConfigFront, aber als eigene
+// Schublade -> spaeter unabhaengig anpassbar.
+// ============================================================
+namespace ConfigRear
+{
+    constexpr ControlConfig CONFIG =
+    {
+        // deadPwm: Li, Re
+        { 80, 60 },
+
+        // PI-Parameter: Li, Re
+        {
+            { 2.0f, 6.0f },   // Li: Kp, Ki
+            { 2.0f, 5.5f }    // Re: Kp, Ki
+        }
+    };
+}
+
+#endif // CONTROLCONFIG_H
+
+
+
+// ===== C:\Users\Acer\source\repos\robot\3_Control\src\PIRegler.cpp =====
+// PIRegler.cpp  (bidirektional)
 
 #include "PIRegler.h"
 #include <Arduino.h>
@@ -1586,16 +964,16 @@ int16_t PIRegler::update(float v_ist, uint16_t dt_ms) {
     const float p_part = _Kp * e;
     const float u_pre = p_part + _integral;
 
-    // --- Begrenzen (SÃ¤ttigung) ---
+    // --- Begrenzen (Sättigung) ---
     const float u_limited = constrain(u_pre, uMinNorm, uMaxNorm);
 
-    // --- Anti-Windup: Clamping (Integrator nur, wenn nicht gesÃ¤ttigt) ---
+    // --- Anti-Windup: Clamping (Integrator nur, wenn nicht gesättigt) ---
     const bool saturated = (u_pre <= uMinNorm) || (u_pre >= uMaxNorm);
     if (!saturated) {
         _integral += _Ki * e * dt_s;
     }
 
-    // --- endgÃ¼ltiger PI-Ausgang ---
+    // --- endgültiger PI-Ausgang ---
     float u = p_part + _integral;
     u = constrain(u, uMinNorm, uMaxNorm);
 
@@ -1674,20 +1052,71 @@ void PIRegler::setParams(float Kp, float Ki)
     _Kp = Kp;
     _Ki = Ki;
 }
-C:\Users\Acer\source\repos\robot>(
-echo C:\Users\Acer\source\repos\robot\3_Control\src\Rad.cpp   | findstr /I "\\tools\\"  1>nul  
- if errorlevel 1 (
-echo..  
- echo ==================================================  
- echo DATEI: C:\Users\Acer\source\repos\robot\3_Control\src\Rad.cpp  
- echo ==================================================  
- type "C:\Users\Acer\source\repos\robot\3_Control\src\Rad.cpp" 
-) 
-) 
-.
-==================================================
-DATEI: C:\Users\Acer\source\repos\robot\3_Control\src\Rad.cpp
-==================================================
+
+
+// ===== C:\Users\Acer\source\repos\robot\3_Control\src\PIRegler.h =====
+// ============================================================
+// File: PIRegler.h
+// Beschreibung:
+//  - Bidirektionaler PI-Regler für Drehzahlregelung
+//  - Ausgang: signed PWM [-uMax .. +uMax]
+//  - Anti-Windup (Clamping)
+//  - Slew-Rate Begrenzung
+// ============================================================
+#pragma once
+#include <Arduino.h>
+
+class PIRegler {
+public:
+    PIRegler(float Kp, float Ki,
+        int16_t uMin, int16_t uMax,
+        int16_t slewLimit);
+
+    // v_ist in m/s, dt_ms = Zeit seit letztem Aufruf
+    int16_t update(float v_ist, uint16_t dt_ms);
+
+    // Start-PWM vorgeben (Feedforward / Arbeitspunkt-Vorbelegung)
+    void presetOutput(float u0_pwm);
+
+    void setSoll(float v_soll);
+    float soll() const;
+
+    float Kp() const { return _Kp; }
+    float Ki() const { return _Ki; }
+
+    void reset();
+
+    // PI-Parameter zur Laufzeit neu setzen
+    void setParams(float Kp, float Ki);
+
+    // --- Debug / Monitoring ---
+    float lastError() const { return _lastE; }
+    float lastP()     const { return _lastP; }
+    float lastI()     const { return _lastI; }
+
+private:
+    int16_t applySlew(int16_t pwm);
+
+    float   _Kp;
+    float   _Ki;
+
+    int16_t _uMin;
+    int16_t _uMax;
+    int16_t _slewLimit;
+
+    float   _v_soll;
+    float   _integral;
+
+    int16_t _uPrev;
+
+    // Debug
+    float _lastE;
+    float _lastP;
+    float _lastI;
+};
+
+
+// ===== C:\Users\Acer\source\repos\robot\3_Control\src\Rad.cpp =====
 // Rad.cpp
 #include "Rad.h"
 #include <math.h>            // fabsf
@@ -1813,21 +1242,51 @@ void Rad::setDeadPwm(int16_t deadPwm)
 {
     _deadPwm = deadPwm;
 }
-C:\Users\Acer\source\repos\robot>(
-echo C:\Users\Acer\source\repos\robot\3_Control\src\SpeedWeg.cpp   | findstr /I "\\tools\\"  1>nul  
- if errorlevel 1 (
-echo..  
- echo ==================================================  
- echo DATEI: C:\Users\Acer\source\repos\robot\3_Control\src\SpeedWeg.cpp  
- echo ==================================================  
- type "C:\Users\Acer\source\repos\robot\3_Control\src\SpeedWeg.cpp" 
-) 
-) 
-.
-==================================================
-DATEI: C:\Users\Acer\source\repos\robot\3_Control\src\SpeedWeg.cpp
-==================================================
-ï»¿// ============================================================
+
+
+// ===== C:\Users\Acer\source\repos\robot\3_Control\src\Rad.h =====
+// Rad.h
+#pragma once
+#include <Arduino.h>
+#include "src/ControlTypes.h"
+#include "src/Motor.h"
+#include "SpeedWeg.h"
+#include "PIRegler.h"
+
+class Rad {
+public:
+    Rad(Motor& motor, SpeedWeg& speed, PIRegler& regler,
+        uint16_t dtMs, int16_t deadPwm);
+
+    void  setSoll(float v_soll);
+    float soll() const;
+    float vIst() const;
+
+    void update(uint32_t nowMs);
+
+    int16_t lastPwm() const { return _lastPwm; }
+
+    PIParam getPI() const;
+    void reset();
+    void stop();
+
+    int16_t deadPwm() const { return _deadPwm; }
+    void setDeadPwm(int16_t deadPwm);
+
+private:
+    Motor& _motor;
+    SpeedWeg& _speed;
+    PIRegler& _regler;
+
+    uint16_t _dtMs;
+    uint32_t _lastUpdateMs;
+    int16_t _lastPwm;
+    int16_t _deadPwm;
+};
+
+
+// ===== C:\Users\Acer\source\repos\robot\3_Control\src\SpeedWeg.cpp =====
+// ============================================================
 // File: SpeedWeg.cpp
 // ============================================================
 
@@ -1938,7 +1397,7 @@ void SpeedWeg::updateFromTicks(int16_t dcounts, uint32_t now_ms) {
     // 5) Tiefpass
     _rps_filt += _alpha * (rps_i - _rps_filt);
 
-    // 6) Fenster zurÃ¼cksetzen
+    // 6) Fenster zurücksetzen
     _acc_counts = 0;
 }
 
@@ -1969,123 +1428,70 @@ float SpeedWeg::weg_abs_mm() const {
     return _weg_abs_mm_total;
 }
 
-C:\Users\Acer\source\repos\robot>(
-echo C:\Users\Acer\source\repos\robot\4_Vehicle\src\VehicleController.h   | findstr /I "\\tools\\"  1>nul  
- if errorlevel 1 (
-echo..  
- echo ==================================================  
- echo DATEI: C:\Users\Acer\source\repos\robot\4_Vehicle\src\VehicleController.h  
- echo ==================================================  
- type "C:\Users\Acer\source\repos\robot\4_Vehicle\src\VehicleController.h" 
-) 
-) 
-.
-==================================================
-DATEI: C:\Users\Acer\source\repos\robot\4_Vehicle\src\VehicleController.h
-==================================================
+
+
+// ===== C:\Users\Acer\source\repos\robot\3_Control\src\SpeedWeg.h =====
 // ============================================================
-// VehicleController.h
+// File: SpeedWeg.h
+// Zweck: Geschwindigkeit (m/s) & Weg aus Encoder-Ticks
+//        inkl. Tiefpass-Filter für stabile v_Ist-Werte
+//        -> Zeitbasis: Millisekunden (ms)
 // ============================================================
-#ifndef VEHICLE_CONTROLLER_H
-#define VEHICLE_CONTROLLER_H
 
-#include "src/globals.h"
-#include "VehicleRegler.h"
-
-class VehicleController
-{
-public:
-    void begin(float Kp_vx, float Ki_vx,
-        float Kp_vy, float Ki_vy,
-        float Kp_wz, float Ki_wz);
-    void cmd(float vx, float vy, float wz);
-    void updateIst(float v0, float v1, float v2, float v3);
-    void update(uint32_t now);
-    void stop();
-
-    float getWheelSoll(WheelVehicle w) const;
-    float vxIst() const { return _vx_ist; }
-    float vyIst() const { return _vy_ist; }
-    float wzIst() const { return _wz_ist; }
-
-private:
-    void applyMixer(float vx, float vy, float wz);
-
-    float _vx = 0.0f;
-    float _vy = 0.0f;
-    float _wz = 0.0f;
-
-    float _vx_ist = 0.0f;
-    float _vy_ist = 0.0f;
-    float _wz_ist = 0.0f;
-
-    float _wheelSoll[WHEEL_VEHICLE_COUNT] = { 0 };
-
-    VehicleRegler _regler;
-    uint32_t _lastUpdateMs = 0;
-};
-
-#endif
-C:\Users\Acer\source\repos\robot>(
-echo C:\Users\Acer\source\repos\robot\4_Vehicle\src\VehicleRegler.h   | findstr /I "\\tools\\"  1>nul  
- if errorlevel 1 (
-echo..  
- echo ==================================================  
- echo DATEI: C:\Users\Acer\source\repos\robot\4_Vehicle\src\VehicleRegler.h  
- echo ==================================================  
- type "C:\Users\Acer\source\repos\robot\4_Vehicle\src\VehicleRegler.h" 
-) 
-) 
-.
-==================================================
-DATEI: C:\Users\Acer\source\repos\robot\4_Vehicle\src\VehicleRegler.h
-==================================================
-// ============================================================
-// VehicleRegler.h
-// ============================================================
-#ifndef VEHICLE_REGLER_H
-#define VEHICLE_REGLER_H
+#pragma once
 
 #include <Arduino.h>
+#include "src/globals.h"
 
-class VehicleRegler
-{
+class Enc;
+
+class SpeedWeg {
 public:
-    VehicleRegler();
-    void setParams(float Kp_vx, float Ki_vx,
-        float Kp_vy, float Ki_vy,
-        float Kp_wz, float Ki_wz);
-    void reset();
+    explicit SpeedWeg(Enc& enc);
 
-    float updateVx(float soll, float ist, uint16_t dt_ms);
-    float updateVy(float soll, float ist, uint16_t dt_ms);
-    float updateWz(float soll, float ist, uint16_t dt_ms);
+    void reset();
+    void setAlpha(float a);
+    void setTimeoutMs(uint16_t ms);
+
+    // now_ms = millis()
+    void update(uint32_t now_ms);
+
+    float mps() const;       // m/s
+    float rpm() const;       // U/min
+    float weg_mm() const;    // mm (signed)
+    float weg_abs_mm() const;
+
+    float weg_mm_total() const { return _weg_mm_total; }
+    float weg_abs_mm_total() const { return _weg_abs_mm_total; }
+    long  counts_total() const { return _counts_total; }
 
 private:
-    float _Kp_vx, _Ki_vx;
-    float _Kp_vy, _Ki_vy;
-    float _Kp_wz, _Ki_wz;
+    void updateFromTicks(int16_t dcounts, uint32_t now_ms);
+    void timeoutCheck(uint32_t now_ms);
 
-    float _integral_vx;
-    float _integral_vy;
-    float _integral_wz;
+private:
+    Enc& _enc;
+
+    // Weg & Zähler
+    long  _last_counts = 0;
+    long  _counts_total = 0;
+    float _weg_mm_total = 0.0f;
+    float _weg_abs_mm_total = 0.0f;
+
+    // Tick-Sammelpuffer für das Geschwindigkeitsfenster
+    int32_t _acc_counts = 0;
+
+    // Filter & Zeit (in ms)
+    float    _rps_filt = 0.0f;
+    float    _alpha = 0.2f;
+    uint32_t _last_time_ms = 0;    // Zeitpunkt der letzten Geschwindigkeitsmessung
+    uint32_t _timeout_ms = 60;   // Stillstand nach 60 ms
+    uint32_t _last_tick_ms = 0;    // Zeitpunkt des letzten Ticks (für Timeout)
 };
 
-#endif // VEHICLE_REGLER_H
-C:\Users\Acer\source\repos\robot>(
-echo C:\Users\Acer\source\repos\robot\4_Vehicle\src\VehicleController.cpp   | findstr /I "\\tools\\"  1>nul  
- if errorlevel 1 (
-echo..  
- echo ==================================================  
- echo DATEI: C:\Users\Acer\source\repos\robot\4_Vehicle\src\VehicleController.cpp  
- echo ==================================================  
- type "C:\Users\Acer\source\repos\robot\4_Vehicle\src\VehicleController.cpp" 
-) 
-) 
-.
-==================================================
-DATEI: C:\Users\Acer\source\repos\robot\4_Vehicle\src\VehicleController.cpp
-==================================================
+
+
+// ===== C:\Users\Acer\source\repos\robot\4_Vehicle\src\VehicleController.cpp =====
 // ============================================================
 // VehicleController.cpp
 // ============================================================
@@ -2174,20 +1580,55 @@ float VehicleController::getWheelSoll(WheelVehicle w) const
 {
     return _wheelSoll[w];
 }
-C:\Users\Acer\source\repos\robot>(
-echo C:\Users\Acer\source\repos\robot\4_Vehicle\src\VehicleRegler.cpp   | findstr /I "\\tools\\"  1>nul  
- if errorlevel 1 (
-echo..  
- echo ==================================================  
- echo DATEI: C:\Users\Acer\source\repos\robot\4_Vehicle\src\VehicleRegler.cpp  
- echo ==================================================  
- type "C:\Users\Acer\source\repos\robot\4_Vehicle\src\VehicleRegler.cpp" 
-) 
-) 
-.
-==================================================
-DATEI: C:\Users\Acer\source\repos\robot\4_Vehicle\src\VehicleRegler.cpp
-==================================================
+
+
+// ===== C:\Users\Acer\source\repos\robot\4_Vehicle\src\VehicleController.h =====
+// ============================================================
+// VehicleController.h
+// ============================================================
+#ifndef VEHICLE_CONTROLLER_H
+#define VEHICLE_CONTROLLER_H
+
+#include "src/globals.h"
+#include "VehicleRegler.h"
+
+class VehicleController
+{
+public:
+    void begin(float Kp_vx, float Ki_vx,
+        float Kp_vy, float Ki_vy,
+        float Kp_wz, float Ki_wz);
+    void cmd(float vx, float vy, float wz);
+    void updateIst(float v0, float v1, float v2, float v3);
+    void update(uint32_t now);
+    void stop();
+
+    float getWheelSoll(WheelVehicle w) const;
+    float vxIst() const { return _vx_ist; }
+    float vyIst() const { return _vy_ist; }
+    float wzIst() const { return _wz_ist; }
+
+private:
+    void applyMixer(float vx, float vy, float wz);
+
+    float _vx = 0.0f;
+    float _vy = 0.0f;
+    float _wz = 0.0f;
+
+    float _vx_ist = 0.0f;
+    float _vy_ist = 0.0f;
+    float _wz_ist = 0.0f;
+
+    float _wheelSoll[WHEEL_VEHICLE_COUNT] = { 0 };
+
+    VehicleRegler _regler;
+    uint32_t _lastUpdateMs = 0;
+};
+
+#endif
+
+
+// ===== C:\Users\Acer\source\repos\robot\4_Vehicle\src\VehicleRegler.cpp =====
 // ============================================================
 // VehicleRegler.cpp
 // ============================================================
@@ -2248,159 +1689,44 @@ float VehicleRegler::updateWz(float soll, float ist, uint16_t dt_ms)
     _integral_wz += _Ki_wz * e * dt_s;
     return _Kp_wz * e + _integral_wz;
 }
-C:\Users\Acer\source\repos\robot>(
-echo C:\Users\Acer\source\repos\robot\5_System\src\Printer.h   | findstr /I "\\tools\\"  1>nul  
- if errorlevel 1 (
-echo..  
- echo ==================================================  
- echo DATEI: C:\Users\Acer\source\repos\robot\5_System\src\Printer.h  
- echo ==================================================  
- type "C:\Users\Acer\source\repos\robot\5_System\src\Printer.h" 
-) 
-) 
-.
-==================================================
-DATEI: C:\Users\Acer\source\repos\robot\5_System\src\Printer.h
-==================================================
+
+
+// ===== C:\Users\Acer\source\repos\robot\4_Vehicle\src\VehicleRegler.h =====
 // ============================================================
-// Printer.h
+// VehicleRegler.h
 // ============================================================
-#ifndef PRINTER_H
-#define PRINTER_H
+#ifndef VEHICLE_REGLER_H
+#define VEHICLE_REGLER_H
 
 #include <Arduino.h>
-#include "src/globals.h"
-#include "src/VehicleController.h"
-#include "src/Control.h"
 
-class Printer
+class VehicleRegler
 {
 public:
-    void printHeader();
-    void printWheels(VehicleController& vehicle,
-        float v2_ist, float v3_ist,
-        int16_t pwm2, int16_t pwm3,
-        uint32_t t_ms);
-};
+    VehicleRegler();
+    void setParams(float Kp_vx, float Ki_vx,
+        float Kp_vy, float Ki_vy,
+        float Kp_wz, float Ki_wz);
+    void reset();
 
-#endif
-C:\Users\Acer\source\repos\robot>(
-echo C:\Users\Acer\source\repos\robot\5_System\src\Printer.cpp   | findstr /I "\\tools\\"  1>nul  
- if errorlevel 1 (
-echo..  
- echo ==================================================  
- echo DATEI: C:\Users\Acer\source\repos\robot\5_System\src\Printer.cpp  
- echo ==================================================  
- type "C:\Users\Acer\source\repos\robot\5_System\src\Printer.cpp" 
-) 
-) 
-.
-==================================================
-DATEI: C:\Users\Acer\source\repos\robot\5_System\src\Printer.cpp
-==================================================
-// ============================================================
-// Printer.cpp
-// ============================================================
-#include "Printer.h"
-
-void Printer::printHeader()
-{
-    Serial.print('#');
-    Serial.println(F("ms,VoLi_s,VoLi_i,VoLi_pwm,VoRe_s,VoRe_i,VoRe_pwm,HiLi_s,HiLi_i,HiLi_pwm,HiRe_s,HiRe_i,HiRe_pwm"));
-}
-
-void Printer::printWheels(VehicleController& vehicle,
-    float v2_ist, float v3_ist,
-    int16_t pwm2, int16_t pwm3,
-    uint32_t t_ms)
-{
-    Serial.print('#');
-    Serial.print(t_ms);                              Serial.print(',');
-    Serial.print(vehicle.getWheelSoll(VoLi), 2);    Serial.print(',');
-    Serial.print(speed[Li].mps(), 2);               Serial.print(',');
-    Serial.print(rad[Li].lastPwm());                Serial.print(',');
-    Serial.print(vehicle.getWheelSoll(VoRe), 2);    Serial.print(',');
-    Serial.print(speed[Re].mps(), 2);               Serial.print(',');
-    Serial.print(rad[Re].lastPwm());                Serial.print(',');
-    Serial.print(vehicle.getWheelSoll(HiLi), 2);   Serial.print(',');
-    Serial.print(v2_ist, 2);                        Serial.print(',');
-    Serial.print(pwm2);                             Serial.print(',');
-    Serial.print(vehicle.getWheelSoll(HiRe), 2);   Serial.print(',');
-    Serial.print(v3_ist, 2);                        Serial.print(',');
-    Serial.println(pwm3);
-}
-C:\Users\Acer\source\repos\robot>(
-echo C:\Users\Acer\source\repos\robot\5_System\src\CommandRunner\CommandRunner.h   | findstr /I "\\tools\\"  1>nul  
- if errorlevel 1 (
-echo..  
- echo ==================================================  
- echo DATEI: C:\Users\Acer\source\repos\robot\5_System\src\CommandRunner\CommandRunner.h  
- echo ==================================================  
- type "C:\Users\Acer\source\repos\robot\5_System\src\CommandRunner\CommandRunner.h" 
-) 
-) 
-.
-==================================================
-DATEI: C:\Users\Acer\source\repos\robot\5_System\src\CommandRunner\CommandRunner.h
-==================================================
-// ============================================================
-// CommandRunner.h
-// ============================================================
-#ifndef COMMAND_RUNNER_H
-#define COMMAND_RUNNER_H
-
-#include <Arduino.h>
-#include "src/Parser/CommandParser.h"
-#include "src/UartLink.h"
-#include "src/VehicleController.h"
-
-typedef const char* (*GetCmdFn)(uint8_t index);
-typedef uint8_t(*SizeFn)();
-
-class CommandRunner
-{
-public:
-    CommandRunner(VehicleController& vehicle, UartLink& uart, CommandParser& parser,
-        GetCmdFn getCmd, SizeFn size);
-    void begin();
-    void update(uint32_t now);
-
-    float getWheelSoll(WheelVehicle w) const;
-    bool  isActive() const;
-    bool isFinished() const;
+    float updateVx(float soll, float ist, uint16_t dt_ms);
+    float updateVy(float soll, float ist, uint16_t dt_ms);
+    float updateWz(float soll, float ist, uint16_t dt_ms);
 
 private:
-    void startCmd(const ParsedCommand& cmd, uint32_t now);
-    void stopAll();
+    float _Kp_vx, _Ki_vx;
+    float _Kp_vy, _Ki_vy;
+    float _Kp_wz, _Ki_wz;
 
-    VehicleController& _vehicle;
-    UartLink& _uart;
-    CommandParser& _parser;
-    GetCmdFn           _getCmd;
-    SizeFn             _size;
-
-    uint8_t   _cmdIndex;
-    bool      _active;
-    bool      _finished;
-    uint32_t  _startTime;
-    uint32_t  _durationMs;
+    float _integral_vx;
+    float _integral_vy;
+    float _integral_wz;
 };
 
-#endif
-C:\Users\Acer\source\repos\robot>(
-echo C:\Users\Acer\source\repos\robot\5_System\src\CommandRunner\CommandRunner.cpp   | findstr /I "\\tools\\"  1>nul  
- if errorlevel 1 (
-echo..  
- echo ==================================================  
- echo DATEI: C:\Users\Acer\source\repos\robot\5_System\src\CommandRunner\CommandRunner.cpp  
- echo ==================================================  
- type "C:\Users\Acer\source\repos\robot\5_System\src\CommandRunner\CommandRunner.cpp" 
-) 
-) 
-.
-==================================================
-DATEI: C:\Users\Acer\source\repos\robot\5_System\src\CommandRunner\CommandRunner.cpp
-==================================================
+#endif // VEHICLE_REGLER_H
+
+
+// ===== C:\Users\Acer\source\repos\robot\5_System\src\CommandRunner\CommandRunner.cpp =====
 // ============================================================
 // CommandRunner.cpp
 // ============================================================
@@ -2475,57 +1801,57 @@ float CommandRunner::getWheelSoll(WheelVehicle w) const
 
 bool CommandRunner::isActive() const { return _active; }
 bool CommandRunner::isFinished() const { return _finished; }
-C:\Users\Acer\source\repos\robot>(
-echo C:\Users\Acer\source\repos\robot\5_System\src\Connection\ConnectionMonitor.h   | findstr /I "\\tools\\"  1>nul  
- if errorlevel 1 (
-echo..  
- echo ==================================================  
- echo DATEI: C:\Users\Acer\source\repos\robot\5_System\src\Connection\ConnectionMonitor.h  
- echo ==================================================  
- type "C:\Users\Acer\source\repos\robot\5_System\src\Connection\ConnectionMonitor.h" 
-) 
-) 
-.
-==================================================
-DATEI: C:\Users\Acer\source\repos\robot\5_System\src\Connection\ConnectionMonitor.h
-==================================================
-// ConnectionMonitor.h
-#pragma once
+
+
+// ===== C:\Users\Acer\source\repos\robot\5_System\src\CommandRunner\CommandRunner.h =====
+// ============================================================
+// CommandRunner.h
+// ============================================================
+#ifndef COMMAND_RUNNER_H
+#define COMMAND_RUNNER_H
 
 #include <Arduino.h>
+#include "src/Parser/CommandParser.h"
 #include "src/UartLink.h"
+#include "src/VehicleController.h"
 
-class ConnectionMonitor
+typedef const char* (*GetCmdFn)(uint8_t index);
+typedef uint8_t(*SizeFn)();
+
+class CommandRunner
 {
 public:
-    ConnectionMonitor(UartLink& uart, uint8_t ledPin);
+    CommandRunner(VehicleController& vehicle, UartLink& uart, CommandParser& parser,
+        GetCmdFn getCmd, SizeFn size);
+    void begin();
+    void update(uint32_t now);
 
-    void begin(bool wait);
-    void update();
-    void waitForConnection();
+    float getWheelSoll(WheelVehicle w) const;
+    bool  isActive() const;
+    bool isFinished() const;
 
 private:
-    UartLink& _uart;
-    uint8_t _ledPin;
+    void startCmd(const ParsedCommand& cmd, uint32_t now);
+    void stopAll();
 
-    bool _lastState;
-    uint32_t _lastOk;
+    VehicleController& _vehicle;
+    UartLink& _uart;
+    CommandParser& _parser;
+    GetCmdFn           _getCmd;
+    SizeFn             _size;
+
+    uint8_t   _cmdIndex;
+    bool      _active;
+    bool      _finished;
+    uint32_t  _startTime;
+    uint32_t  _durationMs;
 };
-C:\Users\Acer\source\repos\robot>(
-echo C:\Users\Acer\source\repos\robot\5_System\src\Connection\ConnectionMonitor.cpp   | findstr /I "\\tools\\"  1>nul  
- if errorlevel 1 (
-echo..  
- echo ==================================================  
- echo DATEI: C:\Users\Acer\source\repos\robot\5_System\src\Connection\ConnectionMonitor.cpp  
- echo ==================================================  
- type "C:\Users\Acer\source\repos\robot\5_System\src\Connection\ConnectionMonitor.cpp" 
-) 
-) 
-.
-==================================================
-DATEI: C:\Users\Acer\source\repos\robot\5_System\src\Connection\ConnectionMonitor.cpp
-==================================================
-ï»¿// ConnectionMonitor.cpp
+
+#endif
+
+
+// ===== C:\Users\Acer\source\repos\robot\5_System\src\Connection\ConnectionMonitor.cpp =====
+// ConnectionMonitor.cpp
 #include "ConnectionMonitor.h"
 
 ConnectionMonitor::ConnectionMonitor(UartLink& uart, uint8_t ledPin)
@@ -2548,15 +1874,15 @@ void ConnectionMonitor::waitForConnection()
 
 void ConnectionMonitor::begin(bool wait)
 {
-    // ðŸ”¥ Hardware-Init
+    // ?? Hardware-Init
     pinMode(_ledPin, OUTPUT);
     digitalWrite(_ledPin, HIGH);   // wartet auf Verbindung
 
-    // ðŸ”¥ Zustand
+    // ?? Zustand
     _lastState = false;
     _lastOk = millis();
 
-    // ðŸ”¥ optional blockierend
+    // ?? optional blockierend
     if (wait)
     {
         waitForConnection();
@@ -2567,14 +1893,14 @@ void ConnectionMonitor::update()
 {
     bool now = _uart.isConnected();
 
-    // ðŸ”´ Verbindung verloren
+    // ?? Verbindung verloren
     if (!now && _lastState)
     {
         Serial.println("#DISCONNECTED");
         digitalWrite(_ledPin, HIGH);
     }
 
-    // ðŸŸ¢ Verbindung neu da
+    // ?? Verbindung neu da
     if (now && !_lastState)
     {
         Serial.println("#CONNECTED");
@@ -2583,65 +1909,34 @@ void ConnectionMonitor::update()
 
     _lastState = now;
 }
-C:\Users\Acer\source\repos\robot>(
-echo C:\Users\Acer\source\repos\robot\5_System\src\Parser\CommandParser.h   | findstr /I "\\tools\\"  1>nul  
- if errorlevel 1 (
-echo..  
- echo ==================================================  
- echo DATEI: C:\Users\Acer\source\repos\robot\5_System\src\Parser\CommandParser.h  
- echo ==================================================  
- type "C:\Users\Acer\source\repos\robot\5_System\src\Parser\CommandParser.h" 
-) 
-) 
-.
-==================================================
-DATEI: C:\Users\Acer\source\repos\robot\5_System\src\Parser\CommandParser.h
-==================================================
-// ============================================================
-// CommandParser.h
-// ============================================================
-#ifndef COMMAND_PARSER_H
-#define COMMAND_PARSER_H
+
+
+// ===== C:\Users\Acer\source\repos\robot\5_System\src\Connection\ConnectionMonitor.h =====
+// ConnectionMonitor.h
+#pragma once
 
 #include <Arduino.h>
+#include "src/UartLink.h"
 
-enum CmdType : uint8_t
-{
-    CMD_NONE = 0,
-    CMD_TIME = 1,
-    CMD_PATH = 2,   // später
-};
-
-struct ParsedCommand
-{
-    CmdType type;
-    float vx;
-    float vy;
-    float wz;
-    float param;     // CMD_TIME: Sekunden, CMD_PATH: cm
-};
-
-class CommandParser
+class ConnectionMonitor
 {
 public:
-    static bool parse(const char* line, ParsedCommand& cmd);
+    ConnectionMonitor(UartLink& uart, uint8_t ledPin);
+
+    void begin(bool wait);
+    void update();
+    void waitForConnection();
+
+private:
+    UartLink& _uart;
+    uint8_t _ledPin;
+
+    bool _lastState;
+    uint32_t _lastOk;
 };
 
-#endif
-C:\Users\Acer\source\repos\robot>(
-echo C:\Users\Acer\source\repos\robot\5_System\src\Parser\CommandParser.cpp   | findstr /I "\\tools\\"  1>nul  
- if errorlevel 1 (
-echo..  
- echo ==================================================  
- echo DATEI: C:\Users\Acer\source\repos\robot\5_System\src\Parser\CommandParser.cpp  
- echo ==================================================  
- type "C:\Users\Acer\source\repos\robot\5_System\src\Parser\CommandParser.cpp" 
-) 
-) 
-.
-==================================================
-DATEI: C:\Users\Acer\source\repos\robot\5_System\src\Parser\CommandParser.cpp
-==================================================
+
+// ===== C:\Users\Acer\source\repos\robot\5_System\src\Parser\CommandParser.cpp =====
 // CommandParser.cpp    
 #include "CommandParser.h"
 #include <Arduino.h>
@@ -2693,103 +1988,102 @@ bool CommandParser::parse(const char* line, ParsedCommand& cmd)
     }
     return false;
 }
-C:\Users\Acer\source\repos\robot>(
-echo C:\Users\Acer\source\repos\robot\hinten\src\hinten.ino   | findstr /I "\\tools\\"  1>nul  
- if errorlevel 1 (
-echo..  
- echo ==================================================  
- echo DATEI: C:\Users\Acer\source\repos\robot\hinten\src\hinten.ino  
- echo ==================================================  
- type "C:\Users\Acer\source\repos\robot\hinten\src\hinten.ino" 
-) 
-) 
-.
-==================================================
-DATEI: C:\Users\Acer\source\repos\robot\hinten\src\hinten.ino
-==================================================
-ï»¿// hinten.ino
 
-#include "src/Hardware.h"
-#include "src/hardware_pins.h"
 
+// ===== C:\Users\Acer\source\repos\robot\5_System\src\Parser\CommandParser.h =====
+// ============================================================
+// CommandParser.h
+// ============================================================
+#ifndef COMMAND_PARSER_H
+#define COMMAND_PARSER_H
+
+#include <Arduino.h>
+
+enum CmdType : uint8_t
+{
+    CMD_NONE = 0,
+    CMD_TIME = 1,
+    CMD_PATH = 2,   // später
+};
+
+struct ParsedCommand
+{
+    CmdType type;
+    float vx;
+    float vy;
+    float wz;
+    float param;     // CMD_TIME: Sekunden, CMD_PATH: cm
+};
+
+class CommandParser
+{
+public:
+    static bool parse(const char* line, ParsedCommand& cmd);
+};
+
+#endif
+
+
+// ===== C:\Users\Acer\source\repos\robot\5_System\src\Printer.cpp =====
+// ============================================================
+// Printer.cpp
+// ============================================================
+#include "Printer.h"
+
+void Printer::printHeader()
+{
+    Serial.print('#');
+    Serial.println(F("ms,VoLi_s,VoLi_i,VoLi_pwm,VoRe_s,VoRe_i,VoRe_pwm,HiLi_s,HiLi_i,HiLi_pwm,HiRe_s,HiRe_i,HiRe_pwm"));
+}
+
+void Printer::printWheels(VehicleController& vehicle,
+    float v2_ist, float v3_ist,
+    int16_t pwm2, int16_t pwm3,
+    uint32_t t_ms)
+{
+    Serial.print('#');
+    Serial.print(t_ms);                              Serial.print(',');
+    Serial.print(vehicle.getWheelSoll(VoLi), 2);    Serial.print(',');
+    Serial.print(speed[Li].mps(), 2);               Serial.print(',');
+    Serial.print(rad[Li].lastPwm());                Serial.print(',');
+    Serial.print(vehicle.getWheelSoll(VoRe), 2);    Serial.print(',');
+    Serial.print(speed[Re].mps(), 2);               Serial.print(',');
+    Serial.print(rad[Re].lastPwm());                Serial.print(',');
+    Serial.print(vehicle.getWheelSoll(HiLi), 2);   Serial.print(',');
+    Serial.print(v2_ist, 2);                        Serial.print(',');
+    Serial.print(pwm2);                             Serial.print(',');
+    Serial.print(vehicle.getWheelSoll(HiRe), 2);   Serial.print(',');
+    Serial.print(v3_ist, 2);                        Serial.print(',');
+    Serial.println(pwm3);
+}
+
+
+// ===== C:\Users\Acer\source\repos\robot\5_System\src\Printer.h =====
+// ============================================================
+// Printer.h
+// ============================================================
+#ifndef PRINTER_H
+#define PRINTER_H
+
+#include <Arduino.h>
+#include "src/globals.h"
+#include "src/VehicleController.h"
 #include "src/Control.h"
-#include "src/ControlConfig.h"
-#include "src/CommUtils.h"
-#include "src/UartLink.h"
-#include "src/Connection/ConnectionMonitor.h"
 
-UartLink uart(Serial, false);   // Responder
-ConnectionMonitor conn(uart, 13);
-
-void setup()
+class Printer
 {
-    Serial.begin(115200);
+public:
+    void printHeader();
+    void printWheels(VehicleController& vehicle,
+        float v2_ist, float v3_ist,
+        int16_t pwm2, int16_t pwm3,
+        uint32_t t_ms);
+};
 
-    hardware_begin(PinsRear::PINS);
-    hardware_enableMotors();
+#endif
 
-    control_begin(ConfigRear::CONFIG);
 
-    speed_reset_all();
-
-    uart.begin();
-    conn.begin(false);
-}
-
-void loop()
-{
-    uint32_t now = millis();
-
-    uart.update();
-    conn.update();
-
-    if (uart.availableLine())
-    {
-        const char* line = uart.getLine();
-
-        int16_t v2_i;
-        int16_t v3_i;
-
-        if (sscanf(line, "VSOL,%hd,%hd", &v2_i, &v3_i) == 2)
-        {
-            float v2 = int100ToFloat(v2_i);
-            float v3 = int100ToFloat(v3_i);
-
-            rad[Li].setSoll(v2);
-            rad[Re].setSoll(v3);
-        }
-    }
-
-    // VIST senden: v2_ist, v3_ist alle 100ms
-    static uint32_t lastVist = 0;
-    if (now - lastVist >= VEHICLE_DT_MS)
-    {
-        lastVist = now;
-        int16_t v2_i = floatToInt100(speed[Li].mps());
-        int16_t v3_i = floatToInt100(speed[Re].mps());
-        int16_t pwm2 = rad[Li].lastPwm();
-        int16_t pwm3 = rad[Re].lastPwm();
-        char buf[32];
-        snprintf(buf, sizeof(buf), "VIST,%d,%d,%d,%d", v2_i, v3_i, pwm2, pwm3);
-        uart.sendLine(buf);
-    }
-
-    control_update(now);
-}
-C:\Users\Acer\source\repos\robot>(
-echo C:\Users\Acer\source\repos\robot\hinten\__vm\.hinten.vsarduino.h   | findstr /I "\\tools\\"  1>nul  
- if errorlevel 1 (
-echo..  
- echo ==================================================  
- echo DATEI: C:\Users\Acer\source\repos\robot\hinten\__vm\.hinten.vsarduino.h  
- echo ==================================================  
- type "C:\Users\Acer\source\repos\robot\hinten\__vm\.hinten.vsarduino.h" 
-) 
-) 
-.
-==================================================
-DATEI: C:\Users\Acer\source\repos\robot\hinten\__vm\.hinten.vsarduino.h
-==================================================
+// ===== C:\Users\Acer\source\repos\robot\hinten\__vm\.hinten.vsarduino.h =====
 /* 
 	Editor: https://www.visualmicro.com/
 			This file is for intellisense purpose only.
@@ -2813,419 +2107,2454 @@ DATEI: C:\Users\Acer\source\repos\robot\hinten\__vm\.hinten.vsarduino.h
 #endif
 #endif
 
-C:\Users\Acer\source\repos\robot>(
-echo C:\Users\Acer\source\repos\robot\tools\Achse_Hi.h   | findstr /I "\\tools\\"  1>nul  
- if errorlevel 1 (
-echo..  
- echo ==================================================  
- echo DATEI: C:\Users\Acer\source\repos\robot\tools\Achse_Hi.h  
- echo ==================================================  
- type "C:\Users\Acer\source\repos\robot\tools\Achse_Hi.h" 
-) 
-) 
 
-C:\Users\Acer\source\repos\robot>(
-echo C:\Users\Acer\source\repos\robot\tools\AutoTuner.h   | findstr /I "\\tools\\"  1>nul  
- if errorlevel 1 (
-echo..  
- echo ==================================================  
- echo DATEI: C:\Users\Acer\source\repos\robot\tools\AutoTuner.h  
- echo ==================================================  
- type "C:\Users\Acer\source\repos\robot\tools\AutoTuner.h" 
-) 
-) 
 
-C:\Users\Acer\source\repos\robot>(
-echo C:\Users\Acer\source\repos\robot\tools\Control.h   | findstr /I "\\tools\\"  1>nul  
- if errorlevel 1 (
-echo..  
- echo ==================================================  
- echo DATEI: C:\Users\Acer\source\repos\robot\tools\Control.h  
- echo ==================================================  
- type "C:\Users\Acer\source\repos\robot\tools\Control.h" 
-) 
-) 
+// ===== C:\Users\Acer\source\repos\robot\tools\__vm\.tools.vsarduino.h =====
+/* 
+	Editor: https://www.visualmicro.com/
+			This file is for intellisense purpose only.
+			Visual micro (and the arduino ide) ignore this code during compilation. This code is automatically maintained by visualmicro, manual changes to this file will be overwritten
+			The contents of the _vm sub folder can be deleted prior to publishing a project
+			All non-arduino files created by visual micro and all visual studio project or solution files can be freely deleted and are not required to compile a sketch (do not delete your own code!).
+			Note: debugger breakpoints are stored in '.sln' or '.asln' files, knowledge of last uploaded breakpoints is stored in the upload.vmps.xml file. Both files are required to continue a previous debug session without needing to compile and upload again
+	
+	Hardware: ATmega328P (Old Bootloader) (Arduino Nano) (nano_atmega328old), Platform=avr, Package=arduino
+*/
 
-C:\Users\Acer\source\repos\robot>(
-echo C:\Users\Acer\source\repos\robot\tools\ControlParams.h   | findstr /I "\\tools\\"  1>nul  
- if errorlevel 1 (
-echo..  
- echo ==================================================  
- echo DATEI: C:\Users\Acer\source\repos\robot\tools\ControlParams.h  
- echo ==================================================  
- type "C:\Users\Acer\source\repos\robot\tools\ControlParams.h" 
-) 
-) 
+#if defined(_VMICRO_INTELLISENSE)
 
-C:\Users\Acer\source\repos\robot>(
-echo C:\Users\Acer\source\repos\robot\tools\Encoder.h   | findstr /I "\\tools\\"  1>nul  
- if errorlevel 1 (
-echo..  
- echo ==================================================  
- echo DATEI: C:\Users\Acer\source\repos\robot\tools\Encoder.h  
- echo ==================================================  
- type "C:\Users\Acer\source\repos\robot\tools\Encoder.h" 
-) 
-) 
+#ifndef _VSARDUINO_H_
+#define _VSARDUINO_H_
+#pragma diag_suppress=338,2925
+// User Defined Errors to Ignore below... [vm.intellisense.ignore-error-codes]
+#include <arduino.h>
+#include <pins_arduino.h> 
+#include "..\tools.ino"
+#endif
+#endif
 
-C:\Users\Acer\source\repos\robot>(
-echo C:\Users\Acer\source\repos\robot\tools\globals.h   | findstr /I "\\tools\\"  1>nul  
- if errorlevel 1 (
-echo..  
- echo ==================================================  
- echo DATEI: C:\Users\Acer\source\repos\robot\tools\globals.h  
- echo ==================================================  
- type "C:\Users\Acer\source\repos\robot\tools\globals.h" 
-) 
-) 
 
-C:\Users\Acer\source\repos\robot>(
-echo C:\Users\Acer\source\repos\robot\tools\Hardware.h   | findstr /I "\\tools\\"  1>nul  
- if errorlevel 1 (
-echo..  
- echo ==================================================  
- echo DATEI: C:\Users\Acer\source\repos\robot\tools\Hardware.h  
- echo ==================================================  
- type "C:\Users\Acer\source\repos\robot\tools\Hardware.h" 
-) 
-) 
 
-C:\Users\Acer\source\repos\robot>(
-echo C:\Users\Acer\source\repos\robot\tools\Mixer2W.h   | findstr /I "\\tools\\"  1>nul  
- if errorlevel 1 (
-echo..  
- echo ==================================================  
- echo DATEI: C:\Users\Acer\source\repos\robot\tools\Mixer2W.h  
- echo ==================================================  
- type "C:\Users\Acer\source\repos\robot\tools\Mixer2W.h" 
-) 
-) 
+// ===== C:\Users\Acer\source\repos\robot\tools\Achse_Hi.cpp =====
+// Achse_Hi.cpp
+#include "Achse_Hi.h"
 
-C:\Users\Acer\source\repos\robot>(
-echo C:\Users\Acer\source\repos\robot\tools\Motor.h   | findstr /I "\\tools\\"  1>nul  
- if errorlevel 1 (
-echo..  
- echo ==================================================  
- echo DATEI: C:\Users\Acer\source\repos\robot\tools\Motor.h  
- echo ==================================================  
- type "C:\Users\Acer\source\repos\robot\tools\Motor.h" 
-) 
-) 
+Achse_Hi::Achse_Hi(Motor& li, Motor& re)
+    : _li(li), _re(re)
+{
+}
 
-C:\Users\Acer\source\repos\robot>(
-echo C:\Users\Acer\source\repos\robot\tools\PIRegler.h   | findstr /I "\\tools\\"  1>nul  
- if errorlevel 1 (
-echo..  
- echo ==================================================  
- echo DATEI: C:\Users\Acer\source\repos\robot\tools\PIRegler.h  
- echo ==================================================  
- type "C:\Users\Acer\source\repos\robot\tools\PIRegler.h" 
-) 
-) 
+void Achse_Hi::bremse(bool art)
+{
+    _li.bremse(art);
+    _re.bremse(art);
+}
 
-C:\Users\Acer\source\repos\robot>(
-echo C:\Users\Acer\source\repos\robot\tools\Printer.h   | findstr /I "\\tools\\"  1>nul  
- if errorlevel 1 (
-echo..  
- echo ==================================================  
- echo DATEI: C:\Users\Acer\source\repos\robot\tools\Printer.h  
- echo ==================================================  
- type "C:\Users\Acer\source\repos\robot\tools\Printer.h" 
-) 
-) 
 
-C:\Users\Acer\source\repos\robot>(
-echo C:\Users\Acer\source\repos\robot\tools\Rad.h   | findstr /I "\\tools\\"  1>nul  
- if errorlevel 1 (
-echo..  
- echo ==================================================  
- echo DATEI: C:\Users\Acer\source\repos\robot\tools\Rad.h  
- echo ==================================================  
- type "C:\Users\Acer\source\repos\robot\tools\Rad.h" 
-) 
-) 
-
-C:\Users\Acer\source\repos\robot>(
-echo C:\Users\Acer\source\repos\robot\tools\SpeedWeg.h   | findstr /I "\\tools\\"  1>nul  
- if errorlevel 1 (
-echo..  
- echo ==================================================  
- echo DATEI: C:\Users\Acer\source\repos\robot\tools\SpeedWeg.h  
- echo ==================================================  
- type "C:\Users\Acer\source\repos\robot\tools\SpeedWeg.h" 
-) 
-) 
-
-C:\Users\Acer\source\repos\robot>(
-echo C:\Users\Acer\source\repos\robot\tools\Tests.h   | findstr /I "\\tools\\"  1>nul  
- if errorlevel 1 (
-echo..  
- echo ==================================================  
- echo DATEI: C:\Users\Acer\source\repos\robot\tools\Tests.h  
- echo ==================================================  
- type "C:\Users\Acer\source\repos\robot\tools\Tests.h" 
-) 
-) 
-
-C:\Users\Acer\source\repos\robot>(
-echo C:\Users\Acer\source\repos\robot\tools\TestTypes.h   | findstr /I "\\tools\\"  1>nul  
- if errorlevel 1 (
-echo..  
- echo ==================================================  
- echo DATEI: C:\Users\Acer\source\repos\robot\tools\TestTypes.h  
- echo ==================================================  
- type "C:\Users\Acer\source\repos\robot\tools\TestTypes.h" 
-) 
-) 
-
-C:\Users\Acer\source\repos\robot>(
-echo C:\Users\Acer\source\repos\robot\tools\Utils.h   | findstr /I "\\tools\\"  1>nul  
- if errorlevel 1 (
-echo..  
- echo ==================================================  
- echo DATEI: C:\Users\Acer\source\repos\robot\tools\Utils.h  
- echo ==================================================  
- type "C:\Users\Acer\source\repos\robot\tools\Utils.h" 
-) 
-) 
-
-C:\Users\Acer\source\repos\robot>(
-echo C:\Users\Acer\source\repos\robot\tools\VehicleController.h   | findstr /I "\\tools\\"  1>nul  
- if errorlevel 1 (
-echo..  
- echo ==================================================  
- echo DATEI: C:\Users\Acer\source\repos\robot\tools\VehicleController.h  
- echo ==================================================  
- type "C:\Users\Acer\source\repos\robot\tools\VehicleController.h" 
-) 
-) 
-
-C:\Users\Acer\source\repos\robot>(
-echo C:\Users\Acer\source\repos\robot\tools\VehicleTypes.h   | findstr /I "\\tools\\"  1>nul  
- if errorlevel 1 (
-echo..  
- echo ==================================================  
- echo DATEI: C:\Users\Acer\source\repos\robot\tools\VehicleTypes.h  
- echo ==================================================  
- type "C:\Users\Acer\source\repos\robot\tools\VehicleTypes.h" 
-) 
-) 
-
-C:\Users\Acer\source\repos\robot>(
-echo C:\Users\Acer\source\repos\robot\tools\Achse_Hi.cpp   | findstr /I "\\tools\\"  1>nul  
- if errorlevel 1 (
-echo..  
- echo ==================================================  
- echo DATEI: C:\Users\Acer\source\repos\robot\tools\Achse_Hi.cpp  
- echo ==================================================  
- type "C:\Users\Acer\source\repos\robot\tools\Achse_Hi.cpp" 
-) 
-) 
-
-C:\Users\Acer\source\repos\robot>(
-echo C:\Users\Acer\source\repos\robot\tools\AutoTuner.cpp   | findstr /I "\\tools\\"  1>nul  
- if errorlevel 1 (
-echo..  
- echo ==================================================  
- echo DATEI: C:\Users\Acer\source\repos\robot\tools\AutoTuner.cpp  
- echo ==================================================  
- type "C:\Users\Acer\source\repos\robot\tools\AutoTuner.cpp" 
-) 
-) 
-
-C:\Users\Acer\source\repos\robot>(
-echo C:\Users\Acer\source\repos\robot\tools\Control.cpp   | findstr /I "\\tools\\"  1>nul  
- if errorlevel 1 (
-echo..  
- echo ==================================================  
- echo DATEI: C:\Users\Acer\source\repos\robot\tools\Control.cpp  
- echo ==================================================  
- type "C:\Users\Acer\source\repos\robot\tools\Control.cpp" 
-) 
-) 
-
-C:\Users\Acer\source\repos\robot>(
-echo C:\Users\Acer\source\repos\robot\tools\Encoder.cpp   | findstr /I "\\tools\\"  1>nul  
- if errorlevel 1 (
-echo..  
- echo ==================================================  
- echo DATEI: C:\Users\Acer\source\repos\robot\tools\Encoder.cpp  
- echo ==================================================  
- type "C:\Users\Acer\source\repos\robot\tools\Encoder.cpp" 
-) 
-) 
-
-C:\Users\Acer\source\repos\robot>(
-echo C:\Users\Acer\source\repos\robot\tools\Hardware.cpp   | findstr /I "\\tools\\"  1>nul  
- if errorlevel 1 (
-echo..  
- echo ==================================================  
- echo DATEI: C:\Users\Acer\source\repos\robot\tools\Hardware.cpp  
- echo ==================================================  
- type "C:\Users\Acer\source\repos\robot\tools\Hardware.cpp" 
-) 
-) 
-
-C:\Users\Acer\source\repos\robot>(
-echo C:\Users\Acer\source\repos\robot\tools\Mixer2W.cpp   | findstr /I "\\tools\\"  1>nul  
- if errorlevel 1 (
-echo..  
- echo ==================================================  
- echo DATEI: C:\Users\Acer\source\repos\robot\tools\Mixer2W.cpp  
- echo ==================================================  
- type "C:\Users\Acer\source\repos\robot\tools\Mixer2W.cpp" 
-) 
-) 
-
-C:\Users\Acer\source\repos\robot>(
-echo C:\Users\Acer\source\repos\robot\tools\Motor.cpp   | findstr /I "\\tools\\"  1>nul  
- if errorlevel 1 (
-echo..  
- echo ==================================================  
- echo DATEI: C:\Users\Acer\source\repos\robot\tools\Motor.cpp  
- echo ==================================================  
- type "C:\Users\Acer\source\repos\robot\tools\Motor.cpp" 
-) 
-) 
-
-C:\Users\Acer\source\repos\robot>(
-echo C:\Users\Acer\source\repos\robot\tools\PIRegler.cpp   | findstr /I "\\tools\\"  1>nul  
- if errorlevel 1 (
-echo..  
- echo ==================================================  
- echo DATEI: C:\Users\Acer\source\repos\robot\tools\PIRegler.cpp  
- echo ==================================================  
- type "C:\Users\Acer\source\repos\robot\tools\PIRegler.cpp" 
-) 
-) 
-
-C:\Users\Acer\source\repos\robot>(
-echo C:\Users\Acer\source\repos\robot\tools\Printer.cpp   | findstr /I "\\tools\\"  1>nul  
- if errorlevel 1 (
-echo..  
- echo ==================================================  
- echo DATEI: C:\Users\Acer\source\repos\robot\tools\Printer.cpp  
- echo ==================================================  
- type "C:\Users\Acer\source\repos\robot\tools\Printer.cpp" 
-) 
-) 
-
-C:\Users\Acer\source\repos\robot>(
-echo C:\Users\Acer\source\repos\robot\tools\Rad.cpp   | findstr /I "\\tools\\"  1>nul  
- if errorlevel 1 (
-echo..  
- echo ==================================================  
- echo DATEI: C:\Users\Acer\source\repos\robot\tools\Rad.cpp  
- echo ==================================================  
- type "C:\Users\Acer\source\repos\robot\tools\Rad.cpp" 
-) 
-) 
-
-C:\Users\Acer\source\repos\robot>(
-echo C:\Users\Acer\source\repos\robot\tools\SpeedWeg.cpp   | findstr /I "\\tools\\"  1>nul  
- if errorlevel 1 (
-echo..  
- echo ==================================================  
- echo DATEI: C:\Users\Acer\source\repos\robot\tools\SpeedWeg.cpp  
- echo ==================================================  
- type "C:\Users\Acer\source\repos\robot\tools\SpeedWeg.cpp" 
-) 
-) 
-
-C:\Users\Acer\source\repos\robot>(
-echo C:\Users\Acer\source\repos\robot\tools\Tests.cpp   | findstr /I "\\tools\\"  1>nul  
- if errorlevel 1 (
-echo..  
- echo ==================================================  
- echo DATEI: C:\Users\Acer\source\repos\robot\tools\Tests.cpp  
- echo ==================================================  
- type "C:\Users\Acer\source\repos\robot\tools\Tests.cpp" 
-) 
-) 
-
-C:\Users\Acer\source\repos\robot>(
-echo C:\Users\Acer\source\repos\robot\tools\Utils.cpp   | findstr /I "\\tools\\"  1>nul  
- if errorlevel 1 (
-echo..  
- echo ==================================================  
- echo DATEI: C:\Users\Acer\source\repos\robot\tools\Utils.cpp  
- echo ==================================================  
- type "C:\Users\Acer\source\repos\robot\tools\Utils.cpp" 
-) 
-) 
-
-C:\Users\Acer\source\repos\robot>(
-echo C:\Users\Acer\source\repos\robot\tools\VehicleController.cpp   | findstr /I "\\tools\\"  1>nul  
- if errorlevel 1 (
-echo..  
- echo ==================================================  
- echo DATEI: C:\Users\Acer\source\repos\robot\tools\VehicleController.cpp  
- echo ==================================================  
- type "C:\Users\Acer\source\repos\robot\tools\VehicleController.cpp" 
-) 
-) 
-
-C:\Users\Acer\source\repos\robot>(
-echo C:\Users\Acer\source\repos\robot\tools\tools.ino   | findstr /I "\\tools\\"  1>nul  
- if errorlevel 1 (
-echo..  
- echo ==================================================  
- echo DATEI: C:\Users\Acer\source\repos\robot\tools\tools.ino  
- echo ==================================================  
- type "C:\Users\Acer\source\repos\robot\tools\tools.ino" 
-) 
-) 
-
-C:\Users\Acer\source\repos\robot>(
-echo C:\Users\Acer\source\repos\robot\tools\__vm\.tools.vsarduino.h   | findstr /I "\\tools\\"  1>nul  
- if errorlevel 1 (
-echo..  
- echo ==================================================  
- echo DATEI: C:\Users\Acer\source\repos\robot\tools\__vm\.tools.vsarduino.h  
- echo ==================================================  
- type "C:\Users\Acer\source\repos\robot\tools\__vm\.tools.vsarduino.h" 
-) 
-) 
-
-C:\Users\Acer\source\repos\robot>(
-echo C:\Users\Acer\source\repos\robot\vorne\src\CommandScript.h   | findstr /I "\\tools\\"  1>nul  
- if errorlevel 1 (
-echo..  
- echo ==================================================  
- echo DATEI: C:\Users\Acer\source\repos\robot\vorne\src\CommandScript.h  
- echo ==================================================  
- type "C:\Users\Acer\source\repos\robot\vorne\src\CommandScript.h" 
-) 
-) 
-.
-==================================================
-DATEI: C:\Users\Acer\source\repos\robot\vorne\src\CommandScript.h
-==================================================
-// CommandScript.h
+// ===== C:\Users\Acer\source\repos\robot\tools\Achse_Hi.h =====
+// Achse_Hi.h
 #pragma once
 #include <Arduino.h>
+#include "Motor.h"
+#include "Encoder.h"
 
-class CommandScript
-{
+class Achse_Hi {
 public:
-    static const char* get(uint8_t index);
-    static uint8_t size();
+    Achse_Hi(Motor& li, Motor& re);
+
+    void bremse(bool art);
+
+    Motor& hiLi() { return _li; }
+    Motor& hiRe() { return _re; }
+
+private:
+    Motor& _li;
+    Motor& _re;
 };
 
-C:\Users\Acer\source\repos\robot>(
-echo C:\Users\Acer\source\repos\robot\vorne\src\CommandScript.cpp   | findstr /I "\\tools\\"  1>nul  
- if errorlevel 1 (
-echo..  
- echo ==================================================  
- echo DATEI: C:\Users\Acer\source\repos\robot\vorne\src\CommandScript.cpp  
- echo ==================================================  
- type "C:\Users\Acer\source\repos\robot\vorne\src\CommandScript.cpp" 
-) 
-) 
-.
-==================================================
-DATEI: C:\Users\Acer\source\repos\robot\vorne\src\CommandScript.cpp
-==================================================
+
+
+// ===== C:\Users\Acer\source\repos\robot\tools\AutoTuner.cpp =====
+// AutoTuner.cpp
+#include "AutoTuner.h"
+#include <math.h>
+#include "Printer.h"
+
+// 1.0f = langsam, 0.5f ˜ doppelt so schnell, 0.3f = aggressiver
+constexpr float IMC_LAMBDA_FACTOR = 0.45f;
+
+Printer AutoTuner::_defaultPrinter;
+
+AutoTuner::AutoTuner(Motor& m, SpeedWeg& speed, Wheel wheelIndex)
+	: _wheelIndex(wheelIndex), _prn(0), _motor(m), _speed(speed),
+	_stepIndex(0), _st(ST::Idle),
+	_t_step_ms(0), _t_last_print(0),
+	_initialized(false), _dir(+1) 
+{
+	_p.u_dead = (uint8_t)DEAD_PWM[_wheelIndex];
+}
+
+AutoTuner::AutoTuner(Motor& m, SpeedWeg& speed, Wheel wheelIndex, bool useDefaultPrinter)
+	: _wheelIndex(wheelIndex), _prn(0), _motor(m), _speed(speed),
+	_stepIndex(0), _st(ST::Idle),
+	_t_step_ms(0), _t_last_print(0),
+	_initialized(false), _dir(+1) 
+{
+	_p.u_dead = (uint8_t)DEAD_PWM[_wheelIndex];
+	if (useDefaultPrinter) _prn = &_defaultPrinter;
+}
+
+void AutoTuner::setDir(int8_t dir)
+{
+	_dir = (dir >= 0) ? (int8_t)+1 : (int8_t)-1;
+}
+
+uint32_t AutoTuner::clamp_u32(uint32_t x, uint32_t lo, uint32_t hi) {
+	return x < lo ? lo : (x > hi ? hi : x);
+}
+
+uint8_t AutoTuner::pwm_from_delta(uint8_t u_dead, uint8_t du) {
+	if (du == 0) return 0;
+	const uint16_t u = static_cast<uint16_t>(u_dead) + du;
+	return (u > 255) ? 255 : static_cast<uint8_t>(u);
+}
+
+void AutoTuner::motor_apply_delta(uint8_t du) {
+	if (du == 0) {
+		_motor.bremse(HIGH);
+		return;
+	}
+
+	const uint8_t pwm = pwm_from_delta(_p.u_dead, du);
+
+	if (_dir > 0) _motor.vor(pwm);
+	else          _motor.rueck(pwm);
+}
+
+void AutoTuner::hold_sample(StepData& s, uint32_t now_ms, float v_mps) {
+	if (s.n < StepData::MAX_SAMPLES && now_ms - s.last_sample_ms >= s.sample_dt_ms) {
+		s.last_sample_ms = now_ms;
+		const uint32_t dt = now_ms - s.t0_ms;
+
+		// v * 1000 (m/s -> milli-m/s)
+		const uint32_t y_x1000_u32 =
+			clamp_u32(static_cast<uint32_t>(v_mps * 1000.0f + 0.5f), 0, 65535);
+
+		s.buf[s.n++] = StepData::Sample{
+			static_cast<uint16_t>(y_x1000_u32)
+		};
+	}
+}
+
+void AutoTuner::compute_t63(StepData& s) {
+	constexpr float FACT = 0.632f;
+	const float y63 = s.y_start + FACT * (s.y_end - s.y_start);
+	const uint16_t y63_x1000 = static_cast<uint16_t>(y63 * 1000.0f + 0.5f);
+
+	s.t63_ms = 0;
+	s.t63_idx = 0xFFFF;
+
+	
+	for (uint16_t i = 0; i < s.n; ++i) {
+		if (s.buf[i].y_x1000 >= y63_x1000) {
+			s.t63_ms = i * s.sample_dt_ms;
+			s.t63_idx = i;
+			break;
+		}
+	}
+}
+
+void AutoTuner::runIMCOpenStepWithPrints(uint32_t now_us) {
+	if (!_initialized && _st == ST::Idle) {
+		_p = IMCParams(); // Defaults
+		_p.u_dead = (uint8_t)DEAD_PWM[_wheelIndex];
+	}
+	runIMCOpenStepWithPrints(_p, now_us);
+}
+
+void AutoTuner::runIMCOpenStepWithPrints(const IMCParams& p, uint32_t now_us) {
+	if (!_initialized) {
+		_p = p;
+
+		if (_p.avg_last_ms > _p.hold_ms) _p.avg_last_ms = _p.hold_ms;
+		if (_p.du2 <= _p.du1) {
+			Serial.println(F("[Warn] IMC: du2 <= du1 -> K2 wird 0. Bitte du2 > du1 wählen."));
+		}
+
+		for (int i = 0; i < 2; ++i) {
+			_steps[i] = StepData();
+			_steps[i].sample_dt_ms = _p.sample_dt_ms;
+		}
+
+		_steps[0].du = _p.du1;
+		_steps[1].du = _p.du2;
+
+		motor_apply_delta(0);
+		_stepIndex = 0;
+		_t_last_print = 0;
+		_t_step_ms = millis();
+		_st = ST::PreBrake;
+		_initialized = true;
+	}
+
+	updateIMC(now_us);
+}
+
+void AutoTuner::updateIMC(uint32_t /*now_us*/) {
+
+	// WICHTIG: SpeedWeg läuft in ms. Daher konsequent millis() nutzen.
+	const uint32_t now = millis();
+	_speed.pollEncoder(now);
+
+	// Jetzt verwenden wir v [m/s] als Ausgang
+	const float v = _speed.mps();
+
+	StepData& s = _steps[_stepIndex];
+	
+
+	switch (_st) {
+	case ST::Idle:
+		return;
+
+	case ST::PreBrake:
+		_t_step_ms = now;
+		_st = ST::PreWait;
+		break;
+
+	case ST::PreWait:
+		// Nur VOR Step 1 warten wir auf Stillstand.
+		if (_stepIndex == 0) {
+			if (fabsf(v) > _p.v_still_mps) { _t_step_ms = now; break; }
+			if (now - _t_step_ms >= _p.settle_ms) {
+				s.y_start = v;            // Start aus dem Stillstand
+				_st = ST::StepStart;
+			}
+		}
+		else {
+			// Für Step 2 KEIN Stillstand: kontinuierlicher Test
+			// y_start(2) wird aus y_end(1) gesetzt, siehe unten.
+			_st = ST::StepStart;
+		}
+		break;
+
+	case ST::StepStart:
+		if (_stepIndex == 1) {
+			// Kontinuierlich: Step 2 startet vom Endwert von Step 1
+			s.y_start = _steps[0].y_end;
+		}
+		motor_apply_delta(s.du);
+		s.t0_ms = now;
+		s.avg_sum = 0.0f; s.avg_n = 0;
+
+		// Printer-Signaturen bleiben unverändert.
+		// Inhaltlich sind die Werte jetzt v [m/s].
+		if (_prn) _prn->imc_step_start(_stepIndex + 1, _p.u_dead, s.du);
+
+		_st = ST::StepHold;
+		break;
+
+	case ST::StepHold:
+		hold_sample(s, now, v);
+
+		if (now - _t_last_print >= 100) {
+			_t_last_print = now;
+			if (_prn) _prn->imc_progress(_stepIndex + 1, now - s.t0_ms, v);
+		}
+
+		if (now - s.t0_ms >= _p.hold_ms - _p.avg_last_ms) {
+			s.avg_sum += v; s.avg_n++;
+		}
+
+		if (now - s.t0_ms >= _p.hold_ms) {
+			s.y_end = (s.avg_n ? (s.avg_sum / s.avg_n) : v);
+			s.dy = s.y_end - s.y_start;
+
+			
+
+			compute_t63(s);
+			Serial.print(F("t63_idx="));
+			Serial.println(s.t63_idx);
+
+			if (s.t63_idx == 0xFFFF) {
+				Serial.println(F("[Warn] 63%-Marke nicht erreicht -> T ~ 0."));
+			}
+			else if (_prn) {
+				const float y_at = s.buf[s.t63_idx].y_x1000 / 1000.0f;
+				const float y63 = s.y_start + 0.632f * (s.y_end - s.y_start);
+				_prn->imc_t63_hit(_stepIndex + 1, s.t63_ms, y_at, y63);
+			}
+
+			if (_stepIndex == 0) {
+				// >>> WICHTIG: KEIN Bremsen/Absetzen zwischen Step 1 und 2
+				_stepIndex = 1;
+				_st = ST::StepStart;   // direkt in Step 2 übergehen
+				// y_start(2) setzen wir in StepStart aus y_end(1)
+			}
+			else {
+				// beide Steps fertig -> Kennwerte
+				motor_apply_delta(0);
+
+				// K: (m/s) pro PWM-Delta
+				_r.K[0] = (_p.du1 > 0) ? (_steps[0].dy / static_cast<float>(_p.du1)) : 0.0f;
+
+				const float du2d = (_p.du2 > _p.du1) ? static_cast<float>(_p.du2 - _p.du1) : 0.0f;
+				_r.K[1] = (du2d > 0.0f) ? (_steps[1].dy / du2d) : 0.0f;
+
+				_r.Kavg = 0.5f * (_r.K[0] + _r.K[1]);
+
+				_r.T[0] = _steps[0].t63_ms * 0.001f;
+				_r.T[1] = _steps[1].t63_ms * 0.001f;
+				_r.Tavg = 0.5f * (_r.T[0] + _r.T[1]);
+
+				// IMC: lambda = factor * T
+				const float lambda = IMC_LAMBDA_FACTOR * _r.Tavg;
+
+				// Hier berechnen wir Kp,Ki passend zu DEINEM PIRegler,
+				// der intern u in 0..1 nutzt und danach PWM = u*255 macht.
+				//
+				// IMC-Formel liefert zunächst Kp in PWM/(m/s).
+				// Danach normieren wir durch 255 -> Kp_norm für u?[0..1].
+				float Kp_pwm = 0.0f;
+				if (_r.Kavg > 0.0f && lambda > 0.0f) {
+					Kp_pwm = (_r.Tavg / (_r.Kavg * lambda));
+				}
+
+				_r.Ti = _r.Tavg;
+
+				float Ki_pwm = 0.0f;
+				if (_r.Ti > 0.0f) {
+					Ki_pwm = (Kp_pwm / _r.Ti);
+				}
+
+				// Normierung für deinen PIRegler (u_norm -> PWM später):
+				_r.Kp = Kp_pwm / 255.0f;
+				_r.Ki = Ki_pwm / 255.0f;
+
+				_r.valid = true;
+
+				if (_prn) {
+					_prn->imc_header();
+					for (int i = 0; i < 2; ++i) {
+						_prn->imc_step(
+							i + 1,
+							AutoTunerTypes::StepDataView{
+								_steps[i].y_start,
+								_steps[i].y_end,
+								_steps[i].dy,
+								_steps[i].t63_ms
+							},
+							_r.K[i]
+						);
+					}
+					_prn->imc_summary(
+						AutoTunerTypes::IMCResultView{
+							_r.K[0], _r.K[1], _r.Kavg,
+							_r.T[0], _r.T[1], _r.Tavg,
+							_r.Kp, _r.Ti, _r.Ki, _r.valid
+						}
+					);
+				}
+
+				_st = ST::Done;
+			}
+		}
+		break;
+
+	case ST::Done:
+		break;
+	}
+}
+
+bool AutoTuner::isIMCOpenStepDone() const { return _st == ST::Done; }
+const AutoTuner::IMCResult& AutoTuner::result() const { return _r; }
+
+uint8_t AutoTuner::deadbandScan(uint8_t startPWM,
+	uint8_t endPWM,
+	uint8_t step,
+	uint16_t measure_ms,
+	uint16_t settle_ms,
+	float vThresh_mps)
+{
+	uint8_t u_dead = 0;
+
+	const uint32_t to_ms32 = static_cast<uint32_t>(measure_ms)
+		+ static_cast<uint32_t>(settle_ms);
+	const uint16_t to_ms = (to_ms32 > 500U)	? static_cast<uint16_t>(to_ms32): 500U;
+	_speed.setTimeoutMs(to_ms);
+
+	for (uint8_t pwm = startPWM; pwm <= endPWM; pwm += step) {
+		if (_dir > 0) _motor.vor(pwm);
+		else          _motor.rueck(pwm);
+
+		const uint32_t t0 = millis();
+		while (millis() - t0 < measure_ms) {
+			_speed.pollEncoder(millis());
+			delay(5);
+		}
+
+		const float v = _speed.mps();
+
+		if (_prn) _prn->deadband_line(pwm, v);   // ? Rohdaten: erlaubt
+		if (u_dead == 0 && v >= vThresh_mps) u_dead = pwm;
+
+		_motor.bremse(HIGH);
+		brakeToStill(settle_ms, 0.01f);
+	}
+
+	brakeToStill(300);
+	_motor.bremse(HIGH);
+
+	return u_dead;
+}
+
+
+void AutoTuner::brakeToStill(uint16_t hold_ms) {
+	_motor.bremse(HIGH);
+	delay(hold_ms);
+	_motor.bremse(LOW);
+}
+
+void AutoTuner::brakeToStill(uint16_t settle_ms, float v_eps_mps) {
+	const uint32_t tStop = millis();
+	while (millis() - tStop < settle_ms) {
+		_speed.pollEncoder(millis());  // WICHTIG: ms, nicht micros()
+		if (fabsf(_speed.mps()) < v_eps_mps) break;
+		delay(10);
+	}
+}
+void AutoTuner::resetIMC()
+{
+	// Motor sicher stoppen
+	motor_apply_delta(0);
+
+	// IMC State komplett zurücksetzen
+	_r = IMCResult();
+	_p = IMCParams();
+	_p.u_dead = (uint8_t)DEAD_PWM[_wheelIndex];
+
+	for (int i = 0; i < 2; ++i) {
+		_steps[i] = StepData();
+		_steps[i].sample_dt_ms = _p.sample_dt_ms;
+	}
+	_steps[0].du = _p.du1;
+	_steps[1].du = _p.du2;
+
+	_stepIndex = 0;
+	_st = ST::Idle;
+	_t_step_ms = 0;
+	_t_last_print = 0;
+	_initialized = false;
+
+	// SpeedPfad sauber
+	_speed.reset();
+}
+
+
+
+
+// ===== C:\Users\Acer\source\repos\robot\tools\AutoTuner.h =====
+// AutoTuner.h
+#pragma once
+#include <Arduino.h>
+#include "Motor.h"
+#include "SpeedWeg.h"
+#include "globals.h"
+#include "ControlParams.h"
+
+class Printer; // forward declaration
+
+class AutoTuner {
+public:
+	struct IMCParams {
+		uint8_t  u_dead;
+		uint8_t  du1;
+		uint8_t  du2;
+		uint16_t sample_dt_ms;
+		uint32_t hold_ms;
+		uint32_t avg_last_ms;
+		uint32_t settle_ms;
+
+		// ACHTUNG:
+		// Früher: rpm_still (rpm). Jetzt verwenden wir m/s.
+		// Interpretation: "still" wenn |v| <= v_still_mps.
+		float    v_still_mps;
+
+		IMCParams()
+			: u_dead(0), du1(60), du2(120),
+			sample_dt_ms(20), hold_ms(2000),
+			avg_last_ms(500), settle_ms(500),
+			v_still_mps(0.02f) {   // 0.02 m/s als Startwert, ggf. anpassen
+		}
+	};
+
+	struct IMCResult {
+		float K[2];     // K1, K2  (Einheit: (m/s) pro PWM-Delta)
+		float T[2];     // T1, T2  (s)
+		float Kavg;
+		float Tavg;
+		float Kp;       // IMC-PI Kp (Normierung siehe Code; entspricht PWM/(m/s) "normiert" unten)
+		float Ti;       // s
+		float Ki;       // 1/s (für normierten Reglerausgang u in 0..1)
+		bool  valid;
+
+		IMCResult()
+			: K{ 0.0f, 0.0f }, T{ 0.0f, 0.0f }, Kavg(0.0f), Tavg(0.0f),
+			Kp(0.0f), Ti(0.0f), Ki(0.0f), valid(false) {
+		}
+	};
+
+	AutoTuner(Motor& motor, SpeedWeg& speed, Wheel wheelIndex);
+	AutoTuner(Motor& motor, SpeedWeg& speed, Wheel wheelIndex, bool useDefaultPrinter);
+
+	void setPrinter(Printer* p) { _prn = p; }
+
+	// Hinweis: now_us wird intern NICHT mehr als Zeitbasis benutzt.
+	// SpeedWeg läuft in ms. Wir verwenden millis() konsequent.
+	void runIMCOpenStepWithPrints(uint32_t now_us);
+	void runIMCOpenStepWithPrints(const IMCParams& p, uint32_t now_us);
+
+	bool isIMCOpenStepDone() const;
+	const IMCResult& result() const;
+
+	uint8_t deadbandScan(uint8_t startPWM = 40,
+		uint8_t endPWM = 200,
+		uint8_t step = 10,
+		uint16_t measure_ms = 400,
+		uint16_t settle_ms = 500,
+		float vThresh_mps = 0.05f); // früher rpmThresh -> jetzt m/s
+
+	void brakeToStill(uint16_t hold_ms = 300);
+	void setDir(int8_t dir);
+	void resetIMC();
+
+private:
+	Wheel _wheelIndex;
+	static Printer _defaultPrinter;
+	Printer* _prn;
+	Motor& _motor;
+	SpeedWeg& _speed;
+	int8_t _dir;   // +1 vorwärts, -1 rückwärts
+
+	struct StepData {
+		static constexpr uint8_t MAX_SAMPLES = 25;
+
+		uint8_t  du;
+		float    y_start, y_end, dy;   // y = v [m/s]
+		uint32_t t0_ms;
+		float    avg_sum; uint32_t avg_n;
+
+		uint16_t n;
+		struct Sample { uint16_t y_x1000; } buf[MAX_SAMPLES]; // v * 1000
+		uint32_t last_sample_ms;
+		uint16_t sample_dt_ms;
+		uint32_t t63_ms;
+		uint16_t t63_idx;
+
+		StepData()
+			: du(0), y_start(0.0f), y_end(0.0f), dy(0.0f),
+			t0_ms(0), avg_sum(0.0f), avg_n(0),
+			n(0), last_sample_ms(0), sample_dt_ms(20),
+			t63_ms(0), t63_idx(0xFFFF) {
+		}
+	};
+
+	enum class ST { Idle, PreBrake, PreWait, StepStart, StepHold, Done };
+
+	IMCParams _p;
+	IMCResult _r;
+	StepData  _steps[2];
+	uint8_t   _stepIndex;
+	ST        _st;
+	uint32_t  _t_step_ms;
+	uint32_t  _t_last_print;
+	bool      _initialized;
+
+	// Helfer
+	static uint32_t clamp_u32(uint32_t x, uint32_t lo, uint32_t hi);
+	static uint8_t  pwm_from_delta(uint8_t u_dead, uint8_t du);
+	void motor_apply_delta(uint8_t du);
+
+	// y ist jetzt v [m/s]
+	void hold_sample(StepData& s, uint32_t now_ms, float v_mps);
+
+	static void compute_t63(StepData& s);
+
+	// now_us bleibt als Parameter wegen deiner bestehenden Aufrufer,
+	// intern wird aber millis() als Zeitbasis verwendet.
+	void updateIMC(uint32_t now_us);
+
+	void brakeToStill(uint16_t settle_ms, float v_eps_mps);
+};
+
+
+
+// ===== C:\Users\Acer\source\repos\robot\tools\Control.cpp =====
+// ============================================================
+// File: Control.cpp
+// ============================================================
+
+#include "Control.h"
+#include "Hardware.h"
+#include "globals.h"
+#include "ControlParams.h"  // neu
+#include "VehicleController.h"
+
+VehicleController vehicle(motor[Re], motor[Li]);
+
+// --- Mixer / Command ---
+Mixer2W mixer2W;
+VehicleCmd cmdVehicle{ 0.0f, 0.0f, 0.0f };
+
+// --- Hinterachse ---
+Achse_Hi achse_Hi(motor[Li], motor[Re]);
+
+
+// --- SpeedWeg ---
+SpeedWeg speed[WHEEL_COUNT] =
+{
+    SpeedWeg(enc[Li]),
+    SpeedWeg(enc[Re])
+};
+
+// --- Regler / Rad ---
+PIRegler regler[WHEEL_COUNT] =
+{
+    PIRegler(PI_PARAMS[Li].Kp, PI_PARAMS[Li].Ki, -MAX_PWM, MAX_PWM),
+    PIRegler(PI_PARAMS[Re].Kp, PI_PARAMS[Re].Ki, -MAX_PWM, MAX_PWM)
+};
+
+Rad rad[WHEEL_COUNT] =
+{
+    Rad(motor[Li], speed[Li], regler[Li], RAD_REGEL_DT_MS, Li),
+    Rad(motor[Re], speed[Re], regler[Re], RAD_REGEL_DT_MS, Re)
+};
+
+void control_begin(bool resetEnc)
+{
+    // Hardware-Polung der Hinterachse (konstant)
+    mixer2W.setKW(1.0f);    // Testfaktor Rotation -> Gegenläufigkeit
+    cmdVehicle = { 0.0f, 0.0f, 0.0f };
+
+    speed[Re].reset();
+    speed[Li].reset();
+    speed[Re].setTimeoutMs(500);
+    speed[Li].setTimeoutMs(500);
+}
+
+SideBinding bindSide(Side side)
+{
+    SideBinding b;
+
+    if (side == Side::LI) {
+        b.m = &motor[Li];
+        b.e = &enc[Li];
+        b.s = &speed[Li];
+        b.r = &rad[Li];
+    }
+    else {
+        b.m = &motor[Re];
+        b.e = &enc[Re];
+        b.s = &speed[Re];
+        b.r = &rad[Re];
+    }
+
+    return b;
+}
+
+
+// ===== C:\Users\Acer\source\repos\robot\tools\Control.h =====
+// Control.h
+#pragma once
+
+#include "SpeedWeg.h"
+#include "PIRegler.h"
+#include "Rad.h"
+#include "Achse_Hi.h"   // wenn Achse_Hi wirklich Teil deiner Control-Ebene ist
+#include "VehicleTypes.h"
+#include "VehicleController.h"
+#include "Mixer2W.h"
+
+// --- SpeedWeg ---
+extern SpeedWeg speed[WHEEL_COUNT];
+
+// --- Regler / Rad ---
+extern PIRegler regler[WHEEL_COUNT];
+extern Rad rad[WHEEL_COUNT];
+
+// --- Hinterachse (Control-Abstraktion) ---
+extern Achse_Hi achse_Hi;
+
+// Init/Reset für Control-Objekte (ohne Pins)
+void control_begin(bool resetEnc);
+
+// --- Mixer (Command -> AxleRef) ---
+extern Mixer2W mixer2W;
+
+// optional (wenn du Command im Control halten willst)
+extern VehicleCmd cmdVehicle;
+
+extern VehicleController vehicle;
+
+// ============================================================
+// SideBinding: deterministische SIDE -> {Motor, Encoder, SpeedWeg, Rad}
+// Ort: Control.h (weil es Control-Objekte bündelt)
+// ============================================================
+
+class Enc;
+class Motor;
+
+struct SideBinding {
+    Motor* m;
+    Enc* e;
+    SpeedWeg* s;
+    Rad* r;
+};
+
+// liefert Referenzen auf die existierenden globalen Objekte aus Control/Hardware
+SideBinding bindSide(Side side);
+
+
+// ===== C:\Users\Acer\source\repos\robot\tools\ControlParams.h =====
+// ControlParams.h
+#pragma once
+#include <Arduino.h>
+#include "globals.h"
+static_assert(ACHS_ABSTAND_M > 0.0f, "ACHS_ABSTAND_M muss > 0 sein");
+// Sollwert
+constexpr float V_SOLL_GERADE = 0.30f;
+// Omega-Referenz (2-Rad hinten): uOmega=1 => vR=+V_SOLL_GERADE, vL=-V_SOLL_GERADE
+constexpr float OMEGA_REF = (2.0f * V_SOLL_GERADE) / ACHS_ABSTAND_M;
+
+// ============================================================
+// Hardware-Polung Hinterachse (Encoder-/Motor-Kette)
+// +1: Vorwärts zählt/ wirkt positiv -1: invertiert
+// Reihenfolge: R, L (passt zu AchseRegel::setSigns(signR, signL))
+// ============================================================
+constexpr int8_t HI_SIGN_R = +1;
+constexpr int8_t HI_SIGN_L = +1;
+
+// ============================================================
+// Control-Parameter (Regler, Limits, Sollwerte, Trim)
+// ============================================================
+
+// Slewrate / PWM
+constexpr int16_t SLEW_LIMIT_PWM = 255;
+constexpr int16_t MAX_PWM = 255;
+
+// Hinterachse
+constexpr int16_t DEAD_PWM[WHEEL_COUNT] = {
+    80,  // 2 = Li
+    60   // 3 = Re
+};
+
+//// Vorderachse
+//constexpr int16_t DEAD_PWM[WHEEL_COUNT] = {
+//    80,  // 2 = Li
+//    80   // 3 = Re
+//};
+
+struct PIParam {
+    float Kp;
+    float Ki;
+};
+
+//// Vorderachse
+//constexpr PIParam PI_PARAMS[WHEEL_COUNT] = {
+//    {2.0f, 11.0f},   // 2 = Li
+//    {2.0f, 10.0f}    // 3 = Re
+//};
+
+// Hinterachse
+constexpr PIParam PI_PARAMS[WHEEL_COUNT] = {
+    {2.0f, 6.0f},   // 2 = Li
+    {2.0f, 5.5f}    // 3 = Re
+};
+
+
+// ===== C:\Users\Acer\source\repos\robot\tools\Encoder.cpp =====
+// Encoder.cpp
+#include "Encoder.h"
+
+// Quadratur-LUT: prev \ curr: 00 01 10 11  (A=LSB, B=MSB)
+const int8_t Enc::s_qlut[4][4] = {
+    {  0, +1, -1,  0 },
+    { -1,  0,  0, +1 },
+    { +1,  0,  0, -1 },
+    {  0, -1, +1,  0 }
+};
+
+Enc::Enc(uint8_t pinA, uint8_t pinB)
+    : _pinA(pinA), _pinB(pinB), _counts(0), _prevState(0)
+{
+    _bitA = uint8_t(_pinA - A0);        // A0..A5 ? 0..5
+    _bitB = uint8_t(_pinB - A0);
+    _maskA = uint8_t(1u << _bitA);
+    _maskB = uint8_t(1u << _bitB);
+}
+
+void Enc::begin(bool resetCounts)
+{
+    pinMode(_pinA, INPUT_PULLUP);
+    pinMode(_pinB, INPUT_PULLUP);
+
+    // Anfangszustand auslesen
+    uint8_t pinc = PINC;
+    uint8_t a = (pinc & _maskA) ? 1 : 0;
+    uint8_t b = (pinc & _maskB) ? 1 : 0;
+    _prevState = (b << 1) | a;
+    if (resetCounts) this->resetCounts();      // Zähler definiert, vor Enable
+    PCIFR |= _BV(PCIF1);                       // pending Flag löschen
+    PCINT1_Dispatcher::add(this);
+    enablePcintGroup1_SelectedPins();
+}
+
+void Enc::resetCounts() { setCounts(0); }
+
+
+int32_t Enc::getCounts() const
+{
+    int32_t v;
+    uint8_t s = SREG; noInterrupts();
+    v = _counts;
+    SREG = s;
+    return v;
+}
+
+void Enc::setCounts(int32_t v)
+{
+    uint8_t s = SREG; noInterrupts();
+    _counts = v;
+    SREG = s;
+}
+
+void Enc::handleIsr(uint8_t pinc_snapshot)
+{
+    // A/B-Bits aus dem EINMAL gelesenen Snapshot ziehen
+    uint8_t a = (pinc_snapshot & _maskA) ? 1 : 0;
+    uint8_t b = (pinc_snapshot & _maskB) ? 1 : 0;
+    uint8_t curr = (b << 1) | a;   // 0..3
+
+    int8_t d = s_qlut[_prevState][curr];
+    _prevState = curr;
+    if (d) _counts += d;
+}
+
+void Enc::enablePcintGroup1_SelectedPins()
+{
+    // PCINT-Gruppe 1 (Port C) aktivieren und genau diese Pins maskieren
+    PCICR |= _BV(PCIE1);
+    PCMSK1 |= (_maskA | _maskB);
+}
+
+// ------------ Dispatcher-Implementierung ------------
+namespace {
+    Enc* s_list[2] = { nullptr, nullptr };
+    uint8_t s_count = 0;
+}
+
+namespace PCINT1_Dispatcher {
+    void add(Enc* enc)
+    {
+        if (s_count < 2) s_list[s_count++] = enc;
+    }
+
+    void isr(uint8_t pinc_snapshot)
+    {
+        for (uint8_t i = 0; i < s_count; ++i)
+            if (s_list[i]) s_list[i]->handleIsr(pinc_snapshot);
+    }
+}
+
+// ------------ ISR selbst (hier mit drin) ------------
+ISR(PCINT1_vect)
+{
+    uint8_t pinc = PINC;                  // EIN Port-Read
+    PCINT1_Dispatcher::isr(pinc);         // an alle Encoder verteilen
+}
+
+
+
+// ===== C:\Users\Acer\source\repos\robot\tools\Encoder.h =====
+// ============================================================
+/* File: Encoder.h
+ * Zweck:
+ *  - Quadratur-Encoder (Port C / PCINT1: A0..A5) zählen
+ *  - Atomarer Zugriff auf Zählerstand
+ *  - Dispatcher ruft handleIsr() mit PINC-Snapshot
+ * Abhängigkeiten: Arduino.h, <avr/io.h>, <avr/interrupt.h>
+ */
+ // ============================================================
+
+#pragma once
+#include <Arduino.h>
+#include <avr/io.h>
+#include <avr/interrupt.h>
+
+/**
+ * @class Enc
+ * @brief Zählt einen Quadratur-Encoder über PCINT1 (Port C).
+ *
+ * Ablauf:
+ *  - begin(): Pins konfigurieren, PCINT aktivieren, Startzustand erfassen
+ *  - ISR (Vektor PCINT1_vect) liest PINC und übergibt Snapshot an Dispatcher
+ *  - Dispatcher ruft handleIsr() ? Zustandsübergang via Lookup-Tabelle
+ *
+ * Thread-Sicherheit:
+ *  - getCounts()/setCounts() sind atomar (kritische Abschnitte).
+ */
+class Enc {
+public:
+    /**
+     * @brief Konstruktor.
+     * @param pinA Arduino-Pin für Kanal A (A0..A5)
+     * @param pinB Arduino-Pin für Kanal B (A0..A5)
+     */
+    Enc(uint8_t pinA, uint8_t pinB);
+
+    /**
+     * @brief Pins einrichten, PCINT aktivieren, optional Counts auf 0.
+     * @param resetCounts true ? Zähler auf 0 setzen
+     */
+    void begin(bool resetCounts = true);
+
+    /** @brief Zähler auf 0 setzen (alias zu setCounts(0)). */
+    void resetCounts();
+
+    /**
+     * @brief Aktuellen Zählerstand atomar lesen.
+     * @return Encoder-Ticks (vorzeichenbehaftet)
+     */
+    int32_t getCounts() const;
+
+    /**
+     * @brief Zählerstand atomar setzen.
+     * @param v Neuer Ticks-Wert
+     */
+    void setCounts(int32_t v);
+
+    /**
+     * @brief Zustandsübergang verarbeiten (vom Dispatcher gerufen).
+     * @param pinc_snapshot Momentanbild von PINC
+     */
+    void handleIsr(uint8_t pinc_snapshot);
+
+private:
+    // Quadratur-Lookup: prev(0..3) × curr(0..3) ? -1/0/+1/Fehler
+    static const int8_t s_qlut[4][4];
+
+    uint8_t  _pinA;   ///< Arduino-Pin A
+    uint8_t  _pinB;   ///< Arduino-Pin B
+    uint8_t  _bitA;   ///< Bitindex 0..5 (PC0..PC5)
+    uint8_t  _bitB;   ///< Bitindex 0..5 (PC0..PC5)
+    uint8_t  _maskA;  ///< Bitmaske für A
+    uint8_t  _maskB;  ///< Bitmaske für B
+
+    volatile int32_t _counts;    ///< Tick-Zähler (atomar zugreifbar)
+    volatile uint8_t _prevState; ///< letzter 2-Bit Zustand (B<<1|A)
+
+    /** @brief PCINT1 nur für die gewählten Pins aktivieren. */
+    void enablePcintGroup1_SelectedPins();
+};
+
+/**
+ * @namespace PCINT1_Dispatcher
+ * @brief Registriert bis zu 2 Enc-Instanzen und verteilt PINC-Snapshots.
+ *
+ * Verwendung:
+ *  - add(&enc)
+ *  - ISR ruft isr(PINC_snapshot)
+ */
+namespace PCINT1_Dispatcher {
+    /** @brief Encoder beim Dispatcher registrieren (max. 2). */
+    void add(Enc* enc);
+
+    /** @brief An die registrierten Encoder weiterreichen. */
+    void isr(uint8_t pinc_snapshot);
+}
+
+
+
+// ===== C:\Users\Acer\source\repos\robot\tools\globals.h =====
+// ============================================================
+// File: globals.h
+// Zweck:
+//  - Zentrale Definitionen für Pins, Konstanten und Geometrie
+//  - Gemeinsame Parameter für Motor, Encoder und Umrechnung
+// Abhängigkeiten: Arduino.h (liefert PI)
+// ============================================================
+
+#pragma once
+#include <Arduino.h>   // enthält PI-Konstante
+
+// ============================================================
+// Wheel Index Definition (Robot Wheel Order)
+// Reihenfolge:
+// 0 = vorne rechts
+// 1 = vorne links
+// 2 = hinten links
+// 3 = hinten rechts
+// ============================================================
+enum Wheel: uint8_t {
+    Li = 0,
+    Re = 1,
+    WHEEL_COUNT
+};
+// ============================================================
+// Wheel Names (für Debug / Printer)
+// ============================================================
+
+constexpr const char* WHEEL_NAME[WHEEL_COUNT] = {
+    "Li",
+    "Re"
+};
+
+// ============================================================
+// ==== Motor-Pins (DRV8833, 2-Pin-Modus) ==== Hinterachse
+// ============================================================
+
+/** @brief Rechter Hinterrad-Motor: IN1 (PWM) */
+constexpr uint8_t M_Re_AIN1 = 9;
+/** @brief Rechter Hinterrad-Motor: IN2 (PWM) */
+constexpr uint8_t M_Re_AIN2 = 10;
+/** @brief Linker Hinterrad-Motor: IN1 (PWM) */
+constexpr uint8_t M_Li_BIN1 = 6;
+/** @brief Linker Hinterrad-Motor: IN2 (PWM) */
+constexpr uint8_t M_Li_BIN2 = 5;
+/** @brief DRV8833 Standby-Pin */
+constexpr uint8_t STBY_PIN = 8;
+
+//// ============================================================
+//// ==== Encoder-Pins (Port C / PCINT1) ==== Vorderachse
+//// ============================================================
+//
+///** @brief Rechter Encoder: Kanal A */
+//constexpr uint8_t ENC_Re_PIN_A = A0;
+///** @brief Rechter Encoder: Kanal B */
+//constexpr uint8_t ENC_Re_PIN_B = A1;
+///** @brief Linker Encoder: Kanal A */
+//constexpr uint8_t ENC_Li_PIN_A = A2;
+///** @brief Linker Encoder: Kanal B */
+//constexpr uint8_t ENC_Li_PIN_B = A3;
+
+// ============================================================
+// ==== Encoder-Pins (Port C / PCINT1) ==== Hinterachse
+// ============================================================
+
+/** @brief Rechter Encoder: Kanal A */
+constexpr uint8_t ENC_Re_PIN_A = A2;
+/** @brief Rechter Encoder: Kanal B */
+constexpr uint8_t ENC_Re_PIN_B = A3;
+/** @brief Linker Encoder: Kanal A */
+constexpr uint8_t ENC_Li_PIN_A = A0;
+/** @brief Linker Encoder: Kanal B */
+constexpr uint8_t ENC_Li_PIN_B = A1;
+// ============================================================
+// ==== Zeitbegrenzungen ====
+// ============================================================
+
+/** @brief Minimaler Messabstand für Drehzahl (ms) */
+constexpr uint32_t SPEED_MIN_DT_MS = 5;
+/** @brief Regelperiode pro Rad (ms) */
+constexpr uint16_t RAD_REGEL_DT_MS = 20;
+/** @brief Fensterzeit der Achs-Kopplung (TickCoupler) (ms) */
+constexpr uint16_t HI_COUPLER_WINDOW_MS = 50;
+// Messzeit Ausgabe der Messungen
+constexpr uint16_t DBG_INTERVAL_MS = 20;
+
+// ============================================================
+// ==== Rad- / Encoder-Geometrie ====
+// ============================================================
+
+/** @brief Encoder-Pulse pro Umdrehung (x1-Auswertung) */
+constexpr uint16_t ENC_PPR = 330;
+/** @brief Encoder-Counts pro Umdrehung (4x-Auswertung ? 1320) */
+constexpr int32_t  COUNTS_PER_REV = int32_t(ENC_PPR) * 4;
+/** @brief Raddurchmesser in Millimetern */
+constexpr float RAD_DURCHMESSER_MM = 60.0f;
+/** @brief Radumfang in Millimetern */
+constexpr float RAD_UMFANG_MM = RAD_DURCHMESSER_MM * PI;
+constexpr float ACHS_ABSTAND_MM = 228.0f;
+
+
+// ============================================================
+// ==== Umrechnungsfaktoren ====
+// ============================================================
+
+/** @brief Encoder-Counts pro Millimeter */
+constexpr float COUNTS_PRO_MM = float(COUNTS_PER_REV) / RAD_UMFANG_MM;
+/** @brief Radumfang in Metern */
+constexpr float RAD_UMFANG_M = RAD_UMFANG_MM / 1000.0f;
+
+constexpr float METER_PRO_TICK = RAD_UMFANG_M / float(COUNTS_PER_REV);
+constexpr float ACHS_ABSTAND_M = ACHS_ABSTAND_MM / 1000.0f;
+
+
+
+// ===== C:\Users\Acer\source\repos\robot\tools\Hardware.cpp =====
+// ============================================================
+// File: Hardware.cpp 
+// für Tools
+// Zweck:
+//  - Definition der physischen Hardware-Objekte (Encoder, Motoren)
+//  - Zentrale Hardware-Initialisierung (Pins/IO, Treiber-Enable, etc.)
+// Hinweis:
+//  - Reset/Begin von Control-/Regel-Objekten (Achse_Hi, SpeedWeg, Regler)
+//    gehört NICHT hierhin, sondern nach Control.cpp (control_begin()).
+// ============================================================
+
+#include "Hardware.h"
+#include "globals.h"
+
+// ============================================================
+// --- Encoder ---
+// ============================================================
+
+Enc enc[WHEEL_COUNT] =
+{
+    Enc(ENC_Li_PIN_A,  ENC_Li_PIN_B),   // Li
+    Enc(ENC_Re_PIN_A, ENC_Re_PIN_B)   // Re
+};
+    
+// ============================================================
+// --- Motoren ---
+// ============================================================
+Motor motor[WHEEL_COUNT] =
+{
+    Motor(M_Li_BIN1, M_Li_BIN2, enc[Li]),
+    Motor(M_Re_AIN1, M_Re_AIN2, enc[Re])
+};
+
+// ============================================================
+// --- zentrale Hardware-Init (Option A) ---
+// ============================================================
+void hardware_begin(bool /*resetEnc*/)
+{
+    // --------------------------------------------------------
+    // Treiber-Standby / Enable
+    // (STBY-Pin ist in globals.h definiert)
+    // --------------------------------------------------------
+    pinMode(STBY_PIN, OUTPUT);
+    digitalWrite(STBY_PIN, LOW);  // Treiber AUS (sicherer Start)
+
+    motor[Li].init();
+    motor[Re].init();
+
+    enc[Li].begin();
+    enc[Re].begin();
+    // --------------------------------------------------------
+    // Hier wäre der richtige Ort für weitere echte IO-Init:
+    //  - pinMode(...) für zusätzliche Pins
+    //  - I2C/SPI begin
+    //  - Interrupt-Setup, falls das rein hardwareseitig ist
+    // --------------------------------------------------------
+
+    
+}
+
+
+
+// ===== C:\Users\Acer\source\repos\robot\tools\Hardware.h =====
+// Hardware.h
+#pragma once
+
+#include <Arduino.h>
+#include "globals.h"
+#include "Encoder.h"
+#include "Motor.h"
+
+// --- Encoder ---
+extern Enc enc[WHEEL_COUNT];
+
+// --- Motoren ---
+extern Motor motor[WHEEL_COUNT];
+
+// zentrale Init-Funktion: Pins/IO + optional Encoder reset
+void hardware_begin(bool resetEnc = true);
+
+
+
+// ===== C:\Users\Acer\source\repos\robot\tools\Mixer2W.cpp =====
+#include "Mixer2W.h"
+
+void Mixer2W::setKW(float kW) { _kW = kW; }
+
+AxleRef Mixer2W::mix(const VehicleCmd& cmd) const {
+    AxleRef r;
+    r.vL = cmd.vx - _kW * cmd.wz;
+    r.vR = cmd.vx + _kW * cmd.wz;
+    return r;
+}
+
+
+
+// ===== C:\Users\Acer\source\repos\robot\tools\Mixer2W.h =====
+// Mixer2W.h
+#pragma once
+#include "VehicleTypes.h"
+
+class Mixer2W {
+public:
+    void setKW(float kW);
+    AxleRef mix(const VehicleCmd& cmd) const;
+
+private:
+    float _kW = 1.0f;
+};
+
+
+// ===== C:\Users\Acer\source\repos\robot\tools\Motor.cpp =====
+// Motor.cpp
+#include "Encoder.h"  // nur falls Enc::begin() genutzt wird
+#include "Motor.h"
+
+// ===== Motor =====
+Motor::Motor(uint8_t in1, uint8_t in2) : _pin1(in1), _pin2(in2) {}
+Motor::Motor(uint8_t pin1, uint8_t pin2, Enc& enc)
+    : _pin1(pin1), _pin2(pin2), _enc(&enc) {
+}
+
+void Motor::init() {
+    pinMode(_pin1, OUTPUT);
+    pinMode(_pin2, OUTPUT);
+    bremse(false); // Coast
+}
+
+//void Motor::begin(bool resetEnc) {
+//    init();
+//    if (_enc) _enc->begin(resetEnc);
+//}
+
+void Motor::vor(uint8_t pwm) { analogWrite(_pin1, pwm); digitalWrite(_pin2, LOW); }
+void Motor::rueck(uint8_t pwm) { analogWrite(_pin2, pwm); digitalWrite(_pin1, LOW); }
+
+void Motor::bremse(bool art) {
+    if (art) { digitalWrite(_pin1, HIGH); digitalWrite(_pin2, HIGH); }   // aktiv bremsen
+    else { digitalWrite(_pin1, LOW);  digitalWrite(_pin2, LOW); }   // auslaufen
+}
+
+void Motor::attachEnc(Enc& enc) { _enc = &enc; }
+Enc* Motor::enc() const { return _enc; }
+
+
+// ===== C:\Users\Acer\source\repos\robot\tools\Motor.h =====
+// ============================================================
+// File: Motor.h
+// Zweck:
+//  - Steuerung eines einzelnen Motors (DRV8833/TB6612, 2-Pin-Modus)
+//  - Richtung, PWM-Leistung, Bremse
+//  - Optionale Encoder-Anbindung
+// Abhängigkeiten: Arduino.h, Encoder.h (forward-deklariert)
+// ============================================================
+
+#pragma once
+#include <Arduino.h>
+#include "Encoder.h"
+
+
+
+/**
+ * @class Motor
+ * @brief Steuert einen Motor mit 2-Pin-Ansteuerung (z. B. DRV8833).
+ *
+ * Unterstützt:
+ *  - Vorwärts- und Rückwärtsfahrt über PWM
+ *  - Bremse (Brake oder Coast)
+ *  - Optionale Verbindung zu einem Encoder (Enc)
+ *
+ * Beispiel:
+ * @code
+ * Motor motor[Re](5, 6);
+ * motor[Re].begin();
+ * motor[Re].vor(180);
+ * delay(1000);
+ * motor[Re].bremse(true);
+ * @endcode
+ */
+class Motor {
+public:
+    /**
+     * @brief Konstruktor ohne Encoder.
+     * @param pin1 PWM-Pin für Richtung A
+     * @param pin2 PWM-Pin für Richtung B
+     */
+    Motor(uint8_t pin1, uint8_t pin2);
+
+    /**
+     * @brief Konstruktor mit Encoder-Referenz.
+     * @param pin1 PWM-Pin für Richtung A
+     * @param pin2 PWM-Pin für Richtung B
+     * @param enc  Referenz auf zugehörigen Encoder
+     */
+    Motor(uint8_t pin1, uint8_t pin2, Enc& enc);
+
+    /** @brief Initialisiert die Pins (pinMode-Aufrufe). */
+    void init();
+
+    /**
+     * @brief Startet Motor + optional Encoder.
+     * @param resetEnc true = Encoderzähler auf 0 setzen
+     */
+    void begin(bool resetEnc = true);
+
+    /** @brief Motor vorwärts mit PWM 0–255. */
+    void vor(uint8_t pwm);
+
+    /** @brief Motor rückwärts mit PWM 0–255. */
+    void rueck(uint8_t pwm);
+
+    /**
+     * @brief Bremst den Motor.
+     * @param art true = Brake (HIGH/HIGH), false = Coast (LOW/LOW)
+     */
+    void bremse(bool art);
+
+    /**
+     * @brief Encoder anhängen (nachträglich).
+     * @param enc Referenz auf Encoder
+     */
+    void attachEnc(Enc& enc);
+
+    /**
+     * @brief Gibt Zeiger auf Encoder zurück (oder nullptr, falls keiner).
+     * @return Encoder-Zeiger oder nullptr
+     */
+    Enc* enc() const;
+
+private:
+    uint8_t _pin1;  ///< PWM-Pin 1 (Richtung A)
+    uint8_t _pin2;  ///< PWM-Pin 2 (Richtung B)
+    Enc* _enc = nullptr; ///< Optionaler Encoder-Zeiger
+};
+
+
+
+// ===== C:\Users\Acer\source\repos\robot\tools\PIRegler.cpp =====
+// PIRegler.cpp  (bidirektional)
+
+#include "PIRegler.h"
+#include "ControlParams.h"
+#include <Arduino.h>
+#include <math.h> // fabsf
+
+PIRegler::PIRegler(float Kp, float Ki, int16_t uMin, int16_t uMax)
+    : _Kp(Kp), _Ki(Ki), _uMin(uMin), _uMax(uMax),
+    _v_soll(0.0f), _integral(0.0f), _uPrev(0), _lastE(0.0f),
+    _lastP(0.0f), _lastI(0.0f)
+{
+}
+
+int16_t PIRegler::update(float v_ist, uint16_t dt_ms) {
+    if (dt_ms == 0) { return _uPrev; }
+
+    // --- Fehler ---
+    const float e = _v_soll - v_ist;
+    _lastE = e;
+
+    // --- Zeit ---
+    const float dt_s = (float)dt_ms * 0.001f;
+
+    // --- bidirektional: u_norm in [-1..+1] ---
+    const float uMinNorm = -1.0f;
+    const float uMaxNorm = +1.0f;
+
+    // --- PI vor Begrenzung ---
+    const float p_part = _Kp * e;
+    const float u_pre = p_part + _integral;
+
+    // --- Begrenzen (Sättigung) ---
+    const float u_limited = constrain(u_pre, uMinNorm, uMaxNorm);
+
+    // --- Anti-Windup: Clamping (Integrator nur, wenn nicht gesättigt) ---
+    const bool saturated = (u_pre <= uMinNorm) || (u_pre >= uMaxNorm);
+    if (!saturated) {
+        _integral += _Ki * e * dt_s;
+    }
+
+    // --- endgültiger PI-Ausgang ---
+    float u = p_part + _integral;
+    u = constrain(u, uMinNorm, uMaxNorm);
+
+    _lastP = p_part;
+    _lastI = _integral;
+
+    // --- PWM signed in [-255..+255] ---
+    // korrekt runden mit Vorzeichen:
+    float pwm_f = u * 255.0f;
+    if (pwm_f >= 0.0f) pwm_f += 0.5f;
+    else               pwm_f -= 0.5f;
+
+    int16_t pwm = (int16_t)pwm_f;
+
+    // --- Grenzen: signed ---
+    // Interpretation:
+    //  - _uMax ist der positive Maximalwert
+    //  - _uMin kann negativ sein (z.B. -MAX_PWM) oder 0 (wenn du ihn nicht nutzt)
+    // Sicherer Standard: [-_uMax..+_uMax], aber respektiere _uMin, falls negativ gesetzt.
+    int16_t pwmMax = _uMax;
+    int16_t pwmMin = _uMin;
+
+    if (pwmMax < 0) pwmMax = (int16_t)(-pwmMax); // defensiv
+    if (pwmMin > 0) pwmMin = (int16_t)(-pwmMax); // wenn jemand uMin falsch positiv setzt, mach symmetrisch
+
+    // Wenn uMin nicht negativ gesetzt ist, mache symmetrisch:
+    if (pwmMin >= 0) pwmMin = (int16_t)(-pwmMax);
+
+    pwm = constrain(pwm, pwmMin, pwmMax);
+
+    // --- Slewrate ---
+    pwm = applySlew(pwm);
+
+    return pwm;
+}
+
+int16_t PIRegler::applySlew(int16_t pwm) {
+    const int16_t du = pwm - _uPrev;
+
+    if (du > SLEW_LIMIT_PWM)        pwm = _uPrev + SLEW_LIMIT_PWM;
+    else if (du < -SLEW_LIMIT_PWM)  pwm = _uPrev - SLEW_LIMIT_PWM;
+    _uPrev = pwm;
+    return pwm;
+}
+
+void PIRegler::presetOutput(float u0_pwm) {
+    // bidirektional clamp auf [-uMax..+uMax] (oder uMin, wenn negativ gesetzt)
+    int16_t pwmMax = _uMax;
+    int16_t pwmMin = _uMin;
+
+    if (pwmMax < 0) pwmMax = (int16_t)(-pwmMax);
+    if (pwmMin >= 0) pwmMin = (int16_t)(-pwmMax);
+
+    if (u0_pwm > (float)pwmMax) u0_pwm = (float)pwmMax;
+    if (u0_pwm < (float)pwmMin) u0_pwm = (float)pwmMin;
+
+    // Normierung auf [-1..+1]
+    const float u0_norm = u0_pwm / 255.0f;
+
+    // Integrator-Vorbelegung (Arbeitspunkt)
+    _integral = u0_norm;
+
+    // Slew-Startwert auf diesen Ausgang setzen (signed)
+    float pwm_f = u0_pwm;
+    if (pwm_f >= 0.0f) pwm_f += 0.5f;
+    else               pwm_f -= 0.5f;
+    _uPrev = (int16_t)pwm_f;
+}
+
+void PIRegler::setSoll(float v_soll) { _v_soll = v_soll; }
+
+float PIRegler::soll() const { return _v_soll; }
+
+void PIRegler::reset() {
+    _integral = 0.0f;
+    _uPrev = 0;
+
+    _lastE = 0.0f;
+    _lastP = 0.0f;
+    _lastI = 0.0f;
+}
+
+
+
+// ===== C:\Users\Acer\source\repos\robot\tools\PIRegler.h =====
+// PIRegler.h
+#pragma once
+#include <Arduino.h>   // int16_t, uint16_t, constrain
+
+class PIRegler {
+public:
+    PIRegler(float Kp, float Ki, int16_t uMin, int16_t uMax);
+
+    // v_ist in m/s, dt_ms = Zeit seit letztem Aufruf
+    int16_t update(float v_ist, uint16_t dt_ms);
+
+    // Start-PWM vorgeben (Feedforward / Arbeitspunkt-Vorbelegung)
+    void presetOutput(float u0_pwm);
+
+    void setSoll(float v_soll);
+    float soll() const;
+    float Kp() const { return _Kp; }
+    float Ki() const { return _Ki; }
+
+    void reset();
+
+    // --- Debug / Monitoring ---
+    float lastError() const { return _lastE; }
+    float lastP()     const { return _lastP; }   // Kp * e (in u_norm)
+    float lastI()     const { return _lastI; }   // Integralanteil (in u_norm)
+
+private:
+    float   _Kp;
+    float   _Ki;
+    float   _v_soll;
+    float   _integral;    // in u_norm
+    int16_t _uMin;        // PWM-Limits
+    int16_t _uMax;
+
+    int16_t _uPrev;       // letzte ausgegebene PWM (für Slew-Rate)
+
+    int16_t applySlew(int16_t pwm);
+
+    // Debug
+    float _lastE;
+    float _lastP;
+    float _lastI;
+};
+
+
+
+// ===== C:\Users\Acer\source\repos\robot\tools\Printer.cpp =====
+// Printer.cpp
+#include "Printer.h"
+
+// ============================================================
+// Regeltest (CSV, Komma)
+// ============================================================
+
+void Printer::regel_header(
+    const __FlashStringHelper* name,
+    Side side,
+    const Rad& re,
+    const Rad& li)
+{
+    const PIParam pRe = re.getPI();
+    const PIParam pLi = li.getPI();
+
+    Serial.print(F("REGEL ("));
+    Serial.print(name);
+    Serial.println(F(")"));
+
+    if (side == Side::BOTH)
+    {
+        Serial.print(F("KpRe=")); Serial.print(pRe.Kp, 2);
+        Serial.print(F(",KiRe=")); Serial.print(pRe.Ki, 2);
+
+        Serial.print(F(",KpLi=")); Serial.print(pLi.Kp, 2);
+        Serial.print(F(",KiLi=")); Serial.println(pLi.Ki, 2);
+
+        Serial.println(F("t_s,vSollRe,vIstRe,pwmRe,vSollLi,vIstLi,pwmLi"));
+    }
+    else
+    {
+        const PIParam p = (side == Side::RE) ? pRe : pLi;
+
+        Serial.print(F("Kp=")); Serial.print(p.Kp, 2);
+        Serial.print(F(",Ki=")); Serial.println(p.Ki, 2);
+
+        Serial.println(F("t_s,vSoll,vIst,pwm"));
+    }
+}
+
+
+void Printer::regel_line(float t_s, float soll, float ist, int16_t pwm) {
+    Serial.print(t_s, 3);    Serial.print(',');
+    Serial.print(soll, 3);   Serial.print(',');
+    Serial.print(ist, 3);    Serial.print(',');
+    Serial.println(pwm);
+}
+
+void Printer::regel_done() {
+    Serial.println(F("REGEL_DONE"));
+}
+
+void Printer::regel_line_both(float t_s,
+    float vSollRe, float vIstRe, int16_t pwmRe,
+    float vSollLi, float vIstLi, int16_t pwmLi)
+{
+    Serial.print(t_s, 3);
+    Serial.print(',');
+
+    Serial.print(vSollRe, 3);
+    Serial.print(',');
+    Serial.print(vIstRe, 3);
+    Serial.print(',');
+    Serial.print(pwmRe);
+    Serial.print(',');
+
+    Serial.print(vSollLi, 3);
+    Serial.print(',');
+    Serial.print(vIstLi, 3);
+    Serial.print(',');
+    Serial.println(pwmLi);
+}
+// ============================================================
+// Deadband Finder (CSV, Komma)
+// ============================================================
+
+void Printer::deadband_header(Side side,
+    uint8_t startPWM, uint8_t endPWM, uint8_t step,
+    uint16_t measure_ms, uint16_t settle_ms, float vThresh_mps)
+{
+    Serial.println();
+    Serial.print(F("DEADBAND "));
+    if (side == Side::RE) Serial.println(F("(RE)"));
+    else if (side == Side::LI) Serial.println(F("(LI)"));
+    else Serial.println(F("(BOTH)"));
+
+    Serial.print(F("params,startPWM=")); Serial.print(startPWM);
+    Serial.print(F(",endPWM="));         Serial.print(endPWM);
+    Serial.print(F(",step="));           Serial.print(step);
+    Serial.print(F(",measure_ms="));     Serial.print(measure_ms);
+    Serial.print(F(",settle_ms="));      Serial.print(settle_ms);
+    Serial.print(F(",vThresh_mps="));    Serial.println(vThresh_mps, 3);
+
+    // optional: CSV-Spaltenkopf für Lines (nur falls du deadband_line nutzt)
+    Serial.println(F("PWM,v_mps"));
+}
+
+
+void Printer::deadband_line(uint16_t pwm, float v_mps) {
+    Serial.print(pwm);         Serial.print(',');
+    Serial.println(v_mps, 3);
+}
+
+void Printer::deadband_result(Side side, uint8_t u_dead)
+{
+    Serial.print(F("DEADBAND_RESULT "));
+    if (side == Side::RE) Serial.print(F("(RE) "));
+    else if (side == Side::LI) Serial.print(F("(LI) "));
+    else Serial.print(F("(BOTH) "));
+
+    Serial.print(F("u_dead="));
+    Serial.println(u_dead);
+}
+void Printer::deadband_done(Side side)
+{
+    Serial.print(F("DEADBAND_DONE "));
+    if (side == Side::RE) Serial.println(F("(RE)"));
+    else if (side == Side::LI) Serial.println(F("(LI)"));
+    else Serial.println(F("(BOTH)"));
+}
+
+// ============================================================
+// IMC / Schrittantwort (MINIMAL: nur KP, KI, T)
+// ============================================================
+
+void Printer::imc_header() {
+    // absichtlich keine Ausgabe
+}
+
+void Printer::imc_step_start(uint8_t /*step*/, uint8_t /*u_dead*/, uint8_t /*du*/) {
+    // absichtlich keine Ausgabe
+}
+
+void Printer::imc_progress(uint8_t /*step*/, uint32_t /*dt_ms*/, float /*v_mps*/) {
+    // absichtlich keine Ausgabe
+}
+
+void Printer::imc_t63_hit(uint8_t /*step*/, uint32_t /*t63_ms*/, float /*v_at*/, float /*y63_est*/) {
+    // absichtlich keine Ausgabe
+}
+
+void Printer::imc_step(uint8_t /*step*/, const AutoTunerTypes::StepDataView& /*s*/, float /*K*/) {
+    // absichtlich keine Ausgabe
+}
+
+void Printer::imc_summary(const AutoTunerTypes::IMCResultView& r) {
+    // Für DEINEN PIRegler: r.Kp und r.Ki sind normiert (u_norm 0..1), passend zu PIRegler.cpp
+    // r.Tavg ist die gemittelte Zeitkonstante (aus 63%-Punkt)
+
+    Serial.print(F("PI_TUNE,KP,"));
+    Serial.print(r.Kp, 6);
+
+    Serial.print(F(",KI,"));
+    Serial.print(r.Ki, 6);
+
+    Serial.print(F(",T_S,"));
+    Serial.println(r.Tavg, 4);
+}
+
+void Printer::enc_hand_header() {
+    Serial.println();
+    Serial.println(F("== ENC_HAND: Encoder Handtest (Motor AUS) =="));
+    Serial.println(F("# t_s, dTicksR, dTicksL, ticksR, ticksL, vR_mps, vL_mps"));
+}
+
+void Printer::enc_hand_line(float t_s,
+    long dR, long dL,
+    long ticksR, long ticksL,
+    float vR_mps, float vL_mps) {
+    Serial.print(t_s, 3);   Serial.print(F(","));
+    Serial.print(dR);       Serial.print(F(","));
+    Serial.print(dL);       Serial.print(F(","));
+    Serial.print(ticksR);   Serial.print(F(","));
+    Serial.print(ticksL);   Serial.print(F(","));
+    Serial.print(vR_mps, 6); Serial.print(F(","));
+    Serial.println(vL_mps, 6);
+}
+
+void Printer::pi_sprung_header(Side side)
+{
+    Serial.println();
+    Serial.print(F("PI_SPRUNG "));
+    if (side == Side::RE)        Serial.println(F("(RE)"));
+    else if (side == Side::LI)   Serial.println(F("(LI)"));
+    else                         Serial.println(F("(BOTH)"));
+
+    // Wenn dein IMC/Step-Print schon eigene Header hat, lass es minimal.
+    // Optional: eine kurze Spaltenzeile, wenn du später einheitlich parsen willst.
+}
+
+void Printer::pi_sprung_done(Side side)
+{
+    Serial.print(F("PI_SPRUNG_DONE "));
+    if (side == Side::RE)        Serial.println(F("(RE)"));
+    else if (side == Side::LI)   Serial.println(F("(LI)"));
+    else                         Serial.println(F("(BOTH)"));
+}
+
+
+// ===== C:\Users\Acer\source\repos\robot\tools\Printer.h =====
+// Printer.h
+#pragma once
+#include <Arduino.h>
+#include "TestTypes.h"   // für enum class Side
+#include "Rad.h"
+#include "ControlParams.h"
+
+namespace AutoTunerTypes {
+    struct StepDataView { float y_start, y_end, dy; uint32_t t63_ms; };
+    struct IMCResultView {
+        float K1, K2, Kavg, T1, T2, Tavg, Kp, Ti, Ki; bool valid;
+    };
+}
+
+class Printer {
+public:
+    void regel_line_both(float t_s,
+        float vSollRe, float vIstRe, int16_t pwmRe,
+        float vSollLi, float vIstLi, int16_t pwmLi);
+
+    // PI Sprung
+    void pi_sprung_header(Side side);
+    void pi_sprung_done(Side side);
+
+    // Regeltest (CSV, Komma)
+    void regel_header( const __FlashStringHelper* name, Side side, 
+        const Rad& re, const Rad& li);
+
+    void regel_line(float t_s, float soll, float ist, int16_t pwm);
+    void regel_done();
+
+    // Deadband (CSV, Komma)
+    void deadband_header(Side side,uint8_t startPWM, uint8_t endPWM, uint8_t step,
+        uint16_t measure_ms, uint16_t settle_ms, float vThresh_mps);
+    void deadband_line(uint16_t pwm, float v_mps);
+    void deadband_result(Side side, uint8_t u_dead);
+    void deadband_done(Side side);
+
+    // IMC / Schrittantwort (CSV, Komma)
+    void imc_header();
+    void imc_step_start(uint8_t step, uint8_t u_dead, uint8_t du);
+    void imc_progress(uint8_t step, uint32_t dt_ms, float v_mps);
+    void imc_t63_hit(uint8_t step, uint32_t t63_ms, float v_at, float y63_est);
+    void imc_step(uint8_t step, const AutoTunerTypes::StepDataView& s, float K);
+    void imc_summary(const AutoTunerTypes::IMCResultView& r);
+
+    void enc_hand_header();
+    void enc_hand_line(float t_s,
+        long dR, long dL,
+        long ticksR, long ticksL,
+        float vR_mps, float vL_mps);
+};
+
+
+
+// ===== C:\Users\Acer\source\repos\robot\tools\Rad.cpp =====
+// Rad.cpp
+#include "Rad.h"
+#include "ControlParams.h" // DEAD_PWM, MAX_PWM
+#include <math.h>          // fabsf
+
+Rad::Rad(Motor& motor, SpeedWeg& speed, PIRegler& regler, uint16_t dtMs, Wheel radIndex)
+    : _motor(motor), _speed(speed), _regler(regler), _dtMs(dtMs), _lastUpdateMs(0),
+    _lastPwm(0), _trim(0), _index(radIndex)
+{}
+
+void Rad::setTrim(int16_t t) {_trim = t;}
+
+void Rad::setSoll(float v_soll) {
+    const float v_alt = _regler.soll();
+    _regler.setSoll(v_soll);
+
+    const float EPS = 1e-6f;
+
+    const bool wasZero = (fabsf(v_alt) < EPS);
+    const bool nowZero = (fabsf(v_soll) < EPS);
+
+    // Startimpuls:
+    //  - von 0 -> !=0 : Kick in die richtige Richtung
+    //  - Richtungswechsel: ebenfalls neu starten (sauberer Übergang)
+    if (!nowZero) {
+        const bool dirFlip = (!wasZero) && ((v_alt > 0.0f && v_soll < 0.0f) || (v_alt < 0.0f && v_soll > 0.0f));
+        if (wasZero || dirFlip) {
+            const float sign = (v_soll >= 0.0f) ? 1.0f : -1.0f;
+            _regler.presetOutput(sign * (float)DEAD_PWM[_index]);
+
+            // Zeitbasis neu setzen, damit der Regler sauber startet
+            _lastUpdateMs = 0;
+            _lastPwm = 0;
+        }
+    }
+    else {
+        // Soll = 0: beim nächsten update() wird gebremst (siehe unten)
+        // (keine harte Regler-Manipulation hier nötig)
+    }
+}
+
+float Rad::soll() const {
+    return _regler.soll();
+}
+
+void Rad::update(uint32_t nowMs) {
+    // erste Initialisierung: Zeitbasis setzen und noch NICHT regeln
+    if (_lastUpdateMs == 0) {
+        _lastUpdateMs = nowMs;
+        return;
+    }
+
+    if ((uint32_t)(nowMs - _lastUpdateMs) < (uint32_t)_dtMs) {
+        return;
+    }
+
+    const uint16_t dt_ms = (uint16_t)(nowMs - _lastUpdateMs);
+    _lastUpdateMs = nowMs;
+
+    const float EPS = 1e-6f;
+    const float v_soll = _regler.soll();
+
+    // Soll ~ 0: Motor hart bremsen und sauber 0 ausgeben
+    if (fabsf(v_soll) < EPS) {
+        _motor.bremse(HIGH);
+        _lastPwm = 0;
+        return;
+    }
+
+    // Ist-Geschwindigkeit (m/s)
+    const float v_ist = _speed.mps();
+
+    // PI-Regler (muss signed liefern dürfen)
+    int16_t pwm = _regler.update(v_ist, dt_ms);
+
+    // Fahrtrichtung aus Soll (nicht aus pwm!): vorwärts +1, rückwärts -1
+    const int16_t dir = (v_soll >= 0.0f) ? (int16_t)+1 : (int16_t)-1;
+
+    // Trim überlagern, aber richtungsrichtig
+    pwm = (int16_t)(pwm + (int16_t)(dir * _trim));
+
+
+    // Sättigung symmetrisch: -MAX_PWM..+MAX_PWM
+    if (pwm > (int16_t)MAX_PWM) pwm = (int16_t)MAX_PWM;
+    if (pwm < (int16_t)-MAX_PWM) pwm = (int16_t)-MAX_PWM;
+
+    // Deadband symmetrisch (nur wenn Soll != 0):
+    // Betrag in (0..DEAD_PWM) hochsetzen, Vorzeichen beibehalten.
+
+    int16_t apwm = (pwm >= 0) ? pwm : (int16_t)(-pwm);
+    const int16_t dead = DEAD_PWM[_index];
+
+    if (apwm > 0 && apwm < dead) {
+        pwm = (pwm >= 0) ? dead : (int16_t)(-dead);
+        apwm = dead;
+    }
+
+    // Stellgröße an Motor: Richtung aus Vorzeichen
+    if (pwm > 0) {
+        _motor.vor((uint8_t)apwm);
+    }
+    else if (pwm < 0) {
+        _motor.rueck((uint8_t)apwm);
+    }
+    else {
+        _motor.bremse(HIGH);
+    }
+
+    _lastPwm = pwm; // signed speichern (Debug/Logging)
+}
+
+PIParam Rad::getPI() const
+{
+    return { _regler.Kp(), _regler.Ki() };
+}
+
+void Rad::reset() {
+    _regler.reset();
+    _regler.setSoll(0.0f);   // <<< ENTSCHEIDEND
+    _lastUpdateMs = 0;
+    _lastPwm = 0;
+    _trim = 0;               // optional, aber sinnvoll
+}
+
+
+
+
+// ===== C:\Users\Acer\source\repos\robot\tools\Rad.h =====
+#pragma once
+#include <Arduino.h>
+#include "Motor.h"
+#include "SpeedWeg.h"
+#include "PIRegler.h"
+#include "ControlParams.h"
+
+class Rad {
+public:
+    Rad(Motor& motor, SpeedWeg& speed, PIRegler& regler, uint16_t dtMs, Wheel radIndex);
+
+    void  setSoll(float v_soll);
+    float soll() const;
+
+    void update(uint32_t nowMs);
+
+    int16_t lastPwm() const { return _lastPwm; }
+   
+    void setTrim(int16_t t);
+    int16_t trim() const { return _trim; }
+    PIParam getPI() const;
+    void reset();
+
+private:
+    Motor& _motor;
+    SpeedWeg& _speed;
+    PIRegler& _regler;
+
+    uint16_t _dtMs;
+    Wheel _index;
+    uint32_t _lastUpdateMs;
+    int16_t  _lastPwm;
+    int16_t _trim;
+};
+
+
+
+// ===== C:\Users\Acer\source\repos\robot\tools\SpeedWeg.cpp =====
+// ============================================================
+// File: SpeedWeg.cpp
+// ============================================================
+
+#include "SpeedWeg.h"
+#include "Encoder.h"
+#include "globals.h"
+#include <math.h>
+
+// ------------------------------------------------------------
+// Konstruktor
+// ------------------------------------------------------------
+SpeedWeg::SpeedWeg(Enc& enc)
+    : _enc(enc)
+{
+    _last_counts = _enc.getCounts();
+    _counts_total = 0;
+    _weg_mm_total = 0.0f;
+    _weg_abs_mm_total = 0.0f;
+
+    _acc_counts = 0;
+    _alpha = 0.2f;
+    _rps_filt = 0.0f;
+    _last_time_ms = 0;
+    _timeout_ms = 60;
+    _last_tick_ms = 0;
+}
+
+// ------------------------------------------------------------
+void SpeedWeg::reset() {
+    _counts_total = 0;
+    _weg_mm_total = 0.0f;
+    _weg_abs_mm_total = 0.0f;
+
+    _acc_counts = 0;
+    _rps_filt = 0.0f;
+    _last_time_ms = 0;
+    _last_tick_ms = 0;
+
+    _last_counts = _enc.getCounts();
+}
+
+// ------------------------------------------------------------
+void SpeedWeg::setAlpha(float a) {
+    if (a < 0.0f) a = 0.0f;
+    if (a > 1.0f) a = 1.0f;
+    _alpha = a;
+}
+
+// ------------------------------------------------------------
+void SpeedWeg::setTimeoutMs(uint16_t ms) {
+    _timeout_ms = (uint32_t)ms;
+}
+
+// ------------------------------------------------------------
+// Encoder poll + Berechnung  (Zeitbasis: ms)
+// ------------------------------------------------------------
+void SpeedWeg::pollEncoder(uint32_t now_ms) {
+    long cur = _enc.getCounts();
+    long d = cur - _last_counts;
+
+    if (d != 0) {
+        if (d > 32767) d = 32767;
+        if (d < -32768) d = -32768;
+
+        updateFromTicks((int16_t)d, now_ms);
+        _last_counts = cur;
+        _last_tick_ms = now_ms;   // Zeitpunkt dieses Ticks merken
+    }
+
+    timeoutCheck(now_ms);
+}
+
+// ------------------------------------------------------------
+void SpeedWeg::updateFromTicks(int16_t dcounts, uint32_t now_ms) {
+
+    // 1) Weg immer summieren
+    const float d_mm =
+        ((float)dcounts / (float)COUNTS_PER_REV) * RAD_UMFANG_MM;
+
+    _counts_total += dcounts;
+    _weg_mm_total += d_mm;
+    _weg_abs_mm_total += fabsf(d_mm);
+
+    // 2) Tick-Sammelpuffer
+    _acc_counts += dcounts;
+
+    // 3) Zeit seit letzter Geschwindigkeitsmessung
+    if (_last_time_ms == 0) {
+        _last_time_ms = now_ms;
+        return;
+    }
+
+    uint32_t dt_ms = now_ms - _last_time_ms;
+
+    // Noch nicht genug Zeit? Nichts tun.
+    if (dt_ms < SPEED_MIN_DT_MS) {
+        return;
+    }
+
+    // Zeit aktualisieren (Fensterende)
+    _last_time_ms = now_ms;
+
+    // 4) Geschwindigkeit berechnen
+    const float dt_s = (float)dt_ms * 0.001f;
+    const float revs = (float)_acc_counts / (float)COUNTS_PER_REV;
+    const float rps_i = revs / dt_s;
+
+    // 5) Tiefpass
+    _rps_filt += _alpha * (rps_i - _rps_filt);
+
+    // 6) Fenster zurücksetzen
+    _acc_counts = 0;
+}
+
+// ------------------------------------------------------------
+void SpeedWeg::timeoutCheck(uint32_t now_ms) {
+    if (_last_tick_ms == 0) return;  // noch kein Tick
+
+    if ((now_ms - _last_tick_ms) > _timeout_ms) {
+        _rps_filt = 0.0f;
+    }
+}
+
+// ------------------------------------------------------------
+float SpeedWeg::mps() const {
+    return (_rps_filt * RAD_UMFANG_MM) / 1000.0f;
+}
+
+// ------------------------------------------------------------
+float SpeedWeg::rpm() const {
+    return _rps_filt * 60.0f;
+}
+
+float SpeedWeg::weg_mm() const {
+    return _weg_mm_total;
+}
+
+float SpeedWeg::weg_abs_mm() const {
+    return _weg_abs_mm_total;
+}
+
+
+
+// ===== C:\Users\Acer\source\repos\robot\tools\SpeedWeg.h =====
+// ============================================================
+// File: SpeedWeg.h
+// Zweck: Geschwindigkeit (m/s) & Weg aus Encoder-Ticks
+//        inkl. Tiefpass-Filter für stabile v_Ist-Werte
+//        -> Zeitbasis: Millisekunden (ms)
+// ============================================================
+
+#pragma once
+
+#include <Arduino.h>
+#include "globals.h"
+
+class Enc;
+
+class SpeedWeg {
+public:
+    explicit SpeedWeg(Enc& enc);
+
+    void reset();
+    void setAlpha(float a);
+    void setTimeoutMs(uint16_t ms);
+
+    // now_ms = millis()
+    void pollEncoder(uint32_t now_ms);
+
+    float mps() const;       // m/s
+    float rpm() const;       // U/min
+    float weg_mm() const;    // mm (signed)
+    float weg_abs_mm() const;
+
+    float weg_mm_total() const { return _weg_mm_total; }
+    float weg_abs_mm_total() const { return _weg_abs_mm_total; }
+    long  counts_total() const { return _counts_total; }
+
+private:
+    void updateFromTicks(int16_t dcounts, uint32_t now_ms);
+    void timeoutCheck(uint32_t now_ms);
+
+private:
+    Enc& _enc;
+
+    // Weg & Zähler
+    long  _last_counts = 0;
+    long  _counts_total = 0;
+    float _weg_mm_total = 0.0f;
+    float _weg_abs_mm_total = 0.0f;
+
+    // Tick-Sammelpuffer für das Geschwindigkeitsfenster
+    int32_t _acc_counts = 0;
+
+    // Filter & Zeit (in ms)
+    float    _rps_filt = 0.0f;
+    float    _alpha = 0.2f;
+    uint32_t _last_time_ms = 0;    // Zeitpunkt der letzten Geschwindigkeitsmessung
+    uint32_t _timeout_ms = 60;   // Stillstand nach 60 ms
+    uint32_t _last_tick_ms = 0;    // Zeitpunkt des letzten Ticks (für Timeout)
+};
+
+
+
+// ===== C:\Users\Acer\source\repos\robot\tools\Tests.cpp =====
+// ============================================================
+// File: Tests.cpp
+// ============================================================
+
+#include "Tests.h"
+#include "Control.h"
+#include "Hardware.h"
+#include "ControlParams.h"
+
+// --- AutoTuner ---
+AutoTuner tuner[WHEEL_COUNT] =
+{
+    AutoTuner(motor[Li], speed[Li], Li, true),
+    AutoTuner(motor[Re], speed[Re], Re, true)
+};
+
+// --- Targets / Sequencer ---
+
+void tests_begin()
+{
+    // aktuell nichts nötig
+}
+
+
+
+// ===== C:\Users\Acer\source\repos\robot\tools\Tests.h =====
+// Tests.h
+#pragma once
+
+#include "TestTypes.h"
+#include "AutoTuner.h"
+//#include "Sequencer.h"
+
+
+// --- AutoTuner ---
+extern AutoTuner tuner[WHEEL_COUNT];
+
+// --- Targets / Sequencer ---
+
+// optional: falls du Tests gezielt initialisieren willst
+void tests_begin();
+
+
+
+// ===== C:\Users\Acer\source\repos\robot\tools\TestTypes.h =====
+// TestTypes.h
+#pragma once
+#include <Arduino.h>
+// ============================================================
+// --- Testauswahl (Option C: switch MODE) ---
+// ============================================================
+enum class TestMode : uint8_t {
+    ENC_HAND,           //Von Handdrehung
+    DEADBAND,           // Ab PWM startet Motor (Re/Li)
+    PI_SPRUNG,          // Ermittlung K-Werte (Re/Li)
+    REGEL              // Regelung eines Rades (Re/Li)
+};
+
+enum class Side : uint8_t {
+    RE,
+    LI,
+    BOTH
+};
+
+
+
+
+// ===== C:\Users\Acer\source\repos\robot\tools\Utils.cpp =====
+#include "Utils.h"
+
+bool modeAllowsBoth(TestMode m)
+{
+// --- Helper: Side prüfen ---
+    switch (m)
+    {
+    case TestMode::ENC_HAND:
+    case TestMode::REGEL:
+        return true;
+
+    default:
+        return false;
+    }
+}
+// Nur Drehrichtung aus CMD_UX: + = vor, - = zurück
+int8_t cmd_dir_from_ux(float ux)
+{
+    return (ux >= 0.0f) ? +1 : -1;
+}
+
+// Initialisiert Zeitlimit-Logik für zeitbegrenzte Testmodi
+void start_time_limited(uint32_t& start_ms, bool& enabled)
+{
+    start_ms = millis();
+    enabled = true;
+}
+
+Wheel wheelFromSide(Side side)
+{
+    return (side == Side::LI) ? Li : Re;
+}
+
+
+// ===== C:\Users\Acer\source\repos\robot\tools\Utils.h =====
+#pragma once
+#include <Arduino.h>
+#include "globals.h"
+#include "TestTypes.h"
+
+bool modeAllowsBoth(TestMode m);
+int8_t cmd_dir_from_ux(float ux);
+void start_time_limited(uint32_t& start_ms, bool& enabled);
+Wheel wheelFromSide(Side side);
+
+
+
+// ===== C:\Users\Acer\source\repos\robot\tools\VehicleController.cpp =====
+// ============================================================
+// File: VehicleController.cpp
+// ============================================================
+
+#include "VehicleController.h"
+#include "ControlParams.h"
+#include <math.h>
+
+VehicleController::VehicleController(Motor& motorRe, Motor& motorLi)
+    : _motorRe(motorRe), _motorLi(motorLi) {
+}
+
+void VehicleController::selectSide(Side s) {
+    _side = s;
+}
+
+void VehicleController::setPWM(int16_t pwm) {
+    _pwm = pwm;
+}
+void VehicleController::setCmd(float vx, float vy, float omega) {
+    _cmd.vx = vx;
+    _cmd.vy = vy;
+    _cmd.omega = omega;
+    mix2W();
+}
+
+void VehicleController::mix2W() {
+    // 2-Rad-Hinterachse:
+    // vR = vx + (W/2)*omega
+    // vL = vx - (W/2)*omega
+    //
+    // Hinweis: vy ist in 2-Rad-Konfiguration nicht darstellbar und wird ignoriert.
+
+    const float halfW = 0.5f * ACHS_ABSTAND_M;   // W = Spurweite (m)
+    float vR = _cmd.vx + halfW * _cmd.omega;
+    float vL = _cmd.vx - halfW * _cmd.omega;
+
+    // Gemeinsame Sättigung: |vR| und |vL| dürfen nicht > V_SOLL_GERADE werden.
+    const float aR = fabsf(vR);
+    const float aL = fabsf(vL);
+    const float aMax = (aR > aL) ? aR : aL;
+
+    if (aMax > V_SOLL_GERADE) {
+        const float k = V_SOLL_GERADE / aMax;
+        vR *= k;
+        vL *= k;
+    }
+
+    _vSollRe = vR;
+    _vSollLi = vL;
+}
+
+float VehicleController::getWheelSollMps(Side s) const {
+    if (s == Side::RE) return _vSollRe;
+    if (s == Side::LI) return _vSollLi;
+    return 0.0f;
+}
+
+void VehicleController::setCmdNorm(float ux, float uy, float uOmega) {
+    // 1) (ux,uy) Joystick-Normierung: diagonal nicht schneller als max
+    float uxN = ux;
+    float uyN = uy;
+    const float r2 = uxN * uxN + uyN * uyN;
+    if (r2 > 1.0f) {
+        const float invr = 1.0f / sqrtf(r2);
+        uxN *= invr;
+        uyN *= invr;
+    }
+
+    // 2) Normiert -> physikalisch
+    //    vx/vy in m/s, omega in rad/s
+    const float vx = uxN * V_SOLL_GERADE;
+    const float vy = uyN * V_SOLL_GERADE;
+    const float omega = uOmega * OMEGA_REF;
+
+    // 3) Weiterverarbeitung über den bestehenden Pfad
+    setCmd(vx, vy, omega);
+}
+
+void VehicleController::update() {
+    // signed PWM auswerten
+    const int16_t pwm = _pwm;
+    const uint8_t apwm = (pwm >= 0) ? (uint8_t)pwm : (uint8_t)(-pwm);
+
+    // 0 => bremsen
+    if (apwm == 0) {
+        _motorRe.bremse(HIGH);
+        _motorLi.bremse(HIGH);
+        return;
+    }
+
+    // Helper-Lambda: wendet Richtung auf einen Motor an
+    auto drive = [&](Motor& m) {
+        if (pwm > 0) m.vor(apwm);
+        else         m.rueck(apwm);
+        };
+
+    if (_side == Side::RE) {
+        drive(_motorRe);
+        _motorLi.bremse(HIGH);
+    }
+    else if (_side == Side::LI) {
+        drive(_motorLi);
+        _motorRe.bremse(HIGH);
+    }
+    else if (_side == Side::BOTH) {
+        drive(_motorRe);
+        drive(_motorLi);
+    }
+}
+
+
+
+// ===== C:\Users\Acer\source\repos\robot\tools\VehicleController.h =====
+// ============================================================
+// File: VehicleController.h
+// Zweck:
+//  - Zentrale Frontdoor für Fahrzeugansteuerung
+//  - Aktuell: SPEED (open loop PWM) 
+//						+ 2-Rad-Sollwertbildung aus (vx,vy,omega)
+// ============================================================
+
+#pragma once
+#include <Arduino.h>
+#include "TestTypes.h"   // enum class Side
+#include "Motor.h"
+
+
+struct Twist {
+	float vx;     // m/s
+	float vy;     // m/s (bei 2 Rädern aktuell ignoriert)
+	float omega;  // rad/s (Drehgeschwindigkeit um z)
+};
+
+class VehicleController {
+public:
+	// ctor bekommt die beiden Motoren
+	VehicleController(Motor& motorRe, Motor& motorLi);
+
+	// Setzt den aktuellen Fahrbefehl des Fahrzeugs.
+	// Eingabegrößen:
+	//   vx     – Vorwärts-/Rückwärtsgeschwindigkeit in m/s
+	//   vy     – Seitwärtsgeschwindigkeit in m/s
+	//            (bei 2-Rad-Konfiguration derzeit ignoriert)
+	//   omega  – Rotationsgeschwindigkeit um die Hochachse in rad/s
+	// Hinweis:
+	//   Der Befehl wird intern gespeichert und sofort über den
+	//   aktuellen Kinematik-Mixer in radbezogene Sollwerte übersetzt.
+	void setCmd(float vx, float vy, float omega);
+
+	// Liefert den Sollwert (Geschwindigkeit) für ein einzelnes Rad.
+	// Rückgabewert:
+	//   Sollgeschwindigkeit des angegebenen Rads in m/s.
+	// Hinweis:
+	//   Der Wert stammt aus dem zuletzt gesetzten Fahrbefehl (vx,vy,omega)
+	//   und der aktuell aktiven Kinematik (z. B. 2-Rad, später 4-Rad).
+	float getWheelSollMps(Side s) const;
+
+	// Setzt normierten Fahrbefehl (dimensionslos).
+	// ux, uy, uOmega typ. im Bereich [-1..+1].
+	// Translationsanteil (ux,uy) wird bei Bedarf auf Länge 1 normiert,
+	// damit diagonale Eingaben nicht schneller als "max" sind.
+	void setCmdNorm(float ux, float uy, float uOmega);
+
+	// Konfiguration (einmal beim Teststart)
+	void selectSide(Side s);
+
+	// Open-Loop PWM (SPEED)
+	void setPWM(int16_t pwm);
+
+	// zyklischer Aufruf
+	void update();
+
+private:
+	void mix2W();
+
+	Motor& _motorRe;
+	Motor& _motorLi;
+
+	Side   _side = Side::RE;
+	int16_t _pwm = 0;
+
+	Twist _cmd{ 0,0,0 };
+	float _vSollRe = 0.0f;
+	float _vSollLi = 0.0f;
+};
+
+
+
+
+// ===== C:\Users\Acer\source\repos\robot\tools\VehicleTypes.h =====
+// VehicleTypes.h
+#pragma once
+struct VehicleCmd {
+    float vx;
+    float vy;
+    float wz;
+};
+
+struct AxleRef {
+    float vL;
+    float vR;
+};
+
+
+
+// ===== C:\Users\Acer\source\repos\robot\vorne\src\CommandScript.cpp =====
 // CommandScript.cpp
 #include "CommandScript.h"
 
@@ -3244,147 +4573,23 @@ uint8_t CommandScript::size()
 {
     return sizeof(_script) / sizeof(_script[0]);
 }
-C:\Users\Acer\source\repos\robot>(
-echo C:\Users\Acer\source\repos\robot\vorne\src\vorne.ino   | findstr /I "\\tools\\"  1>nul  
- if errorlevel 1 (
-echo..  
- echo ==================================================  
- echo DATEI: C:\Users\Acer\source\repos\robot\vorne\src\vorne.ino  
- echo ==================================================  
- type "C:\Users\Acer\source\repos\robot\vorne\src\vorne.ino" 
-) 
-) 
-.
-==================================================
-DATEI: C:\Users\Acer\source\repos\robot\vorne\src\vorne.ino
-==================================================
-ï»¿/*
- Name:      vorne.ino
- Created:   11.03.2026 22:17:58
- Author:    Dr. Faust
-*/
-#include "CommandScript.h"
-#include "src/Hardware.h"
-#include "src/hardware_pins.h"
-#include "src/Control.h"
-#include "src/ControlConfig.h"
-#include "src/CommUtils.h"
-#include "src/UartLink.h"
-#include "src/Connection/ConnectionMonitor.h"
-#include "src/CommandRunner/CommandRunner.h"
-#include "src/Printer.h"
 
-// globale Variablen
-static float g_v2_ist = 0.0f;
-static float g_v3_ist = 0.0f;
-static int16_t g_pwm2 = 0;
-static int16_t g_pwm3 = 0;
-static uint32_t g_startMs = 0;
-static bool g_timerStarted = false;
 
-// globale Objekte
-VehicleController vehicle;
-UartLink uart(Serial, true);
-ConnectionMonitor conn(uart, 13);
-CommandParser parser;
-CommandRunner commandRunner(vehicle, uart, parser,
-    CommandScript::get, CommandScript::size);
-Printer printer;
+// ===== C:\Users\Acer\source\repos\robot\vorne\src\CommandScript.h =====
+// CommandScript.h
+#pragma once
+#include <Arduino.h>
 
-void setup()
+class CommandScript
 {
-    Serial.begin(115200);
-    hardware_begin(PinsFront::PINS);
-    hardware_enableMotors();
-    control_begin(ConfigFront::CONFIG);
-    speed_reset_all();
-
-    vehicle.begin(
-        0.0f, 0.0f,   // Kp_vx, Ki_vx
-        0.0f, 0.0f,   // Kp_vy, Ki_vy
-        0.0f, 0.0f    // Kp_wz, Ki_wz
-    );
-
-    commandRunner.begin();
-    uart.begin();
-    conn.begin(true);
-    printer.printHeader();
-}
+public:
+    static const char* get(uint8_t index);
+    static uint8_t size();
+};
 
 
-void loop()
-{
-    uint32_t now = millis();
 
-    uart.update();
-    conn.update();
-
-    if (uart.isConnected())
-        commandRunner.update(now);
-
-    if (commandRunner.isActive() && !g_timerStarted)
-    {
-        g_startMs = now;
-        g_timerStarted = true;
-    }
-
-    if (uart.availableLine())
-    {
-        const char* line = uart.getLine();
-        int16_t v2_i, v3_i;
-        if (sscanf(line, "VIST,%hd,%hd,%hd,%hd", &v2_i, &v3_i, &g_pwm2, &g_pwm3) == 4)
-        {
-            g_v2_ist = int100ToFloat(v2_i);
-            g_v3_ist = int100ToFloat(v3_i);
-        }
-    }
-
-    vehicle.updateIst(
-        speed[Re].mps(),
-        speed[Li].mps(),
-        g_v2_ist,
-        g_v3_ist
-    );
-    vehicle.update(now);
-
-    rad[VoLi].setSoll(commandRunner.getWheelSoll(VoLi));
-    rad[VoRe].setSoll(commandRunner.getWheelSoll(VoRe));
-
-    static uint32_t lastSend = 0;
-    if (now - lastSend >= VEHICLE_DT_MS)
-    {
-        lastSend = now;
-        int16_t v2_i = floatToInt100(commandRunner.getWheelSoll(HiLi));
-        int16_t v3_i = floatToInt100(commandRunner.getWheelSoll(HiRe));
-        char buf[32];
-        snprintf(buf, sizeof(buf), "VSOL,%d,%d", v2_i, v3_i);
-        uart.sendLine(buf);
-    }
-
-    control_update(now);
-
-    static uint32_t lastDbg = 0;
-    if (!commandRunner.isFinished() && now - lastDbg >= VEHICLE_DT_MS)
-    {
-        lastDbg = now;
-        uint32_t t = g_timerStarted ? (now - g_startMs) : 0;
-        printer.printWheels(vehicle, g_v2_ist, g_v3_ist, g_pwm2, g_pwm3, t);
-    }
-}
-C:\Users\Acer\source\repos\robot>(
-echo C:\Users\Acer\source\repos\robot\vorne\__vm\.vorne.vsarduino.h   | findstr /I "\\tools\\"  1>nul  
- if errorlevel 1 (
-echo..  
- echo ==================================================  
- echo DATEI: C:\Users\Acer\source\repos\robot\vorne\__vm\.vorne.vsarduino.h  
- echo ==================================================  
- type "C:\Users\Acer\source\repos\robot\vorne\__vm\.vorne.vsarduino.h" 
-) 
-) 
-.
-==================================================
-DATEI: C:\Users\Acer\source\repos\robot\vorne\__vm\.vorne.vsarduino.h
-==================================================
+// ===== C:\Users\Acer\source\repos\robot\vorne\__vm\.vorne.vsarduino.h =====
 /* 
 	Editor: https://www.visualmicro.com/
 			This file is for intellisense purpose only.
@@ -3408,20 +4613,9 @@ DATEI: C:\Users\Acer\source\repos\robot\vorne\__vm\.vorne.vsarduino.h
 #endif
 #endif
 
-C:\Users\Acer\source\repos\robot>(
-echo C:\Users\Acer\source\repos\robot\_alt\control_front.h   | findstr /I "\\tools\\"  1>nul  
- if errorlevel 1 (
-echo..  
- echo ==================================================  
- echo DATEI: C:\Users\Acer\source\repos\robot\_alt\control_front.h  
- echo ==================================================  
- type "C:\Users\Acer\source\repos\robot\_alt\control_front.h" 
-) 
-) 
-.
-==================================================
-DATEI: C:\Users\Acer\source\repos\robot\_alt\control_front.h
-==================================================
+
+
+// ===== C:\Users\Acer\source\repos\robot\_alt\control_front.h =====
 // control_front.h
 #pragma once
 //#include "src/globals.h"
@@ -3436,20 +4630,9 @@ constexpr PIParam PI_PARAMS[WHEEL_COUNT] = {
     {2.0f, 6.0f},   // Li
     {2.0f, 5.5f}    // Re
 };
-C:\Users\Acer\source\repos\robot>(
-echo C:\Users\Acer\source\repos\robot\_alt\Hardware-hinten.h   | findstr /I "\\tools\\"  1>nul  
- if errorlevel 1 (
-echo..  
- echo ==================================================  
- echo DATEI: C:\Users\Acer\source\repos\robot\_alt\Hardware-hinten.h  
- echo ==================================================  
- type "C:\Users\Acer\source\repos\robot\_alt\Hardware-hinten.h" 
-) 
-) 
-.
-==================================================
-DATEI: C:\Users\Acer\source\repos\robot\_alt\Hardware-hinten.h
-==================================================
+
+
+// ===== C:\Users\Acer\source\repos\robot\_alt\Hardware-hinten.h =====
 // Hardware.h
 #ifndef HARDWARE_H
 #define HARDWARE_H
@@ -3471,20 +4654,9 @@ void hardware_begin(bool resetEnc = true);
 void hardware_enableMotors();
 
 #endif // HARDWARE_H
-C:\Users\Acer\source\repos\robot>(
-echo C:\Users\Acer\source\repos\robot\_alt\Hardware-vorne.h   | findstr /I "\\tools\\"  1>nul  
- if errorlevel 1 (
-echo..  
- echo ==================================================  
- echo DATEI: C:\Users\Acer\source\repos\robot\_alt\Hardware-vorne.h  
- echo ==================================================  
- type "C:\Users\Acer\source\repos\robot\_alt\Hardware-vorne.h" 
-) 
-) 
-.
-==================================================
-DATEI: C:\Users\Acer\source\repos\robot\_alt\Hardware-vorne.h
-==================================================
+
+
+// ===== C:\Users\Acer\source\repos\robot\_alt\Hardware-vorne.h =====
 // Hardware.h
 #ifndef HARDWARE_H
 #define HARDWARE_H
@@ -3506,241 +4678,9 @@ void hardware_begin(bool resetEnc = true);
 void hardware_enableMotors();
 
 #endif // HARDWARE_H
-C:\Users\Acer\source\repos\robot>(
-echo C:\Users\Acer\source\repos\robot\_alt\hinten_Control.h   | findstr /I "\\tools\\"  1>nul  
- if errorlevel 1 (
-echo..  
- echo ==================================================  
- echo DATEI: C:\Users\Acer\source\repos\robot\_alt\hinten_Control.h  
- echo ==================================================  
- type "C:\Users\Acer\source\repos\robot\_alt\hinten_Control.h" 
-) 
-) 
-.
-==================================================
-DATEI: C:\Users\Acer\source\repos\robot\_alt\hinten_Control.h
-==================================================
-// Control.h
-#pragma once
-
-#include "src/SpeedWeg.h"
-#include "src/PIRegler.h"
-#include "src/Rad.h"
-
-// --- SpeedWeg ---
-extern SpeedWeg speed[WHEEL_COUNT];
-
-// --- Regler / Rad ---
-extern PIRegler regler[WHEEL_COUNT];
-extern Rad rad[WHEEL_COUNT];
-
-// Init/Reset
-void speed_reset_all();
-void control_update(uint32_t nowMs);
-
-// NEU:
-void control_setSoll(uint8_t wheel, float v);
-void control_stopAll();
-C:\Users\Acer\source\repos\robot>(
-echo C:\Users\Acer\source\repos\robot\_alt\hinten_control_rear.h   | findstr /I "\\tools\\"  1>nul  
- if errorlevel 1 (
-echo..  
- echo ==================================================  
- echo DATEI: C:\Users\Acer\source\repos\robot\_alt\hinten_control_rear.h  
- echo ==================================================  
- type "C:\Users\Acer\source\repos\robot\_alt\hinten_control_rear.h" 
-) 
-) 
-.
-==================================================
-DATEI: C:\Users\Acer\source\repos\robot\_alt\hinten_control_rear.h
-==================================================
-// control_rear.h
-#pragma once
 
 
-constexpr int16_t DEAD_PWM[WHEEL_COUNT] = {
-    80,  // Li
-    60   // Re
-};
-
-constexpr PIParam PI_PARAMS[WHEEL_COUNT] = {
-    {2.0f, 6.0f},   // Li
-    {2.0f, 5.5f}    // Re
-};
-C:\Users\Acer\source\repos\robot>(
-echo C:\Users\Acer\source\repos\robot\_alt\hinten_hardware_pins.h   | findstr /I "\\tools\\"  1>nul  
- if errorlevel 1 (
-echo..  
- echo ==================================================  
- echo DATEI: C:\Users\Acer\source\repos\robot\_alt\hinten_hardware_pins.h  
- echo ==================================================  
- type "C:\Users\Acer\source\repos\robot\_alt\hinten_hardware_pins.h" 
-) 
-) 
-.
-==================================================
-DATEI: C:\Users\Acer\source\repos\robot\_alt\hinten_hardware_pins.h
-==================================================
-// hardware_pins.h
-#pragma once
-#include <Arduino.h>
-
-// ==========================
-// Motor hinten
-// ==========================
-constexpr uint8_t M_Re_AIN1 = 9;
-constexpr uint8_t M_Re_AIN2 = 10;
-
-constexpr uint8_t M_Li_BIN1 = 6;
-constexpr uint8_t M_Li_BIN2 = 5;
-
-constexpr uint8_t STBY_PIN = 8;
-
-// ==========================
-// Encoder hinten
-// ==========================
-constexpr uint8_t ENC_Re_PIN_A = A2;
-constexpr uint8_t ENC_Re_PIN_B = A3;
-
-constexpr uint8_t ENC_Li_PIN_A = A0;
-constexpr uint8_t ENC_Li_PIN_B = A1;
-
-C:\Users\Acer\source\repos\robot>(
-echo C:\Users\Acer\source\repos\robot\_alt\Print.h   | findstr /I "\\tools\\"  1>nul  
- if errorlevel 1 (
-echo..  
- echo ==================================================  
- echo DATEI: C:\Users\Acer\source\repos\robot\_alt\Print.h  
- echo ==================================================  
- type "C:\Users\Acer\source\repos\robot\_alt\Print.h" 
-) 
-) 
-.
-==================================================
-DATEI: C:\Users\Acer\source\repos\robot\_alt\Print.h
-==================================================
-// Print.h
-#pragma once
-#include <Arduino.h>
-
-void print_begin();
-void print_update(uint32_t now);
-C:\Users\Acer\source\repos\robot>(
-echo C:\Users\Acer\source\repos\robot\_alt\VehicleTypes.h   | findstr /I "\\tools\\"  1>nul  
- if errorlevel 1 (
-echo..  
- echo ==================================================  
- echo DATEI: C:\Users\Acer\source\repos\robot\_alt\VehicleTypes.h  
- echo ==================================================  
- type "C:\Users\Acer\source\repos\robot\_alt\VehicleTypes.h" 
-) 
-) 
-.
-==================================================
-DATEI: C:\Users\Acer\source\repos\robot\_alt\VehicleTypes.h
-==================================================
-// VehicleTypes.h
-#pragma once
-struct VehicleCmd {
-    float vx;
-    float vy;
-    float wz;
-};
-
-struct AxleRef {
-    float vL;
-    float vR;
-};
-
-C:\Users\Acer\source\repos\robot>(
-echo C:\Users\Acer\source\repos\robot\_alt\vorne_Control.h   | findstr /I "\\tools\\"  1>nul  
- if errorlevel 1 (
-echo..  
- echo ==================================================  
- echo DATEI: C:\Users\Acer\source\repos\robot\_alt\vorne_Control.h  
- echo ==================================================  
- type "C:\Users\Acer\source\repos\robot\_alt\vorne_Control.h" 
-) 
-) 
-.
-==================================================
-DATEI: C:\Users\Acer\source\repos\robot\_alt\vorne_Control.h
-==================================================
-// Control.h
-#pragma once
-
-//#include "src/globals.h"
-#include "src/SpeedWeg.h"
-#include "src/PIRegler.h"
-#include "src/Rad.h"
-
-// --- SpeedWeg ---
-extern SpeedWeg speed[WHEEL_COUNT];
-
-// --- Regler / Rad ---
-extern PIRegler regler[WHEEL_COUNT];
-extern Rad rad[WHEEL_COUNT];
-
-// Init/Reset
-void speed_reset_all();
-void control_update(uint32_t nowMs);
-
-// NEU:
-void control_setSoll(uint8_t wheel, float v);
-void control_stopAll();
-C:\Users\Acer\source\repos\robot>(
-echo C:\Users\Acer\source\repos\robot\_alt\vorne_hardware_pins.h   | findstr /I "\\tools\\"  1>nul  
- if errorlevel 1 (
-echo..  
- echo ==================================================  
- echo DATEI: C:\Users\Acer\source\repos\robot\_alt\vorne_hardware_pins.h  
- echo ==================================================  
- type "C:\Users\Acer\source\repos\robot\_alt\vorne_hardware_pins.h" 
-) 
-) 
-.
-==================================================
-DATEI: C:\Users\Acer\source\repos\robot\_alt\vorne_hardware_pins.h
-==================================================
-// hardware_pins.h
-#pragma once
-#include <Arduino.h>
-
-// ==========================
-// Motor vorne
-// ==========================
-constexpr uint8_t M_Re_AIN1 = 9;
-constexpr uint8_t M_Re_AIN2 = 10;
-
-constexpr uint8_t M_Li_BIN1 = 6;
-constexpr uint8_t M_Li_BIN2 = 5;
-
-constexpr uint8_t STBY_PIN = 8;
-
-// ==========================
-// Encoder vorne
-// ==========================
-constexpr uint8_t ENC_Re_PIN_A = A2;
-constexpr uint8_t ENC_Re_PIN_B = A3;
-
-constexpr uint8_t ENC_Li_PIN_A = A0;
-constexpr uint8_t ENC_Li_PIN_B = A1;
-
-C:\Users\Acer\source\repos\robot>(
-echo C:\Users\Acer\source\repos\robot\_alt\hinten_Control.cpp   | findstr /I "\\tools\\"  1>nul  
- if errorlevel 1 (
-echo..  
- echo ==================================================  
- echo DATEI: C:\Users\Acer\source\repos\robot\_alt\hinten_Control.cpp  
- echo ==================================================  
- type "C:\Users\Acer\source\repos\robot\_alt\hinten_Control.cpp" 
-) 
-) 
-.
-==================================================
-DATEI: C:\Users\Acer\source\repos\robot\_alt\hinten_Control.cpp
-==================================================
+// ===== C:\Users\Acer\source\repos\robot\_alt\hinten_Control.cpp =====
 // ============================================================
 // File: Control.cpp
 // ============================================================
@@ -3805,20 +4745,76 @@ void control_stopAll()
     for (uint8_t i = 0; i < WHEEL_COUNT; i++)
         rad[i].stop();
 }
-C:\Users\Acer\source\repos\robot>(
-echo C:\Users\Acer\source\repos\robot\_alt\Print.cpp   | findstr /I "\\tools\\"  1>nul  
- if errorlevel 1 (
-echo..  
- echo ==================================================  
- echo DATEI: C:\Users\Acer\source\repos\robot\_alt\Print.cpp  
- echo ==================================================  
- type "C:\Users\Acer\source\repos\robot\_alt\Print.cpp" 
-) 
-) 
-.
-==================================================
-DATEI: C:\Users\Acer\source\repos\robot\_alt\Print.cpp
-==================================================
+
+
+// ===== C:\Users\Acer\source\repos\robot\_alt\hinten_Control.h =====
+// Control.h
+#pragma once
+
+#include "src/SpeedWeg.h"
+#include "src/PIRegler.h"
+#include "src/Rad.h"
+
+// --- SpeedWeg ---
+extern SpeedWeg speed[WHEEL_COUNT];
+
+// --- Regler / Rad ---
+extern PIRegler regler[WHEEL_COUNT];
+extern Rad rad[WHEEL_COUNT];
+
+// Init/Reset
+void speed_reset_all();
+void control_update(uint32_t nowMs);
+
+// NEU:
+void control_setSoll(uint8_t wheel, float v);
+void control_stopAll();
+
+
+// ===== C:\Users\Acer\source\repos\robot\_alt\hinten_control_rear.h =====
+// control_rear.h
+#pragma once
+
+
+constexpr int16_t DEAD_PWM[WHEEL_COUNT] = {
+    80,  // Li
+    60   // Re
+};
+
+constexpr PIParam PI_PARAMS[WHEEL_COUNT] = {
+    {2.0f, 6.0f},   // Li
+    {2.0f, 5.5f}    // Re
+};
+
+
+// ===== C:\Users\Acer\source\repos\robot\_alt\hinten_hardware_pins.h =====
+// hardware_pins.h
+#pragma once
+#include <Arduino.h>
+
+// ==========================
+// Motor hinten
+// ==========================
+constexpr uint8_t M_Re_AIN1 = 9;
+constexpr uint8_t M_Re_AIN2 = 10;
+
+constexpr uint8_t M_Li_BIN1 = 6;
+constexpr uint8_t M_Li_BIN2 = 5;
+
+constexpr uint8_t STBY_PIN = 8;
+
+// ==========================
+// Encoder hinten
+// ==========================
+constexpr uint8_t ENC_Re_PIN_A = A2;
+constexpr uint8_t ENC_Re_PIN_B = A3;
+
+constexpr uint8_t ENC_Li_PIN_A = A0;
+constexpr uint8_t ENC_Li_PIN_B = A1;
+
+
+
+// ===== C:\Users\Acer\source\repos\robot\_alt\Print.cpp =====
 // Print.cpp
 #include "Print.h"
 #include "src/Control.h"
@@ -3874,20 +4870,34 @@ void print_update(uint32_t now)
     Serial.print(',');
     Serial.println(rad[Re].lastPwm());
 }
-C:\Users\Acer\source\repos\robot>(
-echo C:\Users\Acer\source\repos\robot\_alt\vorne_Control.cpp   | findstr /I "\\tools\\"  1>nul  
- if errorlevel 1 (
-echo..  
- echo ==================================================  
- echo DATEI: C:\Users\Acer\source\repos\robot\_alt\vorne_Control.cpp  
- echo ==================================================  
- type "C:\Users\Acer\source\repos\robot\_alt\vorne_Control.cpp" 
-) 
-) 
-.
-==================================================
-DATEI: C:\Users\Acer\source\repos\robot\_alt\vorne_Control.cpp
-==================================================
+
+
+// ===== C:\Users\Acer\source\repos\robot\_alt\Print.h =====
+// Print.h
+#pragma once
+#include <Arduino.h>
+
+void print_begin();
+void print_update(uint32_t now);
+
+
+// ===== C:\Users\Acer\source\repos\robot\_alt\VehicleTypes.h =====
+// VehicleTypes.h
+#pragma once
+struct VehicleCmd {
+    float vx;
+    float vy;
+    float wz;
+};
+
+struct AxleRef {
+    float vL;
+    float vR;
+};
+
+
+
+// ===== C:\Users\Acer\source\repos\robot\_alt\vorne_Control.cpp =====
 // ============================================================
 // File: Control.cpp
 // ============================================================
@@ -3952,3 +4962,57 @@ void control_stopAll()
     for (uint8_t i = 0; i < WHEEL_COUNT; i++)
         rad[i].stop();
 }
+
+
+// ===== C:\Users\Acer\source\repos\robot\_alt\vorne_Control.h =====
+// Control.h
+#pragma once
+
+//#include "src/globals.h"
+#include "src/SpeedWeg.h"
+#include "src/PIRegler.h"
+#include "src/Rad.h"
+
+// --- SpeedWeg ---
+extern SpeedWeg speed[WHEEL_COUNT];
+
+// --- Regler / Rad ---
+extern PIRegler regler[WHEEL_COUNT];
+extern Rad rad[WHEEL_COUNT];
+
+// Init/Reset
+void speed_reset_all();
+void control_update(uint32_t nowMs);
+
+// NEU:
+void control_setSoll(uint8_t wheel, float v);
+void control_stopAll();
+
+
+// ===== C:\Users\Acer\source\repos\robot\_alt\vorne_hardware_pins.h =====
+// hardware_pins.h
+#pragma once
+#include <Arduino.h>
+
+// ==========================
+// Motor vorne
+// ==========================
+constexpr uint8_t M_Re_AIN1 = 9;
+constexpr uint8_t M_Re_AIN2 = 10;
+
+constexpr uint8_t M_Li_BIN1 = 6;
+constexpr uint8_t M_Li_BIN2 = 5;
+
+constexpr uint8_t STBY_PIN = 8;
+
+// ==========================
+// Encoder vorne
+// ==========================
+constexpr uint8_t ENC_Re_PIN_A = A2;
+constexpr uint8_t ENC_Re_PIN_B = A3;
+
+constexpr uint8_t ENC_Li_PIN_A = A0;
+constexpr uint8_t ENC_Li_PIN_B = A1;
+
+
+

@@ -26,17 +26,6 @@ void setup()
     uart.begin();
     conn.begin(false);
 }
-//void loop()
-//{
-//    uint32_t now = millis();
-//
-//    // TEST: nur Re dreht
-//    rad[Re].setSoll(0.0f);
-//    rad[Li].setSoll(0.2f);
-//
-//    control_update(now);
-//}
-
 void loop()
 {
     uint32_t now = millis();
@@ -77,3 +66,14 @@ void loop()
 
     control_update(now);
 }
+
+//void loop()
+//{
+//    uint32_t now = millis();
+//
+//    // TEST: nur Re dreht
+//    rad[Re].setSoll(0.0f);
+//    rad[Li].setSoll(0.2f);
+//
+//    control_update(now);
+//}
