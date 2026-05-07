@@ -1,5 +1,4 @@
 ﻿// vorne.ino
- 
 
 #include "CommandScript.h"
 #include "src/Hardware.h"
@@ -15,8 +14,10 @@
 // globale Variablen
 static float g_v2_ist = 0.0f;
 static float g_v3_ist = 0.0f;
+#ifdef PRINTER_MODE_RAEDER
 static int16_t g_pwm2 = 0;
 static int16_t g_pwm3 = 0;
+#endif
 static uint32_t g_startMs = 0;
 static bool g_timerStarted = false;
 
@@ -36,23 +37,20 @@ void setup()
     hardware_enableMotors();
     control_begin(ConfigFront::CONFIG);
     speed_reset_all();
-
     vehicle.begin(
         0.0f, 0.0f,   // Kp_vx, Ki_vx
         0.0f, 0.0f,   // Kp_vy, Ki_vy
         0.0f, 0.0f    // Kp_wz, Ki_wz
     );
-
     commandRunner.begin();
     uart.begin();
     conn.begin(true);
-    printer.printHeader();
+    printer.printHeader(vehicle, ConfigFront::CONFIG);
 }
 
 void loop()
 {
     uint32_t now = millis();
-
     uart.update();
     conn.update();
 
@@ -68,17 +66,24 @@ void loop()
         }
     }
     else g_timerStarted = false;
-    
 
     if (uart.availableLine())
     {
         const char* line = uart.getLine();
         int16_t v2_i, v3_i;
+#ifdef PRINTER_MODE_RAEDER
         if (sscanf(line, "VIST,%hd,%hd,%hd,%hd", &v2_i, &v3_i, &g_pwm2, &g_pwm3) == 4)
         {
             g_v2_ist = int100ToFloat(v2_i);
             g_v3_ist = int100ToFloat(v3_i);
         }
+#else
+        if (sscanf(line, "VIST,%hd,%hd", &v2_i, &v3_i) == 2)
+        {
+            g_v2_ist = int100ToFloat(v2_i);
+            g_v3_ist = int100ToFloat(v3_i);
+        }
+#endif
     }
 
     vehicle.updateIst(
@@ -110,17 +115,11 @@ void loop()
     {
         lastDbg = now;
         uint32_t t = g_timerStarted ? (now - g_startMs) : 0;
+#ifdef PRINTER_MODE_CHASSIS
+        printer.printWheels(vehicle, g_v2_ist, g_v3_ist, t);
+#endif
+#ifdef PRINTER_MODE_RAEDER
         printer.printWheels(vehicle, g_v2_ist, g_v3_ist, g_pwm2, g_pwm3, t);
+#endif
     }
 }
-
-//void loop()
-//{
-//    uint32_t now = millis();
-//
-//    // TEST: 
-//    rad[Re].setSoll(0.2f);
-//    rad[Li].setSoll(0.2f);
-//
-//    control_update(now);
-//}

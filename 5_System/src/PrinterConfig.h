@@ -1,0 +1,8 @@
+// PrinterConfig.h
+#ifndef PRINTER_CONFIG_H
+#define PRINTER_CONFIG_H
+
+//#define PRINTER_MODE_CHASSIS
+ #define PRINTER_MODE_RAEDER
+
+#endif // PRINTER_CONFIG_H

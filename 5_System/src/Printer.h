@@ -1,22 +1,28 @@
-// ============================================================
-// Printer.h
-// ============================================================
 #ifndef PRINTER_H
 #define PRINTER_H
-
 #include <Arduino.h>
 #include "src/globals.h"
 #include "src/VehicleController.h"
 #include "src/Control.h"
+#include "src/ControlConfig.h"
+#include "PrinterConfig.h"
 
 class Printer
 {
 public:
-    void printHeader();
+    void printHeader(VehicleController& vehicle, const ControlConfig& cfg);
+
+#ifdef PRINTER_MODE_CHASSIS
+    void printWheels(VehicleController& vehicle,
+        float v2_ist, float v3_ist,
+        uint32_t t_ms);
+#endif
+
+#ifdef PRINTER_MODE_RAEDER
     void printWheels(VehicleController& vehicle,
         float v2_ist, float v3_ist,
         int16_t pwm2, int16_t pwm3,
         uint32_t t_ms);
+#endif
 };
-
 #endif

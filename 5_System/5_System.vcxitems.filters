@@ -11,5 +11,6 @@
     <ClInclude Include="$(MSBuildThisFileDirectory)src\Parser\CommandParser.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)src\CommandRunner\CommandRunner.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)src\Printer.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)src\PrinterConfig.h" />
   </ItemGroup>
 </Project>

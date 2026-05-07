@@ -23,6 +23,17 @@ public:
     float vyIst() const { return _vy_ist; }
     float wzIst() const { return _wz_ist; }
 
+    float vxSoll() const { return _vx; }
+    float vySoll() const { return _vy; }
+    float wzSoll() const { return _wz; }
+
+    float KpVx() const { return _regler.KpVx(); }
+    float KiVx() const { return _regler.KiVx(); }
+    float KpVy() const { return _regler.KpVy(); }
+    float KiVy() const { return _regler.KiVy(); }
+    float KpWz() const { return _regler.KpWz(); }
+    float KiWz() const { return _regler.KiWz(); }
+
 private:
     void applyMixer(float vx, float vy, float wz);
 

@@ -19,6 +19,13 @@ public:
     float updateVy(float soll, float ist, uint16_t dt_ms);
     float updateWz(float soll, float ist, uint16_t dt_ms);
 
+    float KpVx() const { return _Kp_vx; }
+    float KiVx() const { return _Ki_vx; }
+    float KpVy() const { return _Kp_vy; }
+    float KiVy() const { return _Ki_vy; }
+    float KpWz() const { return _Kp_wz; }
+    float KiWz() const { return _Ki_wz; }
+
 private:
     float _Kp_vx, _Ki_vx;
     float _Kp_vy, _Ki_vy;
