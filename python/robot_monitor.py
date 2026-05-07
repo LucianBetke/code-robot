@@ -48,7 +48,7 @@ import matplotlib.animation as animation
 # ─────────────────────────────────────────────
 # Einstellungen
 # ─────────────────────────────────────────────
-DEFAULT_PORT = "COM3"
+DEFAULT_PORT = "COM7"
 DEFAULT_BAUD = 115200
 MAX_POINTS   = 3000       # Punkte im Ring-Puffer
 UPDATE_MS    = 200        # Plot-Update-Intervall
