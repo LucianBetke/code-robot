@@ -1,5 +1,4 @@
 ﻿// vorne.ino
-
 #include "CommandScript.h"
 #include "src/Hardware.h"
 #include "src/hardware_pins.h"
@@ -54,9 +53,6 @@ void loop()
     uart.update();
     conn.update();
 
-    if (uart.isConnected())
-        commandRunner.update(now);
-
     if (commandRunner.isActive())
     {
         if (!g_timerStarted)
@@ -65,7 +61,6 @@ void loop()
             g_timerStarted = true;
         }
     }
-    else g_timerStarted = false;
 
     if (uart.availableLine())
     {
@@ -111,15 +106,25 @@ void loop()
     control_update(now);
 
     static uint32_t lastDbg = 0;
-    if (!commandRunner.isFinished() && now - lastDbg >= VEHICLE_DT_MS)
+    if (g_timerStarted && now - lastDbg >= VEHICLE_DT_MS)
     {
-        lastDbg = now;
-        uint32_t t = g_timerStarted ? (now - g_startMs) : 0;
+        if (lastDbg == 0) lastDbg = now;
+        else lastDbg += VEHICLE_DT_MS;
+        uint32_t t = lastDbg - g_startMs;
 #ifdef PRINTER_MODE_CHASSIS
         printer.printWheels(vehicle, g_v2_ist, g_v3_ist, t);
 #endif
 #ifdef PRINTER_MODE_RAEDER
         printer.printWheels(vehicle, g_v2_ist, g_v3_ist, g_pwm2, g_pwm3, t);
 #endif
+    }
+
+    if (uart.isConnected())
+        commandRunner.update(now);
+
+    if (!commandRunner.isActive())
+    {
+        g_timerStarted = false;
+        lastDbg = 0;
     }
 }

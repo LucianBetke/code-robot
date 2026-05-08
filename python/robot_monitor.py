@@ -11,20 +11,9 @@ Was auf dem Port ankommt:
   - #ms,VoLi_s,...          -> CSV-Header (einmalig beim Start)
   - #100,0.30,0.00,80,...   -> Datenzeilen (alle 100 ms, nur wenn Befehl aktiv)
 
-Spalten der Datenzeilen:
-  ms        Zeitstempel [ms] seit Befehlsstart (0 wenn kein Befehl)
-  VoLi_s    Vorne-Links  Soll  [m/s]
-  VoLi_i    Vorne-Links  Ist   [m/s]
-  VoLi_pwm  Vorne-Links  PWM   [-255..255]
-  VoRe_s    Vorne-Rechts Soll  [m/s]
-  VoRe_i    Vorne-Rechts Ist   [m/s]
-  VoRe_pwm  Vorne-Rechts PWM
-  HiLi_s    Hinten-Links Soll  [m/s]  (über VSOL gesendet)
-  HiLi_i    Hinten-Links Ist   [m/s]  (über VIST empfangen)
-  HiLi_pwm  Hinten-Links PWM         (über VIST empfangen)
-  HiRe_s    Hinten-Rechts Soll [m/s]
-  HiRe_i    Hinten-Rechts Ist  [m/s]
-  HiRe_pwm  Hinten-Rechts PWM
+Modi (automatisch erkannt aus Header):
+  RAEDER:  ms, VoLi_s/i/pwm, VoRe_s/i/pwm, HiLi_s/i/pwm, HiRe_s/i/pwm
+  CHASSIS: ms, VoLi_i, VoRe_i, HiLi_i, HiRe_i, vx_i, vy_i, wz_i
 
 Abhängigkeiten:
   pip install pyserial matplotlib
@@ -53,23 +42,16 @@ DEFAULT_BAUD = 115200
 MAX_POINTS   = 3000       # Punkte im Ring-Puffer
 UPDATE_MS    = 200        # Plot-Update-Intervall
 
-EXPECTED_COLS = [
-    "ms",
-    "VoLi_s", "VoLi_i", "VoLi_pwm",
-    "VoRe_s", "VoRe_i", "VoRe_pwm",
-    "HiLi_s", "HiLi_i", "HiLi_pwm",
-    "HiRe_s", "HiRe_i", "HiRe_pwm",
-]
-
 # ─────────────────────────────────────────────
 # Gemeinsamer Datenpuffer (thread-safe)
 # ─────────────────────────────────────────────
 class Store:
     def __init__(self):
         self.lock        = threading.Lock()
-        self.ready       = False          # Header wurde empfangen
+        self.ready       = False
+        self.mode        = None           # "RAEDER" oder "CHASSIS"
         self.cols        = []
-        self.bufs        = {}             # {col: deque}
+        self.bufs        = {}
         self._csv_file   = None
         self._csv_writer = None
 
@@ -77,7 +59,9 @@ class Store:
         with self.lock:
             self.cols  = cols
             self.bufs  = {c: deque(maxlen=MAX_POINTS) for c in cols}
+            self.mode  = "CHASSIS" if "vx_i" in cols else "RAEDER"
             self.ready = True
+        print(f"[Mode] {self.mode}")
 
     def push(self, row: dict):
         with self.lock:
@@ -88,9 +72,8 @@ class Store:
                 self._csv_writer.writerow(row)
 
     def snapshot(self):
-        """Gibt eine Kopie aller Buffer zurück (für Plot-Thread)."""
         with self.lock:
-            return {c: list(v) for c, v in self.bufs.items()}
+            return {c: list(v) for c, v in self.bufs.items()}, self.mode
 
     def open_csv(self, path):
         self._csv_file   = open(path, "w", newline="", encoding="utf-8")
@@ -123,7 +106,7 @@ def serial_thread(port: str, baud: int, csv_path: str):
         sys.exit(1)
 
     print(f"[Serial] {port} @ {baud} baud  – warte auf Daten …")
-    time.sleep(2)   # Arduino-Reset abwarten
+    time.sleep(2)
 
     while True:
         try:
@@ -139,17 +122,14 @@ def serial_thread(port: str, baud: int, csv_path: str):
         if not line:
             continue
 
-        # ── UartLink-Protokoll ignorieren ────────────────────
         if any(line.startswith(p) for p in IGNORE_PREFIXES):
             print(f"[uart]  {line}")
             continue
 
-        # ── Zeilen die mit # beginnen ─────────────────────────
         if line.startswith("#"):
-            content = line[1:]          # '#' abschneiden
+            content = line[1:]
             parts   = content.split(",")
 
-            # Header-Zeile: erste Spalte = "ms" (Text)
             if parts[0].strip() == "ms":
                 cols = [p.strip() for p in parts]
                 store.init_cols(cols)
@@ -157,7 +137,6 @@ def serial_thread(port: str, baud: int, csv_path: str):
                 print(f"[Header] {cols}")
                 continue
 
-            # Datenzeile: erste Spalte = Zahl
             if not store.ready:
                 continue
 
@@ -175,7 +154,6 @@ def serial_thread(port: str, baud: int, csv_path: str):
             store.push(row)
             continue
 
-        # ── alles andere ──────────────────────────────────────
         print(f"[?] {line}")
 
     store.close_csv()
@@ -183,90 +161,108 @@ def serial_thread(port: str, baud: int, csv_path: str):
 
 
 # ─────────────────────────────────────────────
+# Farben
+# ─────────────────────────────────────────────
+COLORS_RAD = {
+    "VoLi": "#1f77b4",
+    "VoRe": "#ff7f0e",
+    "HiLi": "#2ca02c",
+    "HiRe": "#d62728",
+}
+COLORS_VEH = {
+    "vx_i": "#9467bd",
+    "vy_i": "#8c564b",
+    "wz_i": "#e377c2",
+}
+
+
+# ─────────────────────────────────────────────
 # Live-Plot (läuft im Main-Thread)
 # ─────────────────────────────────────────────
 def start_plot():
-    fig, axes = plt.subplots(3, 1, figsize=(13, 9), sharex=True)
-    fig.suptitle("Robot Monitor – Vorne & Hinten", fontsize=13)
-
-    ax_v   = axes[0]    # Geschwindigkeit
-    ax_e   = axes[1]    # Regelfehler (Soll - Ist)
-    ax_pwm = axes[2]    # PWM
-
-    for ax in axes:
-        ax.grid(True, linestyle="--", alpha=0.5)
-
-    COLORS = {
-        "VoLi": "#1f77b4",   # blau
-        "VoRe": "#ff7f0e",   # orange
-        "HiLi": "#2ca02c",   # grün
-        "HiRe": "#d62728",   # rot
-    }
+    fig, axes = plt.subplots(2, 1, figsize=(13, 8), sharex=True)
+    fig.suptitle("Robot Monitor", fontsize=13)
 
     def update(_):
         if not store.ready:
             return
 
-        d = store.snapshot()
+        d, mode = store.snapshot()
         t_ms = d.get("ms", [])
         if not t_ms:
             return
 
-        t = [x / 1000.0 for x in t_ms]   # ms → s
+        t = [x / 1000.0 for x in t_ms]
 
         for ax in axes:
             ax.cla()
             ax.grid(True, linestyle="--", alpha=0.5)
 
-        ax_v.set_ylabel("Geschwindigkeit [m/s]")
-        ax_e.set_ylabel("Fehler (Soll−Ist) [m/s]")
-        ax_pwm.set_ylabel("PWM")
-        ax_pwm.set_xlabel("Zeit [s]")
+        axes[1].set_xlabel("Zeit [s]")
 
-        for name, col in COLORS.items():
-            s_key   = f"{name}_s"
-            i_key   = f"{name}_i"
-            pwm_key = f"{name}_pwm"
+        if mode == "RAEDER":
+            ax_v   = axes[0]
+            ax_pwm = axes[1]
 
-            s   = d.get(s_key,   [])
-            ist = d.get(i_key,   [])
-            pwm = d.get(pwm_key, [])
+            ax_v.set_ylabel("Geschwindigkeit [m/s]")
+            ax_pwm.set_ylabel("PWM")
 
-            n = min(len(t), len(s), len(ist))
-            if n == 0:
-                continue
+            for name, col in COLORS_RAD.items():
+                s_key   = f"{name}_s"
+                i_key   = f"{name}_i"
+                pwm_key = f"{name}_pwm"
 
-            t_n   = t[:n]
-            s_n   = s[:n]
-            ist_n = ist[:n]
-            err_n = [s_n[i] - ist_n[i] for i in range(n)]
+                s   = d.get(s_key, [])
+                ist = d.get(i_key, [])
+                pwm = d.get(pwm_key, [])
 
-            # Soll gestrichelt, Ist durchgehend
-            ax_v.plot(t_n, s_n,   linestyle="--", color=col, alpha=0.6,
-                      label=f"{name} Soll")
-            ax_v.plot(t_n, ist_n, linestyle="-",  color=col,
-                      label=f"{name} Ist")
-            ax_e.plot(t_n, err_n, linestyle="-",  color=col,
-                      label=f"{name} Err")
+                n = min(len(t), len(s), len(ist))
+                if n:
+                    ax_v.plot(t[:n], s[:n],   linestyle="--", color=col,
+                              alpha=0.6, label=f"{name} Soll")
+                    ax_v.plot(t[:n], ist[:n], linestyle="-",  color=col,
+                              label=f"{name} Ist")
 
-            n_p = min(len(t), len(pwm))
-            if n_p:
-                ax_pwm.plot(t[:n_p], pwm[:n_p], linestyle="-", color=col,
-                            label=f"{name} PWM")
+                n_p = min(len(t), len(pwm))
+                if n_p:
+                    ax_pwm.plot(t[:n_p], pwm[:n_p], linestyle="-", color=col,
+                                label=f"{name} PWM")
 
-        ax_v.legend(loc="lower right", fontsize=7, ncol=4)
-        ax_e.legend(loc="upper right", fontsize=7, ncol=4)
-        ax_pwm.legend(loc="lower right", fontsize=7, ncol=4)
+            ax_v.legend(loc="lower right", fontsize=7, ncol=4)
+            ax_pwm.legend(loc="lower right", fontsize=7, ncol=4)
+
+        elif mode == "CHASSIS":
+            ax_rad = axes[0]
+            ax_veh = axes[1]
+
+            ax_rad.set_ylabel("Radgeschwindigkeit Ist [m/s]")
+            ax_veh.set_ylabel("Fahrzeug [m/s  /  rad/s]")
+
+            for name, col in COLORS_RAD.items():
+                vals = d.get(f"{name}_i", [])
+                n = min(len(t), len(vals))
+                if n:
+                    ax_rad.plot(t[:n], vals[:n], color=col, label=f"{name}")
+
+            for key, col in COLORS_VEH.items():
+                vals = d.get(key, [])
+                n = min(len(t), len(vals))
+                if n:
+                    ax_veh.plot(t[:n], vals[:n], color=col, label=key)
+
+            ax_rad.legend(loc="lower right", fontsize=8, ncol=4)
+            ax_veh.legend(loc="lower right", fontsize=8, ncol=3)
 
         n_pts = len(t)
-        ax_v.set_title(f"{n_pts} Messpunkte  –  t = {t[-1]:.1f} s" if n_pts else "warte …",
-                       fontsize=10)
+        axes[0].set_title(
+            f"{mode}  –  {n_pts} Messpunkte  –  t = {t[-1]:.1f} s" if n_pts else "warte …",
+            fontsize=10)
         fig.tight_layout()
 
     ani = animation.FuncAnimation(
         fig, update, interval=UPDATE_MS, cache_frame_data=False)
     plt.show()
-    return ani   # Referenz halten (GC-Schutz)
+    return ani
 
 
 # ─────────────────────────────────────────────
@@ -307,7 +303,7 @@ def main():
         except KeyboardInterrupt:
             pass
     else:
-        ani = start_plot()   # blockiert bis Fenster geschlossen
+        ani = start_plot()
 
 
 if __name__ == "__main__":
