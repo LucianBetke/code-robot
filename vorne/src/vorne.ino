@@ -1,4 +1,5 @@
 ﻿// vorne.ino
+#include <avr/wdt.h>
 #include "CommandScript.h"
 #include "src/Hardware.h"
 #include "src/hardware_pins.h"
@@ -19,6 +20,7 @@ static int16_t g_pwm3 = 0;
 #endif
 static uint32_t g_startMs = 0;
 static bool g_timerStarted = false;
+static uint32_t lastVistMs = 0;
 
 // globale Objekte
 VehicleController vehicle;
@@ -31,15 +33,16 @@ Printer printer;
 
 void setup()
 {
+    wdt_disable();
     Serial.begin(115200);
     hardware_begin(PinsFront::PINS);
     hardware_enableMotors();
     control_begin(ConfigFront::CONFIG);
     speed_reset_all();
     vehicle.begin(
-        0.0f, 0.0f,   // Kp_vx, Ki_vx
-        0.0f, 0.0f,   // Kp_vy, Ki_vy
-        0.0f, 0.0f    // Kp_wz, Ki_wz
+        0.0f, 0.0f,
+        0.0f, 0.0f,
+        0.0f, 0.0f
     );
     commandRunner.begin();
     uart.begin();
@@ -50,8 +53,26 @@ void setup()
 void loop()
 {
     uint32_t now = millis();
+
     uart.update();
     conn.update();
+
+    // DISCONNECT erkennen → Reset
+    static bool prevConnected = false;
+    bool nowConnected = uart.isConnected();
+    if (prevConnected && !nowConnected)
+    {
+        wdt_enable(WDTO_15MS);
+        while (1) {}
+    }
+    prevConnected = nowConnected;
+
+    // VIST-Timeout → Reset
+    if (lastVistMs > 0 && now - lastVistMs > 200)
+    {
+        wdt_enable(WDTO_15MS);
+        while (1) {}
+    }
 
     if (commandRunner.isActive())
     {
@@ -59,8 +80,6 @@ void loop()
         {
             g_startMs = now;
             g_timerStarted = true;
-
-            // VSOL sofort senden bei Befehlsstart
             int16_t v2_i = floatToInt100(commandRunner.getWheelSoll(HiLi));
             int16_t v3_i = floatToInt100(commandRunner.getWheelSoll(HiRe));
             char buf[32];
@@ -78,12 +97,14 @@ void loop()
         {
             g_v2_ist = int100ToFloat(v2_i);
             g_v3_ist = int100ToFloat(v3_i);
+            lastVistMs = now;
         }
 #else
         if (sscanf(line, "VIST,%hd,%hd", &v2_i, &v3_i) == 2)
         {
             g_v2_ist = int100ToFloat(v2_i);
             g_v3_ist = int100ToFloat(v3_i);
+            lastVistMs = now;
         }
 #endif
     }
