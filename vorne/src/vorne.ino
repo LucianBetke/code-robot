@@ -59,6 +59,13 @@ void loop()
         {
             g_startMs = now;
             g_timerStarted = true;
+
+            // VSOL sofort senden bei Befehlsstart
+            int16_t v2_i = floatToInt100(commandRunner.getWheelSoll(HiLi));
+            int16_t v3_i = floatToInt100(commandRunner.getWheelSoll(HiRe));
+            char buf[32];
+            snprintf(buf, sizeof(buf), "VSOL,%d,%d", v2_i, v3_i);
+            uart.sendLine(buf);
         }
     }
 
