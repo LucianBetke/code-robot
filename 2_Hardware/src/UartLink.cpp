@@ -45,11 +45,6 @@ void UartLink::update()
             {
                 _connected = true;
             }
-            else if (_initiator && _buf[0] == '#')
-            {
-                // Debug-Zeile von hinten — an PC weiterleiten
-                _link.println(_buf);
-            }
             else if (strcmp(_buf, "KA") != 0 && _buf[0] != '#')
             {
                 // 👉 Nutzdaten speichern
