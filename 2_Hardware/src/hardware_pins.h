@@ -15,7 +15,7 @@ struct HardwarePinSet
     uint8_t motorLi2;
     uint8_t motorRe1;
     uint8_t motorRe2;
-    uint8_t stby;
+    uint8_t stby_sync;
 };
 // ============================================================
 // namespace PinsFront
@@ -26,7 +26,7 @@ namespace PinsFront
     constexpr uint8_t M_Li_BIN2 = 10;  // D10 BIN2 → physisch LINKS
     constexpr uint8_t M_Re_AIN1 = 6;   // D6  AIN1 → physisch RECHTS
     constexpr uint8_t M_Re_AIN2 = 5;   // D5  AIN2 → physisch RECHTS
-    constexpr uint8_t STBY_PIN = 8;
+    constexpr uint8_t STBY_SYNC_PIN = 8;
 
     constexpr uint8_t ENC_Li_PIN_A = A2;  // A2 → Encoder LINKS,  Kanal A
     constexpr uint8_t ENC_Li_PIN_B = A3;  // A3 → Encoder LINKS,  Kanal B
@@ -38,7 +38,7 @@ namespace PinsFront
         ENC_Re_PIN_A, ENC_Re_PIN_B,
         M_Li_BIN1,    M_Li_BIN2,
         M_Re_AIN1,    M_Re_AIN2,
-        STBY_PIN
+        STBY_SYNC_PIN
     };
 }
 // ============================================================
@@ -50,7 +50,7 @@ namespace PinsRear
     constexpr uint8_t M_Re_AIN2 = 10;
     constexpr uint8_t M_Li_BIN1 = 6;
     constexpr uint8_t M_Li_BIN2 = 5;
-    constexpr uint8_t STBY_PIN = 8;
+    constexpr uint8_t STBY_SYNC_PIN = 8;
 
     constexpr uint8_t ENC_Re_PIN_A = A2;
     constexpr uint8_t ENC_Re_PIN_B = A3;
@@ -62,7 +62,7 @@ namespace PinsRear
         ENC_Re_PIN_A, ENC_Re_PIN_B,
         M_Li_BIN1,    M_Li_BIN2,
         M_Re_AIN1,    M_Re_AIN2,
-        STBY_PIN
+        STBY_SYNC_PIN
     };
 }
 #endif // HARDWARE_PINS_H

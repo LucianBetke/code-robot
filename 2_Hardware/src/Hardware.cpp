@@ -1,4 +1,3 @@
-// Hardware.cpp
 #include <Arduino.h>
 #include "src/globals.h"
 #include "Encoder.h"
@@ -8,32 +7,32 @@
 
 Enc   enc[WHEEL_COUNT];
 Motor motor[WHEEL_COUNT];
-
-static uint8_t s_stby_pin = 0;
+static uint8_t s_stby_sync = 0;
 
 void hardware_begin(const HardwarePinSet& pins, bool resetEnc)
 {
-    s_stby_pin = pins.stby;
-
+    s_stby_sync = pins.stby_sync;
     enc[Li].begin(pins.encLiA, pins.encLiB, resetEnc);
     enc[Re].begin(pins.encReA, pins.encReB, resetEnc);
-
     motor[Li].begin(pins.motorLi1, pins.motorLi2, enc[Li]);
     motor[Re].begin(pins.motorRe1, pins.motorRe2, enc[Re]);
-
-    pinMode(s_stby_pin, OUTPUT);
-    digitalWrite(s_stby_pin, LOW);
-
+    pinMode(s_stby_sync, OUTPUT);
     motor[Li].init();
     motor[Re].init();
 }
 
 void hardware_enableMotors()
 {
-    digitalWrite(s_stby_pin, HIGH);
+    digitalWrite(s_stby_sync, HIGH);
 }
 
 void hardware_disableMotors()
 {
-    digitalWrite(s_stby_pin, LOW);
+    digitalWrite(s_stby_sync, LOW);
+}
+
+void hardware_requestVist()
+{
+    digitalWrite(s_stby_sync, HIGH);
+    digitalWrite(s_stby_sync, LOW);
 }
