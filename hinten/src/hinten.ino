@@ -25,6 +25,7 @@ void setup()
     uart.begin();
     conn.begin(false);
     hardware_enableMotors();
+    pinMode(3, INPUT);
     attachInterrupt(digitalPinToInterrupt(3), syncISR, RISING);
 }
 
