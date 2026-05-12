@@ -98,18 +98,6 @@ static bool timeReached(uint32_t now, uint32_t target)
     return (int32_t)(now - target) >= 0;
 }
 
-static void printFloatCell(float v)
-{
-    Serial.print('\t');
-    Serial.print(v, 2);
-}
-
-static void printIntCell(int16_t v)
-{
-    Serial.print('\t');
-    Serial.print(v);
-}
-
 static void sendRearSoll(uint32_t now)
 {
     int16_t v2_i = floatToInt100(commandRunner.getWheelSoll(HiLi));
@@ -124,46 +112,24 @@ static void sendRearSoll(uint32_t now)
 
 static void printCompletedFrame(float hiLi_i, float hiRe_i, int16_t hiLi_pwm, int16_t hiRe_pwm)
 {
-#ifdef PRINTER_MODE_RAEDER
-    Serial.print('#');
-    Serial.print(g_frame.t);
-
-    printFloatCell(g_frame.voLi_s);
-    printFloatCell(g_frame.voLi_i);
-    printIntCell(g_frame.voLi_pwm);
-
-    printFloatCell(g_frame.voRe_s);
-    printFloatCell(g_frame.voRe_i);
-    printIntCell(g_frame.voRe_pwm);
-
-    printFloatCell(g_frame.hiLi_s);
-    printFloatCell(hiLi_i);
-    printIntCell(hiLi_pwm);
-
-    printFloatCell(g_frame.hiRe_s);
-    printFloatCell(hiRe_i);
-    printIntCell(hiRe_pwm);
-
-    Serial.println();
+#ifdef PRINTER_MODE_CHASSIS
+    printer.printWheels(
+        vehicle,
+        hiLi_i,
+        hiRe_i,
+        g_frame.t
+    );
 #endif
 
-#ifdef PRINTER_MODE_CHASSIS
-    Serial.print('#');
-    Serial.print(g_frame.t);
-
-    printFloatCell(g_frame.voLi_s);
-    printFloatCell(g_frame.voLi_i);
-
-    printFloatCell(g_frame.voRe_s);
-    printFloatCell(g_frame.voRe_i);
-
-    printFloatCell(g_frame.hiLi_s);
-    printFloatCell(hiLi_i);
-
-    printFloatCell(g_frame.hiRe_s);
-    printFloatCell(hiRe_i);
-
-    Serial.println();
+#ifdef PRINTER_MODE_RAEDER
+    printer.printWheels(
+        vehicle,
+        hiLi_i,
+        hiRe_i,
+        hiLi_pwm,
+        hiRe_pwm,
+        g_frame.t
+    );
 #endif
 }
 
@@ -232,6 +198,7 @@ void loop()
     // --------------------------------------------------------
     // DISCONNECT erkennen -> Reset
     // --------------------------------------------------------
+
     static bool prevConnected = false;
     bool nowConnected = uart.isConnected();
 
@@ -245,6 +212,7 @@ void loop()
     // --------------------------------------------------------
     // Eingehende VIST-Daten auswerten
     // --------------------------------------------------------
+
     if (uart.availableLine())
     {
         const char* line = uart.getLine();
@@ -274,6 +242,7 @@ void loop()
     // --------------------------------------------------------
     // Timeout: VIST-Antwort fehlt
     // --------------------------------------------------------
+
     if (g_waitingRear && now - g_requestMs > 2 * VEHICLE_DT_MS)
     {
         resetByWatchdog();
@@ -282,6 +251,7 @@ void loop()
     // --------------------------------------------------------
     // CommandRunner nur bei Verbindung aktualisieren
     // --------------------------------------------------------
+
     if (uart.isConnected())
     {
         commandRunner.update(now);
@@ -290,6 +260,7 @@ void loop()
     // --------------------------------------------------------
     // Start/Stop des Log-Zeitrasters
     // --------------------------------------------------------
+
     if (!commandRunner.isActive())
     {
         g_timerStarted = false;
@@ -313,6 +284,7 @@ void loop()
     // --------------------------------------------------------
     // Vehicle-Istwerte aktualisieren
     // --------------------------------------------------------
+
     vehicle.updateIst(
         speed[Re].mps(),
         speed[Li].mps(),
@@ -325,6 +297,7 @@ void loop()
     // --------------------------------------------------------
     // Vorderachse lokal regeln
     // --------------------------------------------------------
+
     rad[VoLi].setSoll(commandRunner.getWheelSoll(VoLi));
     rad[VoRe].setSoll(commandRunner.getWheelSoll(VoRe));
 
@@ -335,6 +308,7 @@ void loop()
     // Rear trotzdem mit VSOL versorgen, damit hinten kein
     // VSOL-Timeout ausloest.
     // --------------------------------------------------------
+
     if (uart.isConnected() && !commandRunner.isActive())
     {
         if (g_lastVsolSendMs == 0)
@@ -350,9 +324,11 @@ void loop()
 
     // --------------------------------------------------------
     // Aktiver Messframe:
-    // Frontwerte speichern, VSOL senden, Sync-Puls ausloesen.
+    // Frontwerte speichern, VSOL senden, VIST anfordern.
     // Gedruckt wird NICHT hier, sondern erst bei VIST-Empfang.
+    // Die Ausgabe erfolgt wieder ueber die Printer-Klasse.
     // --------------------------------------------------------
+
     if (commandRunner.isActive() && !g_waitingRear)
     {
         if (timeReached(now, g_nextFrameMs))
