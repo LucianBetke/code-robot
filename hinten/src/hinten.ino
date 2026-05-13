@@ -13,8 +13,12 @@ ConnectionMonitor conn(uart, 13);
 
 static uint32_t lastVsolMs = 0;
 
+// Merkt sich die letzte empfangene VSOL-Frame-ID.
+// Diese ID wird bei VIST wieder zurueckgesendet.
+static uint16_t g_lastVsolFrameId = 0;
+
 // Merkt sich, ob hinten zuletzt einen echten Fahr-Sollwert bekommen hat.
-// VSOL,0,0 bedeutet: kein aktiver Fahrbefehl mehr.
+// VSOL,<id>,0,0 bedeutet: kein aktiver Fahrbefehl mehr.
 static bool g_rearSollActive = false;
 
 volatile bool g_syncFlag = false;
@@ -29,6 +33,13 @@ static void stopRearWheels()
     rad[Li].setSoll(0.0f);
     rad[Re].setSoll(0.0f);
     g_rearSollActive = false;
+}
+
+static void sendVsolOk(uint16_t frameId)
+{
+    char bufOk[24];
+    snprintf(bufOk, sizeof(bufOk), "VSOL_OK,%u", (unsigned int)frameId);
+    uart.sendLine(bufOk);
 }
 
 void setup()
@@ -70,10 +81,6 @@ void loop()
     // --------------------------------------------------------
     // VSOL-Timeout:
     //
-    // Alt:
-    // Fehlendes VSOL fuehrte zum Watchdog-Reset.
-    //
-    // Neu:
     // Fehlendes VSOL ist im Stillstand erlaubt.
     // Nur wenn vorher ein echter Fahr-Sollwert aktiv war,
     // wird bei Timeout hinten sicher gestoppt.
@@ -86,17 +93,26 @@ void loop()
 
     // --------------------------------------------------------
     // Eingehende Sollwerte vom vorderen Nano
+    //
+    // Format:
+    // VSOL,<frameId>,<hiLiSoll>,<hiReSoll>
+    //
+    // Antwort:
+    // VSOL_OK,<frameId>
     // --------------------------------------------------------
 
     if (uart.availableLine())
     {
         const char* line = uart.getLine();
 
+        unsigned int frameIdRx;
         int16_t v2_i;
         int16_t v3_i;
 
-        if (sscanf(line, "VSOL,%hd,%hd", &v2_i, &v3_i) == 2)
+        if (sscanf(line, "VSOL,%u,%hd,%hd", &frameIdRx, &v2_i, &v3_i) == 3)
         {
+            g_lastVsolFrameId = (uint16_t)frameIdRx;
+
             float vSollLi = int100ToFloat(v2_i);
             float vSollRe = int100ToFloat(v3_i);
 
@@ -106,6 +122,8 @@ void loop()
             lastVsolMs = now;
 
             g_rearSollActive = (v2_i != 0 || v3_i != 0);
+
+            sendVsolOk(g_lastVsolFrameId);
         }
     }
 
@@ -118,6 +136,9 @@ void loop()
     // --------------------------------------------------------
     // Sync-Puls vom vorderen Nano:
     // Hintere Istwerte und PWM-Werte zuruecksenden.
+    //
+    // Format:
+    // VIST,<frameId>,<hiLiIst>,<hiReIst>,<hiLiPwm>,<hiRePwm>
     // --------------------------------------------------------
 
     if (g_syncFlag)
@@ -130,8 +151,14 @@ void loop()
         int16_t pwm2 = rad[Li].lastPwm();
         int16_t pwm3 = rad[Re].lastPwm();
 
-        char bufVist[32];
-        snprintf(bufVist, sizeof(bufVist), "VIST,%d,%d,%d,%d", vIstLi, vIstRe, pwm2, pwm3);
+        char bufVist[48];
+        snprintf(bufVist, sizeof(bufVist), "VIST,%u,%d,%d,%d,%d",
+            (unsigned int)g_lastVsolFrameId,
+            vIstLi,
+            vIstRe,
+            pwm2,
+            pwm3
+        );
 
         uart.sendLine(bufVist);
     }

@@ -27,11 +27,18 @@ static uint32_t g_nextFrameMs = 0;
 static uint32_t g_requestMs = 0;
 static uint32_t g_lastVsolSendMs = 0;
 
-static bool g_waitingRear = false;
+// Front wartet zuerst auf VSOL_OK und danach auf VIST.
+static bool g_waitingVsolOk = false;
+static bool g_waitingVist = false;
 
-// Nach Befehlsende werden nur noch wenige Stop-Telegramme gesendet.
-static const uint8_t STOP_SEND_MAX = 2;
+// Frame-ID 0 bleibt reserviert fuer "ungueltig / keine ID".
+static uint16_t g_nextFrameId = 1;
+
+// Nach Befehlsende werden drei Stop-Telegramme gesendet.
+// Wichtig: erst nach dem letzten fertigen Messframe.
+static const uint8_t STOP_SEND_MAX = 3;
 static uint8_t g_stopSendCount = 0;
+static bool g_stopSequenceArmed = false;
 
 // ============================================================
 // Gemeinsamer Log-Datensatz fuer einen Zeitpunkt
@@ -39,39 +46,17 @@ static uint8_t g_stopSendCount = 0;
 
 struct PendingFrame
 {
+    uint16_t frameId;
     uint32_t t;
 
-    float voLi_s;
-    float voLi_i;
-    int16_t voLi_pwm;
+    float voLi_s; float voLi_i; int16_t voLi_pwm;
+    float voRe_s; float voRe_i; int16_t voRe_pwm;
+    float hiLi_s; float hiRe_s;
 
-    float voRe_s;
-    float voRe_i;
-    int16_t voRe_pwm;
-
-    float hiLi_s;
-    float hiRe_s;
-
-    bool valid;
+    bool hasFrontSnapshot;
 };
 
-static PendingFrame g_frame =
-{
-    0,
-
-    0.0f,
-    0.0f,
-    0,
-
-    0.0f,
-    0.0f,
-    0,
-
-    0.0f,
-    0.0f,
-
-    false
-};
+static PendingFrame g_frame = {};
 
 // ============================================================
 // Globale Objekte
@@ -102,13 +87,29 @@ static bool timeReached(uint32_t now, uint32_t target)
     return (int32_t)(now - target) >= 0;
 }
 
-static void sendRearSoll(uint32_t now)
+static uint16_t nextFrameId()
+{
+    uint16_t id = g_nextFrameId++;
+
+    if (g_nextFrameId == 0)
+    {
+        g_nextFrameId = 1;
+    }
+
+    return id;
+}
+
+static void sendRearSoll(uint32_t now, uint16_t frameId)
 {
     int16_t v2_i = floatToInt100(commandRunner.getWheelSoll(HiLi));
     int16_t v3_i = floatToInt100(commandRunner.getWheelSoll(HiRe));
 
-    char bufVsoll[32];
-    snprintf(bufVsoll, sizeof(bufVsoll), "VSOL,%d,%d", v2_i, v3_i);
+    char bufVsoll[36];
+    snprintf(bufVsoll, sizeof(bufVsoll), "VSOL,%u,%d,%d",
+        (unsigned int)frameId,
+        v2_i,
+        v3_i
+    );
 
     uart.sendLine(bufVsoll);
     g_lastVsolSendMs = now;
@@ -116,7 +117,14 @@ static void sendRearSoll(uint32_t now)
 
 static void sendRearStop(uint32_t now)
 {
-    uart.sendLine("VSOL,0,0");
+    uint16_t frameId = nextFrameId();
+
+    char bufVsoll[24];
+    snprintf(bufVsoll, sizeof(bufVsoll), "VSOL,%u,0,0",
+        (unsigned int)frameId
+    );
+
+    uart.sendLine(bufVsoll);
     g_lastVsolSendMs = now;
 }
 
@@ -158,6 +166,9 @@ static void printCompletedFrame(float hiLi_i, float hiRe_i, int16_t hiLi_pwm, in
 
 static void requestRearFrame(uint32_t now, uint32_t frameTime)
 {
+    uint16_t frameId = nextFrameId();
+
+    g_frame.frameId = frameId;
     g_frame.t = frameTime;
 
     g_frame.voLi_s = commandRunner.getWheelSoll(VoLi);
@@ -171,30 +182,26 @@ static void requestRearFrame(uint32_t now, uint32_t frameTime)
     g_frame.hiLi_s = commandRunner.getWheelSoll(HiLi);
     g_frame.hiRe_s = commandRunner.getWheelSoll(HiRe);
 
-    g_frame.valid = true;
-    g_waitingRear = true;
+    g_frame.hasFrontSnapshot = true;
+
+    g_waitingVsolOk = true;
+    g_waitingVist = false;
     g_requestMs = now;
 
-    sendRearSoll(now);
-    hardware_requestVist();
+    sendRearSoll(now, frameId);
+
+    // Wichtig:
+    // VIST wird jetzt noch NICHT angefordert.
+    // Erst wenn hinten VSOL_OK,<frameId> bestaetigt hat,
+    // wird hardware_requestVist() ausgeloest.
 }
 
 static void tryRequestFrame(uint32_t now)
 {
-    if (!commandRunner.isActive())
-    {
-        return;
-    }
-
-    if (g_waitingRear)
-    {
-        return;
-    }
-
-    if (!g_timerStarted)
-    {
-        return;
-    }
+    if (!commandRunner.isActive()) return;
+    if (g_waitingVsolOk) return;
+    if (g_waitingVist) return;
+    if (!g_timerStarted) return;
 
     if (timeReached(now, g_nextFrameMs))
     {
@@ -260,53 +267,91 @@ void loop()
     prevConnected = nowConnected;
 
     // --------------------------------------------------------
-    // Eingehende VIST-Daten auswerten
+    // Eingehende Daten auswerten:
+    //
+    // 1. VSOL_OK,<frameId>
+    // 2. VIST,<frameId>,<hiLiIst>,<hiReIst>,<hiLiPwm>,<hiRePwm>
     // --------------------------------------------------------
 
     if (uart.availableLine())
     {
         const char* line = uart.getLine();
 
+        unsigned int frameIdRx;
+
+        // ----------------------------------------------------
+        // VSOL_OK auswerten
+        // ----------------------------------------------------
+
+        if (sscanf(line, "VSOL_OK,%u", &frameIdRx) == 1)
+        {
+            if (g_waitingVsolOk &&
+                g_frame.hasFrontSnapshot &&
+                (uint16_t)frameIdRx == g_frame.frameId)
+            {
+                g_waitingVsolOk = false;
+                g_waitingVist = true;
+                g_requestMs = now;
+
+                hardware_requestVist();
+            }
+        }
+
+        // ----------------------------------------------------
+        // VIST auswerten
+        // ----------------------------------------------------
+
         int16_t v2_i;
         int16_t v3_i;
         int16_t pwm2;
         int16_t pwm3;
 
-        if (sscanf(line, "VIST,%hd,%hd,%hd,%hd", &v2_i, &v3_i, &pwm2, &pwm3) == 4)
+        if (sscanf(line, "VIST,%u,%hd,%hd,%hd,%hd",
+            &frameIdRx,
+            &v2_i,
+            &v3_i,
+            &pwm2,
+            &pwm3) == 5)
         {
-            g_v2_ist = int100ToFloat(v2_i);
-            g_v3_ist = int100ToFloat(v3_i);
-            g_pwm2 = pwm2;
-            g_pwm3 = pwm3;
-
-            vehicle.updateIst(
-                speed[Re].mps(),
-                speed[Li].mps(),
-                g_v2_ist,
-                g_v3_ist
-            );
-
-            if (g_waitingRear && g_frame.valid)
+            if (g_waitingVist &&
+                g_frame.hasFrontSnapshot &&
+                (uint16_t)frameIdRx == g_frame.frameId)
             {
+                g_v2_ist = int100ToFloat(v2_i);
+                g_v3_ist = int100ToFloat(v3_i);
+                g_pwm2 = pwm2;
+                g_pwm3 = pwm3;
+
+                vehicle.updateIst(
+                    speed[Re].mps(),
+                    speed[Li].mps(),
+                    g_v2_ist,
+                    g_v3_ist
+                );
+
                 printCompletedFrame(g_v2_ist, g_v3_ist, g_pwm2, g_pwm3);
 
-                g_waitingRear = false;
-                g_frame.valid = false;
+                g_waitingVist = false;
+                g_frame.hasFrontSnapshot = false;
             }
         }
     }
 
     // --------------------------------------------------------
-    // Timeout: VIST-Antwort fehlt
+    // Timeout:
+    //
+    // Front wartet entweder auf VSOL_OK oder auf VIST.
+    // Wenn beides zu lange ausbleibt, ist die Kopplung gestoert.
     // --------------------------------------------------------
 
-    if (g_waitingRear && now - g_requestMs > 2 * VEHICLE_DT_MS)
+    if ((g_waitingVsolOk || g_waitingVist) && now - g_requestMs > 2 * VEHICLE_DT_MS)
     {
         resetByWatchdog();
     }
 
     // --------------------------------------------------------
     // Vor commandRunner.update() pruefen, ob ein Frame faellig ist.
+    //
     // Dadurch wird bei 2000 ms noch der letzte Frame des alten Befehls
     // angefordert, bevor der CommandRunner den Befehl beendet.
     // --------------------------------------------------------
@@ -318,11 +363,26 @@ void loop()
 
     // --------------------------------------------------------
     // CommandRunner aktualisieren
+    // Dabei merken wir uns den Uebergang:
+    // aktiv -> nicht aktiv.
+    //
+    // Genau bei diesem Uebergang wird die Stop-Sequenz nur vorgemerkt.
+    // Gesendet wird sie weiter unten erst, wenn kein Frame mehr offen ist.
     // --------------------------------------------------------
 
     if (uart.isConnected())
     {
+        bool wasActive = commandRunner.isActive();
+
         commandRunner.update(now);
+
+        bool isActive = commandRunner.isActive();
+
+        if (wasActive && !isActive)
+        {
+            g_stopSequenceArmed = true;
+            g_stopSendCount = 0;
+        }
     }
 
     // --------------------------------------------------------
@@ -333,14 +393,15 @@ void loop()
     {
         g_timerStarted = false;
 
-        if (!g_waitingRear)
+        if (!g_waitingVsolOk && !g_waitingVist)
         {
-            g_frame.valid = false;
+            g_frame.hasFrontSnapshot = false;
         }
     }
 
     if (commandRunner.isActive())
     {
+        g_stopSequenceArmed = false;
         g_stopSendCount = 0;
 
         if (!g_timerStarted)
@@ -349,8 +410,9 @@ void loop()
             g_nextFrameMs = now;
             g_timerStarted = true;
 
-            g_waitingRear = false;
-            g_frame.valid = false;
+            g_waitingVsolOk = false;
+            g_waitingVist = false;
+            g_frame.hasFrontSnapshot = false;
         }
     }
 
@@ -377,34 +439,42 @@ void loop()
     control_update(now);
 
     // --------------------------------------------------------
-    // Kein aktives Kommando:
+    // Stop-Sequenz fuer hinten:
     //
-    // Hinten bekommt noch 3 Stop-Telegramme im 100-ms-Takt.
-    // Danach wird nicht mehr endlos VSOL,0,0 gesendet.
+    // Der CommandRunner sendet keinen Stop mehr direkt.
+    // Stattdessen sendet vorne nach abgeschlossenem letztem Messframe
+    // drei Stop-Telegramme an hinten.
     //
-    // Nicht senden, solange noch ein Messframe auf VIST wartet.
+    // Wichtig:
+    // Nicht senden, solange noch VSOL_OK oder VIST offen ist.
+    // Dadurch kommt #WHEELS,2000 vor VSOL,0,0.
     // --------------------------------------------------------
 
-    if (uart.isConnected() && !commandRunner.isActive() && !g_waitingRear)
+    if (uart.isConnected() &&
+        !commandRunner.isActive() &&
+        !g_waitingVsolOk &&
+        !g_waitingVist &&
+        g_stopSequenceArmed)
     {
-        if (g_lastVsolSendMs == 0)
-        {
-            g_lastVsolSendMs = now;
-        }
-
         if (g_stopSendCount < STOP_SEND_MAX)
         {
-            if (now - g_lastVsolSendMs >= VEHICLE_DT_MS)
+            if (g_stopSendCount == 0 || now - g_lastVsolSendMs >= VEHICLE_DT_MS)
             {
                 sendRearStop(now);
                 g_stopSendCount++;
             }
+        }
+
+        if (g_stopSendCount >= STOP_SEND_MAX)
+        {
+            g_stopSequenceArmed = false;
         }
     }
 
     // --------------------------------------------------------
     // Aktiver Messframe nach commandRunner.update():
     // wichtig fuer den ersten Frame bei 0 ms.
+    //
     // Die Endmessung bei 2000 ms wird oben vor commandRunner.update()
     // abgefangen.
     // --------------------------------------------------------

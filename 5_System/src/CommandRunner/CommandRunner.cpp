@@ -24,7 +24,6 @@ void CommandRunner::begin()
 void CommandRunner::stopAll()
 {
     _vehicle.cmd(0.0f, 0.0f, 0.0f);
-    _uart.sendLine("VSOL,0,0");
 }
 
 void CommandRunner::startCmd(const ParsedCommand& cmd, uint32_t now)
