@@ -29,6 +29,10 @@ static uint32_t g_lastVsolSendMs = 0;
 
 static bool g_waitingRear = false;
 
+// Nach Befehlsende werden nur noch wenige Stop-Telegramme gesendet.
+static const uint8_t STOP_SEND_MAX = 3;
+static uint8_t g_stopSendCount = 0;
+
 // ============================================================
 // Gemeinsamer Log-Datensatz fuer einen Zeitpunkt
 // ============================================================
@@ -107,6 +111,12 @@ static void sendRearSoll(uint32_t now)
     snprintf(bufVsoll, sizeof(bufVsoll), "VSOL,%d,%d", v2_i, v3_i);
 
     uart.sendLine(bufVsoll);
+    g_lastVsolSendMs = now;
+}
+
+static void sendRearStop(uint32_t now)
+{
+    uart.sendLine("VSOL,0,0");
     g_lastVsolSendMs = now;
 }
 
@@ -296,8 +306,7 @@ void loop()
     }
 
     // --------------------------------------------------------
-    // Wichtiger Punkt:
-    // Vor commandRunner.update() noch pruefen, ob ein Frame faellig ist.
+    // Vor commandRunner.update() pruefen, ob ein Frame faellig ist.
     // Dadurch wird bei 2000 ms noch der letzte Frame des alten Befehls
     // angefordert, bevor der CommandRunner den Befehl beendet.
     // --------------------------------------------------------
@@ -332,6 +341,8 @@ void loop()
 
     if (commandRunner.isActive())
     {
+        g_stopSendCount = 0;
+
         if (!g_timerStarted)
         {
             g_startMs = now;
@@ -366,13 +377,12 @@ void loop()
     control_update(now);
 
     // --------------------------------------------------------
-    // Wenn kein aktives Kommando laeuft:
-    // Rear trotzdem mit VSOL versorgen, damit hinten kein
-    // VSOL-Timeout ausloest.
+    // Kein aktives Kommando:
     //
-    // Aber nicht senden, solange noch ein Messframe auf VIST wartet.
-    // Sonst koennte direkt nach dem letzten 2000-ms-Frame schon VSOL,0,0
-    // dazwischenfunken.
+    // Hinten bekommt noch 3 Stop-Telegramme im 100-ms-Takt.
+    // Danach wird nicht mehr endlos VSOL,0,0 gesendet.
+    //
+    // Nicht senden, solange noch ein Messframe auf VIST wartet.
     // --------------------------------------------------------
 
     if (uart.isConnected() && !commandRunner.isActive() && !g_waitingRear)
@@ -382,15 +392,19 @@ void loop()
             g_lastVsolSendMs = now;
         }
 
-        if (now - g_lastVsolSendMs >= VEHICLE_DT_MS)
+        if (g_stopSendCount < STOP_SEND_MAX)
         {
-            sendRearSoll(now);
+            if (now - g_lastVsolSendMs >= VEHICLE_DT_MS)
+            {
+                sendRearStop(now);
+                g_stopSendCount++;
+            }
         }
     }
 
     // --------------------------------------------------------
     // Aktiver Messframe nach commandRunner.update():
-    // Das ist wichtig fuer den ersten Frame bei 0 ms.
+    // wichtig fuer den ersten Frame bei 0 ms.
     // Die Endmessung bei 2000 ms wird oben vor commandRunner.update()
     // abgefangen.
     // --------------------------------------------------------
