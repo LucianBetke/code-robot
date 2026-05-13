@@ -29,13 +29,16 @@ void CommandRunner::stopAll()
 
 void CommandRunner::startCmd(const ParsedCommand& cmd, uint32_t now)
 {
-    Serial.print(F("#startCmd param="));
-    Serial.print(cmd.param);
-    Serial.print(F(" durationMs="));
-    Serial.println((uint32_t)(cmd.param * 1000.0f));
-    _vehicle.cmd(cmd.vx, cmd.vy, cmd.wz);
-    _startTime = now;
     _durationMs = (uint32_t)(cmd.param * 1000.0f);
+
+    Serial.print(F("#EVENT,startCmd,param="));
+    Serial.print(cmd.param, 2);
+    Serial.print(F(",durationMs="));
+    Serial.println(_durationMs);
+
+    _vehicle.cmd(cmd.vx, cmd.vy, cmd.wz);
+
+    _startTime = now;
     _active = true;
 }
 
@@ -54,12 +57,22 @@ void CommandRunner::update(uint32_t now)
         }
         else
         {
-            if (_cmdIndex >= _size()) _finished = true;
+            if (_cmdIndex >= _size())
+            {
+                _finished = true;
+            }
             else
             {
                 ParsedCommand cmd;
-                if (!CommandParser::parse(_getCmd(_cmdIndex), cmd)) _cmdIndex++;
-                else if (cmd.type == CMD_TIME) startCmd(cmd, now);
+
+                if (!CommandParser::parse(_getCmd(_cmdIndex), cmd))
+                {
+                    _cmdIndex++;
+                }
+                else if (cmd.type == CMD_TIME)
+                {
+                    startCmd(cmd, now);
+                }
             }
         }
     }
@@ -70,5 +83,12 @@ float CommandRunner::getWheelSoll(WheelVehicle w) const
     return _vehicle.getWheelSoll(w);
 }
 
-bool CommandRunner::isActive() const { return _active; }
-bool CommandRunner::isFinished() const { return _finished; }
+bool CommandRunner::isActive() const
+{
+    return _active;
+}
+
+bool CommandRunner::isFinished() const
+{
+    return _finished;
+}

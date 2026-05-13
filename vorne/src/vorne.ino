@@ -30,7 +30,7 @@ static uint32_t g_lastVsolSendMs = 0;
 static bool g_waitingRear = false;
 
 // Nach Befehlsende werden nur noch wenige Stop-Telegramme gesendet.
-static const uint8_t STOP_SEND_MAX = 3;
+static const uint8_t STOP_SEND_MAX = 2;
 static uint8_t g_stopSendCount = 0;
 
 // ============================================================
