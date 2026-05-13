@@ -29,6 +29,7 @@ void Printer::printHeader(VehicleController& vehicle, const ControlConfig& cfg)
 }
 
 #ifdef PRINTER_MODE_CHASSIS
+
 void Printer::printWheels(VehicleController& vehicle,
     float v2_ist, float v3_ist,
     uint32_t t_ms)
@@ -43,9 +44,29 @@ void Printer::printWheels(VehicleController& vehicle,
     Serial.print(vehicle.vyIst(), 2); Serial.print(',');
     Serial.println(vehicle.wzIst(), 2);
 }
+
+void Printer::printFrame(VehicleController& vehicle,
+    uint32_t t_ms,
+    float voLi_i,
+    float voRe_i,
+    float hiLi_i,
+    float hiRe_i)
+{
+    Serial.print('#');
+    Serial.print(t_ms);               Serial.print(',');
+    Serial.print(voLi_i, 2);          Serial.print(',');
+    Serial.print(voRe_i, 2);          Serial.print(',');
+    Serial.print(hiLi_i, 2);          Serial.print(',');
+    Serial.print(hiRe_i, 2);          Serial.print(',');
+    Serial.print(vehicle.vxIst(), 2); Serial.print(',');
+    Serial.print(vehicle.vyIst(), 2); Serial.print(',');
+    Serial.println(vehicle.wzIst(), 2);
+}
+
 #endif
 
 #ifdef PRINTER_MODE_RAEDER
+
 void Printer::printWheels(VehicleController& vehicle,
     float v2_ist, float v3_ist,
     int16_t pwm2, int16_t pwm3,
@@ -59,11 +80,47 @@ void Printer::printWheels(VehicleController& vehicle,
     Serial.print(vehicle.getWheelSoll(VoRe), 2);    Serial.print(',');
     Serial.print(speed[Re].mps(), 2);               Serial.print(',');
     Serial.print(rad[Re].lastPwm());                Serial.print(',');
-    Serial.print(vehicle.getWheelSoll(HiLi), 2);   Serial.print(',');
+    Serial.print(vehicle.getWheelSoll(HiLi), 2);    Serial.print(',');
     Serial.print(v2_ist, 2);                        Serial.print(',');
     Serial.print(pwm2);                             Serial.print(',');
-    Serial.print(vehicle.getWheelSoll(HiRe), 2);   Serial.print(',');
+    Serial.print(vehicle.getWheelSoll(HiRe), 2);    Serial.print(',');
     Serial.print(v3_ist, 2);                        Serial.print(',');
     Serial.println(pwm3);
 }
+
+void Printer::printFrame(
+    uint32_t t_ms,
+    float voLi_s,
+    float voLi_i,
+    int16_t voLi_pwm,
+    float voRe_s,
+    float voRe_i,
+    int16_t voRe_pwm,
+    float hiLi_s,
+    float hiLi_i,
+    int16_t hiLi_pwm,
+    float hiRe_s,
+    float hiRe_i,
+    int16_t hiRe_pwm)
+{
+    Serial.print('#');
+    Serial.print(t_ms);          Serial.print(',');
+
+    Serial.print(voLi_s, 2);     Serial.print(',');
+    Serial.print(voLi_i, 2);     Serial.print(',');
+    Serial.print(voLi_pwm);      Serial.print(',');
+
+    Serial.print(voRe_s, 2);     Serial.print(',');
+    Serial.print(voRe_i, 2);     Serial.print(',');
+    Serial.print(voRe_pwm);      Serial.print(',');
+
+    Serial.print(hiLi_s, 2);     Serial.print(',');
+    Serial.print(hiLi_i, 2);     Serial.print(',');
+    Serial.print(hiLi_pwm);      Serial.print(',');
+
+    Serial.print(hiRe_s, 2);     Serial.print(',');
+    Serial.print(hiRe_i, 2);     Serial.print(',');
+    Serial.println(hiRe_pwm);
+}
+
 #endif

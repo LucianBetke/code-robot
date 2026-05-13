@@ -1,0 +1,3236 @@
+﻿============================================================
+FILE: C:\Users\Acer\source\repos\robot\_alt\control_front.h
+============================================================
+// control_front.h
+#pragma once
+//#include "src/globals.h"
+//#include "src/ControlTypes.h"
+
+constexpr int16_t DEAD_PWM[WHEEL_COUNT] = {
+    80,  // Li
+    60   // Re
+};
+
+constexpr PIParam PI_PARAMS[WHEEL_COUNT] = {
+    {2.0f, 6.0f},   // Li
+    {2.0f, 5.5f}    // Re
+};
+
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\_alt\Hardware-hinten.h
+============================================================
+// Hardware.h
+#ifndef HARDWARE_H
+#define HARDWARE_H
+
+#include <Arduino.h>
+#include "src/globals.h"
+
+class Enc;
+class Motor;
+
+// --- Encoder ---
+extern Enc enc[WHEEL_COUNT];
+
+// --- Motoren ---
+extern Motor motor[WHEEL_COUNT];
+
+// zentrale Init-Funktion: Pins/IO + optional Encoder reset
+void hardware_begin(bool resetEnc = true);
+void hardware_enableMotors();
+
+#endif // HARDWARE_H
+
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\_alt\Hardware-vorne.h
+============================================================
+// Hardware.h
+#ifndef HARDWARE_H
+#define HARDWARE_H
+
+#include <Arduino.h>
+#include "src/globals.h"
+
+class Enc;
+class Motor;
+
+// --- Encoder ---
+extern Enc enc[WHEEL_COUNT];
+
+// --- Motoren ---
+extern Motor motor[WHEEL_COUNT];
+
+// zentrale Init-Funktion: Pins/IO + optional Encoder reset
+void hardware_begin(bool resetEnc = true);
+void hardware_enableMotors();
+
+#endif // HARDWARE_H
+
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\_alt\hinten_Control.cpp
+============================================================
+// ============================================================
+// File: Control.cpp
+// ============================================================
+
+#include "Control.h"
+#include "src/Encoder.h"
+#include "control_rear.h"
+#include "Hardware.h"
+
+SpeedWeg speed[WHEEL_COUNT] =
+{
+    SpeedWeg(enc[Li]),
+    SpeedWeg(enc[Re])
+};
+
+PIRegler regler[WHEEL_COUNT] = {
+    PIRegler(PI_PARAMS[Li].Kp, PI_PARAMS[Li].Ki,
+             -MAX_PWM, MAX_PWM,
+             SLEW_LIMIT_PWM),
+
+    PIRegler(PI_PARAMS[Re].Kp, PI_PARAMS[Re].Ki,
+             -MAX_PWM, MAX_PWM,
+             SLEW_LIMIT_PWM)
+};
+
+Rad rad[WHEEL_COUNT] =
+{
+    Rad(motor[Li], speed[Li], regler[Li], RAD_REGEL_DT_MS, DEAD_PWM[Li]),
+    Rad(motor[Re], speed[Re], regler[Re], RAD_REGEL_DT_MS, DEAD_PWM[Re])
+};
+
+void speed_reset_all()
+{
+    for (uint8_t i = 0; i < WHEEL_COUNT; i++)
+    {
+        speed[i].reset();
+        speed[i].setTimeoutMs(500);
+    }
+}
+
+void control_update(uint32_t now)
+{
+    //Serial.println("control_update");
+    for (uint8_t i = 0; i < WHEEL_COUNT; i++)
+    {
+        rad[i].update(now);
+    }
+}
+
+// ---------------------------------
+// NEU
+// ---------------------------------
+
+void control_setSoll(uint8_t w, float v)
+{
+    if (w < WHEEL_COUNT)
+        rad[w].setSoll(v);
+}
+
+void control_stopAll()
+{
+    for (uint8_t i = 0; i < WHEEL_COUNT; i++)
+        rad[i].stop();
+}
+
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\_alt\hinten_Control.h
+============================================================
+// Control.h
+#pragma once
+
+#include "src/SpeedWeg.h"
+#include "src/PIRegler.h"
+#include "src/Rad.h"
+
+// --- SpeedWeg ---
+extern SpeedWeg speed[WHEEL_COUNT];
+
+// --- Regler / Rad ---
+extern PIRegler regler[WHEEL_COUNT];
+extern Rad rad[WHEEL_COUNT];
+
+// Init/Reset
+void speed_reset_all();
+void control_update(uint32_t nowMs);
+
+// NEU:
+void control_setSoll(uint8_t wheel, float v);
+void control_stopAll();
+
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\_alt\hinten_control_rear.h
+============================================================
+// control_rear.h
+#pragma once
+
+
+constexpr int16_t DEAD_PWM[WHEEL_COUNT] = {
+    80,  // Li
+    60   // Re
+};
+
+constexpr PIParam PI_PARAMS[WHEEL_COUNT] = {
+    {2.0f, 6.0f},   // Li
+    {2.0f, 5.5f}    // Re
+};
+
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\_alt\hinten_hardware_pins.h
+============================================================
+// hardware_pins.h
+#pragma once
+#include <Arduino.h>
+
+// ==========================
+// Motor hinten
+// ==========================
+constexpr uint8_t M_Re_AIN1 = 9;
+constexpr uint8_t M_Re_AIN2 = 10;
+
+constexpr uint8_t M_Li_BIN1 = 6;
+constexpr uint8_t M_Li_BIN2 = 5;
+
+constexpr uint8_t STBY_PIN = 8;
+
+// ==========================
+// Encoder hinten
+// ==========================
+constexpr uint8_t ENC_Re_PIN_A = A2;
+constexpr uint8_t ENC_Re_PIN_B = A3;
+
+constexpr uint8_t ENC_Li_PIN_A = A0;
+constexpr uint8_t ENC_Li_PIN_B = A1;
+
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\_alt\Print.cpp
+============================================================
+// Print.cpp
+#include "Print.h"
+#include "src/Control.h"
+
+void print_begin()
+{
+    Serial.println("REGEL Hinten");
+
+    PIParam piRe = rad[Re].getPI();
+    PIParam piLi = rad[Li].getPI();
+
+    Serial.print("KpRe=");
+    Serial.print(piRe.Kp, 2);
+    Serial.print(" KiRe=");
+    Serial.print(piRe.Ki, 2);
+    Serial.print(" KpLi=");
+    Serial.print(piLi.Kp, 2);
+    Serial.print(" KiLi=");
+    Serial.println(piLi.Ki, 2);
+
+    Serial.print("DeadRe=");
+    Serial.print(rad[Re].deadPwm());
+    Serial.print(" DeadLi=");
+    Serial.println(rad[Li].deadPwm());
+
+    Serial.println("t_s,vSollLi,vIstLi,pwmLi,vSollRe,vIstRe,pwmRe");
+}
+
+void print_update(uint32_t now)
+{
+    static uint32_t lastPrint = 0;
+
+    if (now - lastPrint < DBG_INTERVAL_MS)
+        return;
+
+    lastPrint = now;
+
+    float t_s = now / 1000.0f;
+
+    Serial.print(t_s, 3);
+    Serial.print(',');
+
+    Serial.print(rad[Li].soll(), 3);
+    Serial.print(',');
+    Serial.print(rad[Li].vIst(), 3);
+    Serial.print(',');
+    Serial.print(rad[Li].lastPwm());
+    Serial.print(',');
+
+    Serial.print(rad[Re].soll(), 3);
+    Serial.print(',');
+    Serial.print(rad[Re].vIst(), 3);
+    Serial.print(',');
+    Serial.println(rad[Re].lastPwm());
+}
+
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\_alt\Print.h
+============================================================
+// Print.h
+#pragma once
+#include <Arduino.h>
+
+void print_begin();
+void print_update(uint32_t now);
+
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\_alt\VehicleTypes.h
+============================================================
+// VehicleTypes.h
+#pragma once
+struct VehicleCmd {
+    float vx;
+    float vy;
+    float wz;
+};
+
+struct AxleRef {
+    float vL;
+    float vR;
+};
+
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\_alt\vorne_Control.cpp
+============================================================
+// ============================================================
+// File: Control.cpp
+// ============================================================
+
+#include "Control.h"
+#include "control_front.h"
+#include "src/Encoder.h"
+#include "Hardware.h"
+
+SpeedWeg speed[WHEEL_COUNT] =
+{
+    SpeedWeg(enc[Li]),
+    SpeedWeg(enc[Re])
+};
+
+PIRegler regler[WHEEL_COUNT] = {
+    PIRegler(PI_PARAMS[Li].Kp, PI_PARAMS[Li].Ki,
+             -MAX_PWM, MAX_PWM,
+             SLEW_LIMIT_PWM),
+
+    PIRegler(PI_PARAMS[Re].Kp, PI_PARAMS[Re].Ki,
+             -MAX_PWM, MAX_PWM,
+             SLEW_LIMIT_PWM)
+};
+
+Rad rad[WHEEL_COUNT] =
+{
+    Rad(motor[Li], speed[Li], regler[Li], RAD_REGEL_DT_MS, DEAD_PWM[Li]),
+    Rad(motor[Re], speed[Re], regler[Re], RAD_REGEL_DT_MS, DEAD_PWM[Re])
+};
+
+void speed_reset_all()
+{
+    for (uint8_t i = 0; i < WHEEL_COUNT; i++)
+    {
+        speed[i].reset();
+        speed[i].setTimeoutMs(500);
+    }
+}
+
+void control_update(uint32_t now)
+{
+    //Serial.println("control_update");
+    for (uint8_t i = 0; i < WHEEL_COUNT; i++)
+    {
+        rad[i].update(now);
+    }
+}
+
+// ---------------------------------
+// NEU
+// ---------------------------------
+
+void control_setSoll(uint8_t w, float v)
+{
+    if (w < WHEEL_COUNT)
+        rad[w].setSoll(v);
+}
+
+void control_stopAll()
+{
+    for (uint8_t i = 0; i < WHEEL_COUNT; i++)
+        rad[i].stop();
+}
+
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\_alt\vorne_Control.h
+============================================================
+// Control.h
+#pragma once
+
+//#include "src/globals.h"
+#include "src/SpeedWeg.h"
+#include "src/PIRegler.h"
+#include "src/Rad.h"
+
+// --- SpeedWeg ---
+extern SpeedWeg speed[WHEEL_COUNT];
+
+// --- Regler / Rad ---
+extern PIRegler regler[WHEEL_COUNT];
+extern Rad rad[WHEEL_COUNT];
+
+// Init/Reset
+void speed_reset_all();
+void control_update(uint32_t nowMs);
+
+// NEU:
+void control_setSoll(uint8_t wheel, float v);
+void control_stopAll();
+
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\_alt\vorne_hardware_pins.h
+============================================================
+// hardware_pins.h
+#pragma once
+#include <Arduino.h>
+
+// ==========================
+// Motor vorne
+// ==========================
+constexpr uint8_t M_Re_AIN1 = 9;
+constexpr uint8_t M_Re_AIN2 = 10;
+
+constexpr uint8_t M_Li_BIN1 = 6;
+constexpr uint8_t M_Li_BIN2 = 5;
+
+constexpr uint8_t STBY_PIN = 8;
+
+// ==========================
+// Encoder vorne
+// ==========================
+constexpr uint8_t ENC_Re_PIN_A = A2;
+constexpr uint8_t ENC_Re_PIN_B = A3;
+
+constexpr uint8_t ENC_Li_PIN_A = A0;
+constexpr uint8_t ENC_Li_PIN_B = A1;
+
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\1_Common\src\CommUtils.h
+============================================================
+// CommUtils.h
+#pragma once
+#include <stdint.h>
+
+inline int16_t floatToInt100(float v)
+{
+    return (int16_t)(v * 100.0f + (v >= 0.0f ? 0.5f : -0.5f));
+}
+
+inline float int100ToFloat(int16_t v)
+{
+    return (float)v / 100.0f;
+}
+
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\1_Common\src\ControlTypes.h
+============================================================
+// ControlTypes.h
+#pragma once
+struct PIParam {
+    float Kp;
+    float Ki;
+};
+
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\1_Common\src\globals.h
+============================================================
+// ============================================================
+// File: globals.h
+// Zweck:
+//  - Zentrale Definitionen für Logik, Geometrie und Zeit
+//  - KEINE Hardware-Pins!
+// ============================================================
+
+#ifndef GLOBALS_H
+#define GLOBALS_H
+
+#pragma once
+
+#include <Arduino.h>
+
+// ============================================================
+// Wheel Index – Fahrzeug (alle 4 Räder)
+// Für Vehicle Controller / Mecanum / Fahrzeuglogik
+// Feste Reihenfolge:
+//   0 = Vorne Rechts
+//   1 = Vorne Links
+//   2 = Hinten Links
+//   3 = Hinten Rechts
+// ============================================================
+
+enum WheelVehicle : uint8_t
+{
+    VoRe = 0,
+    VoLi = 1,
+    HiLi = 2,
+    HiRe = 3,
+    WHEEL_VEHICLE_COUNT
+};
+
+constexpr const char* WHEEL_VEHICLE_NAME[WHEEL_VEHICLE_COUNT] =
+{
+    "VoRe",
+    "VoLi",
+    "HiLi",
+    "HiRe"
+};
+
+// ============================================================
+// Wheel Index – Lokal (pro Nano: links / rechts)
+// Für Motor, Encoder, PI, Rad
+// ============================================================
+
+enum Wheel : uint8_t
+{
+    Li = 0,
+    Re = 1,
+    WHEEL_COUNT
+};
+
+constexpr const char* WHEEL_NAME[WHEEL_COUNT] =
+{
+    "Li",
+    "Re"
+};
+
+// ============================================================
+// ==== Zeitkonstanten ====
+// ============================================================
+
+/** Minimaler Messabstand für Drehzahl (ms) */
+constexpr uint32_t SPEED_MIN_DT_MS = 5;
+
+/** Regelperiode pro Rad (ms) */
+constexpr uint16_t RAD_REGEL_DT_MS = 20;
+
+/** Regelperiode Fahrzeug + UART VSOL/VIST (ms) */
+constexpr uint16_t VEHICLE_DT_MS = 100;
+
+/** Debug-Ausgabe Intervall */
+constexpr uint16_t DBG_INTERVAL_MS = 20;
+
+// ============================================================
+// ==== Encoder / Rad-Geometrie ====
+// ============================================================
+
+/** Encoder-Pulse pro Umdrehung (x1) */
+constexpr uint16_t ENC_PPR = 330;
+
+/** Encoder-Counts pro Umdrehung (4x) */
+constexpr int32_t COUNTS_PER_REV = int32_t(ENC_PPR) * 4;
+
+/** Raddurchmesser (mm) */
+constexpr float RAD_DURCHMESSER_MM = 60.0f;
+
+/** Radumfang (mm) */
+constexpr float RAD_UMFANG_MM = RAD_DURCHMESSER_MM * PI;
+
+/** Radumfang in Meter */
+constexpr float RAD_UMFANG_M = RAD_UMFANG_MM / 1000.0f;
+
+/** Meter pro Tick */
+constexpr float METER_PRO_TICK = RAD_UMFANG_M / float(COUNTS_PER_REV);
+
+// ============================================================
+// ==== Fahrzeug-Geometrie ====
+// ============================================================
+
+/** Spurweite links ↔ rechts (mm) */
+constexpr float TRACK_WIDTH_MM = 200.0f;
+
+/** Radstand vorne ↔ hinten (mm) */
+constexpr float WHEEL_BASE_MM = 100.0f;
+
+/** Spurweite in Meter */
+constexpr float TRACK_WIDTH_M = TRACK_WIDTH_MM / 1000.0f;
+
+/** Radstand in Meter */
+constexpr float WHEEL_BASE_M = WHEEL_BASE_MM / 1000.0f;
+
+/** Mecanum Faktor k = (L/2 + W/2) */
+constexpr float MECANUM_K =
+(WHEEL_BASE_M * 0.5f) +
+(TRACK_WIDTH_M * 0.5f);
+
+// ============================================================
+// ==== PWM / Limits ====
+// ============================================================
+
+constexpr int16_t MAX_PWM = 255;
+constexpr int16_t SLEW_LIMIT_PWM = 255;
+
+// ============================================================
+// ==== Fahrzeug / Geschwindigkeit ====
+// ============================================================
+
+/** Maximale Radgeschwindigkeit (m/s) */
+constexpr float V_WHEEL_MAX = 0.30f;
+
+#endif // GLOBALS_H
+
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\2_Hardware\src\Encoder.cpp
+============================================================
+// Encoder.cpp
+#include "Encoder.h"
+
+// Quadratur-LUT: prev \ curr: 00 01 10 11  (A=LSB, B=MSB)
+const int8_t Enc::s_qlut[4][4] = {
+    {  0, +1, -1,  0 },
+    { -1,  0,  0, +1 },
+    { +1,  0,  0, -1 },
+    {  0, -1, +1,  0 }
+};
+
+Enc::Enc()
+    : _pinA(0), _pinB(0), _counts(0), _prevState(0)
+    , _bitA(0), _bitB(0), _maskA(0), _maskB(0)
+{
+}
+
+void Enc::begin(uint8_t pinA, uint8_t pinB, bool resetCounts)
+{
+    _pinA = pinA;
+    _pinB = pinB;
+    _bitA = uint8_t(_pinA - A0);
+    _bitB = uint8_t(_pinB - A0);
+    _maskA = uint8_t(1u << _bitA);
+    _maskB = uint8_t(1u << _bitB);
+
+    // ab hier identisch mit dem bisherigen begin():
+    pinMode(_pinA, INPUT_PULLUP);
+    pinMode(_pinB, INPUT_PULLUP);
+    uint8_t pinc = PINC;
+    uint8_t a = (pinc & _maskA) ? 1 : 0;
+    uint8_t b = (pinc & _maskB) ? 1 : 0;
+    _prevState = (b << 1) | a;
+    if (resetCounts) this->resetCounts();
+    PCIFR |= _BV(PCIF1);
+    PCINT1_Dispatcher::add(this);
+    enablePcintGroup1_SelectedPins();
+}
+
+void Enc::resetCounts() { setCounts(0); }
+
+
+int32_t Enc::getCounts() const
+{
+    int32_t v;
+    uint8_t s = SREG; noInterrupts();
+    v = _counts;
+    SREG = s;
+    return v;
+}
+
+void Enc::setCounts(int32_t v)
+{
+    uint8_t s = SREG; noInterrupts();
+    _counts = v;
+    SREG = s;
+}
+
+void Enc::handleIsr(uint8_t pinc_snapshot)
+{
+    // A/B-Bits aus dem EINMAL gelesenen Snapshot ziehen
+    uint8_t a = (pinc_snapshot & _maskA) ? 1 : 0;
+    uint8_t b = (pinc_snapshot & _maskB) ? 1 : 0;
+    uint8_t curr = (b << 1) | a;   // 0..3
+
+    int8_t d = s_qlut[_prevState][curr];
+    _prevState = curr;
+    if (d) _counts += d;
+}
+
+void Enc::enablePcintGroup1_SelectedPins()
+{
+    // PCINT-Gruppe 1 (Port C) aktivieren und genau diese Pins maskieren
+    PCICR |= _BV(PCIE1);
+    PCMSK1 |= (_maskA | _maskB);
+}
+
+// ------------ Dispatcher-Implementierung ------------
+namespace {
+    Enc* s_list[2] = { nullptr, nullptr };
+    uint8_t s_count = 0;
+}
+
+namespace PCINT1_Dispatcher {
+    void add(Enc* enc)
+    {
+        if (s_count < 2) s_list[s_count++] = enc;
+    }
+
+    void isr(uint8_t pinc_snapshot)
+    {
+        for (uint8_t i = 0; i < s_count; ++i)
+            if (s_list[i]) s_list[i]->handleIsr(pinc_snapshot);
+    }
+}
+
+// ------------ ISR selbst (hier mit drin) ------------
+ISR(PCINT1_vect)
+{
+    uint8_t pinc = PINC;                  // EIN Port-Read
+    PCINT1_Dispatcher::isr(pinc);         // an alle Encoder verteilen
+}
+
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\2_Hardware\src\Encoder.h
+============================================================
+// ============================================================
+/* File: Encoder.h
+ * Zweck:
+ *  - Quadratur-Encoder (Port C / PCINT1: A0..A5) zählen
+ *  - Atomarer Zugriff auf Zählerstand
+ *  - Dispatcher ruft handleIsr() mit PINC-Snapshot
+ * Abhängigkeiten: Arduino.h, <avr/io.h>, <avr/interrupt.h>
+ */
+ // ============================================================
+#pragma once
+#include <Arduino.h>
+#include <avr/io.h>
+#include <avr/interrupt.h>
+
+class Enc {
+public:
+    Enc();                                              // leerer Konstruktor
+
+    void begin(uint8_t pinA, uint8_t pinB,              // NEU: Pins als Parameter
+        bool resetCounts = true);
+    void begin(bool resetCounts = true);                // bleibt (alter Aufruf)
+
+    void    resetCounts();
+    int32_t getCounts() const;
+    void    setCounts(int32_t v);
+    void    handleIsr(uint8_t pinc_snapshot);
+
+private:
+    static const int8_t s_qlut[4][4];
+
+    uint8_t  _pinA;
+    uint8_t  _pinB;
+    uint8_t  _bitA;
+    uint8_t  _bitB;
+    uint8_t  _maskA;
+    uint8_t  _maskB;
+    volatile int32_t _counts;
+    volatile uint8_t _prevState;
+
+    void enablePcintGroup1_SelectedPins();
+};
+
+namespace PCINT1_Dispatcher {
+    void add(Enc* enc);
+    void isr(uint8_t pinc_snapshot);
+}
+
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\2_Hardware\src\Hardware.cpp
+============================================================
+#include <Arduino.h>
+#include "src/globals.h"
+#include "Encoder.h"
+#include "Motor.h"
+#include "Hardware.h"
+#include "hardware_pins.h"
+
+Enc   enc[WHEEL_COUNT];
+Motor motor[WHEEL_COUNT];
+static uint8_t s_stby_sync = 0;
+
+void hardware_begin(const HardwarePinSet& pins, bool resetEnc)
+{
+    s_stby_sync = pins.stby_sync;
+    enc[Li].begin(pins.encLiA, pins.encLiB, resetEnc);
+    enc[Re].begin(pins.encReA, pins.encReB, resetEnc);
+    motor[Li].begin(pins.motorLi1, pins.motorLi2, enc[Li]);
+    motor[Re].begin(pins.motorRe1, pins.motorRe2, enc[Re]);
+    pinMode(s_stby_sync, OUTPUT);
+    motor[Li].init();
+    motor[Re].init();
+}
+
+void hardware_enableMotors()
+{
+    digitalWrite(s_stby_sync, HIGH);
+}
+
+void hardware_disableMotors()
+{
+    digitalWrite(s_stby_sync, LOW);
+}
+
+void hardware_requestVist()
+{
+    digitalWrite(s_stby_sync, HIGH);
+    digitalWrite(s_stby_sync, LOW);
+}
+
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\2_Hardware\src\Hardware.h
+============================================================
+#ifndef HARDWARE_H
+#define HARDWARE_H
+#include <Arduino.h>
+#include "src/globals.h"
+#include "src/hardware_pins.h"
+
+class Enc;
+class Motor;
+extern Enc   enc[WHEEL_COUNT];
+extern Motor motor[WHEEL_COUNT];
+
+void hardware_begin(const HardwarePinSet& pins, bool resetEnc = true);
+void hardware_enableMotors();
+void hardware_disableMotors();
+void hardware_requestVist();
+#endif // HARDWARE_H
+
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\2_Hardware\src\hardware_pins.h
+============================================================
+// hardware_pins.h
+#ifndef HARDWARE_PINS_H
+#define HARDWARE_PINS_H
+#include <Arduino.h>
+// ============================================================
+// HardwarePinSet — fasst alle Pins für hardware_begin() zusammen
+// ============================================================
+struct HardwarePinSet
+{
+    uint8_t encLiA;
+    uint8_t encLiB;
+    uint8_t encReA;
+    uint8_t encReB;
+    uint8_t motorLi1;
+    uint8_t motorLi2;
+    uint8_t motorRe1;
+    uint8_t motorRe2;
+    uint8_t stby_sync;
+};
+// ============================================================
+// namespace PinsFront
+// ============================================================
+namespace PinsFront
+{
+    constexpr uint8_t M_Li_BIN1 = 9;   // D9  BIN1 → physisch LINKS
+    constexpr uint8_t M_Li_BIN2 = 10;  // D10 BIN2 → physisch LINKS
+    constexpr uint8_t M_Re_AIN1 = 6;   // D6  AIN1 → physisch RECHTS
+    constexpr uint8_t M_Re_AIN2 = 5;   // D5  AIN2 → physisch RECHTS
+    constexpr uint8_t STBY_SYNC_PIN = 8;
+
+    constexpr uint8_t ENC_Li_PIN_A = A2;  // A2 → Encoder LINKS,  Kanal A
+    constexpr uint8_t ENC_Li_PIN_B = A3;  // A3 → Encoder LINKS,  Kanal B
+    constexpr uint8_t ENC_Re_PIN_A = A0;  // A0 → Encoder RECHTS, Kanal A
+    constexpr uint8_t ENC_Re_PIN_B = A1;  // A1 → Encoder RECHTS, Kanal B
+
+    constexpr HardwarePinSet PINS = {
+        ENC_Li_PIN_A, ENC_Li_PIN_B,
+        ENC_Re_PIN_A, ENC_Re_PIN_B,
+        M_Li_BIN1,    M_Li_BIN2,
+        M_Re_AIN1,    M_Re_AIN2,
+        STBY_SYNC_PIN
+    };
+}
+// ============================================================
+// namespace PinsRear
+// ============================================================
+namespace PinsRear
+{
+    constexpr uint8_t M_Re_AIN1 = 9;
+    constexpr uint8_t M_Re_AIN2 = 10;
+    constexpr uint8_t M_Li_BIN1 = 6;
+    constexpr uint8_t M_Li_BIN2 = 5;
+    constexpr uint8_t STBY_SYNC_PIN = 8;
+
+    constexpr uint8_t ENC_Re_PIN_A = A2;
+    constexpr uint8_t ENC_Re_PIN_B = A3;
+    constexpr uint8_t ENC_Li_PIN_A = A0;
+    constexpr uint8_t ENC_Li_PIN_B = A1;
+
+    constexpr HardwarePinSet PINS = {
+        ENC_Li_PIN_A, ENC_Li_PIN_B,
+        ENC_Re_PIN_A, ENC_Re_PIN_B,
+        M_Li_BIN1,    M_Li_BIN2,
+        M_Re_AIN1,    M_Re_AIN2,
+        STBY_SYNC_PIN
+    };
+}
+#endif // HARDWARE_PINS_H
+
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\2_Hardware\src\Motor.cpp
+============================================================
+// Motor.cpp
+#include "Motor.h"
+
+// ===== Motor =====
+Motor::Motor() : _pin1(0), _pin2(0), _enc(nullptr)
+{
+}
+
+void Motor::init() {
+    pinMode(_pin1, OUTPUT);
+    pinMode(_pin2, OUTPUT);
+    bremse(false); // Coast
+}
+
+void Motor::begin(uint8_t pin1, uint8_t pin2, Enc& enc)
+{
+    _pin1 = pin1;
+    _pin2 = pin2;
+    _enc = &enc;
+}
+
+void Motor::vor(uint8_t pwm) { analogWrite(_pin1, pwm); digitalWrite(_pin2, LOW); }
+void Motor::rueck(uint8_t pwm) { analogWrite(_pin2, pwm); digitalWrite(_pin1, LOW); }
+
+void Motor::bremse(bool art) {
+    if (art) { digitalWrite(_pin1, HIGH); digitalWrite(_pin2, HIGH); }   // aktiv bremsen
+    else { digitalWrite(_pin1, LOW);  digitalWrite(_pin2, LOW); }   // auslaufen
+}
+
+void Motor::attachEnc(Enc& enc) { _enc = &enc; }
+Enc* Motor::enc() const { return _enc; }
+
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\2_Hardware\src\Motor.h
+============================================================
+// ============================================================
+// File: Motor.h
+// Zweck:
+//  - Steuerung eines einzelnen Motors (DRV8833/TB6612, 2-Pin-Modus)
+//  - Richtung, PWM-Leistung, Bremse
+//  - Optionale Encoder-Anbindung
+// Abhängigkeiten: Arduino.h, Enc forward-deklariert
+// ============================================================
+
+#ifndef MOTOR_H
+#define MOTOR_H
+
+#pragma once
+#include <Arduino.h>
+
+class Enc;
+
+/**
+ * @class Motor
+ * @brief Steuert einen Motor mit 2-Pin-Ansteuerung (z. B. DRV8833).
+ *
+ * Unterstützt:
+ *  - Vorwärts- und Rückwärtsfahrt über PWM
+ *  - Bremse (Brake oder Coast)
+ *  - Optionale Verbindung zu einem Encoder (Enc)
+ *
+ * Beispiel:
+ * @code
+ * Motor motor[Re](5, 6);
+ * motor[Re].vor(180);
+ * delay(1000);
+ * motor[Re].bremse(true);
+ * @endcode
+ */
+class Motor {
+public:
+    Motor();                                            // NEU: leerer Konstruktor
+
+    void begin(uint8_t pin1, uint8_t pin2, Enc& enc);   // NEU
+
+    void init();
+    void vor(uint8_t pwm);
+    void rueck(uint8_t pwm);
+    void bremse(bool art);
+    void attachEnc(Enc& enc);
+    Enc* enc() const;
+
+private:
+    uint8_t _pin1;
+    uint8_t _pin2;
+    Enc* _enc = nullptr;
+};
+
+#endif // MOTOR_H
+
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\2_Hardware\src\UartLink.cpp
+============================================================
+#include "UartLink.h"
+#include <string.h>
+
+UartLink::UartLink(Stream& link, bool initiator)
+    : _link(link), _initiator(initiator),
+    _connected(false),
+    _lastPing(0),
+    _lastSeen(0),
+    _idx(0),
+    _lineAvailable(false) {
+}
+
+void UartLink::begin()
+{
+    _connected = false;
+    _lastPing = 0;
+    _lastSeen = millis();
+    _idx = 0;
+    _lineAvailable = false;
+    _line[0] = '\0';
+}
+
+void UartLink::update()
+{
+    uint32_t now = millis();
+    // ===== RX =====
+    while (_link.available())
+    {
+        char c = _link.read();
+        if (c == '\r') continue;
+        if (c == '\n')
+        {
+            _buf[_idx] = '\0';
+            _lastSeen = now;
+            if (!_initiator && strcmp(_buf, "PING") == 0)
+            {
+                _link.println("PONG");
+            }
+            else if (_initiator && strcmp(_buf, "PONG") == 0 && !_connected)
+            {
+                _link.println("ACK");
+                _connected = true;
+            }
+            else if (!_initiator && strcmp(_buf, "ACK") == 0)
+            {
+                _connected = true;
+            }
+            else if (strcmp(_buf, "KA") != 0 && _buf[0] != '#')
+            {
+                // 👉 Nutzdaten speichern
+                strncpy(_line, _buf, sizeof(_line) - 1);
+                _line[sizeof(_line) - 1] = '\0';
+                _lineAvailable = true;
+            }
+            _idx = 0;
+        }
+        else if (_idx < sizeof(_buf) - 1)
+        {
+            _buf[_idx++] = c;
+        }
+        else
+        {
+            _idx = 0; // Overflow-Schutz
+        }
+    }
+    // ===== TX =====
+    if (now - _lastPing > PING_INTERVAL)
+    {
+        _lastPing = now;
+        if (!_connected)
+        {
+            if (_initiator) _link.println("PING");
+        }
+        else
+        {
+            _link.println("KA");
+        }
+    }
+    // ===== Timeout =====
+    if (_connected && (now - _lastSeen > TIMEOUT))
+    {
+        _connected = false;
+    }
+}
+
+void UartLink::sendLine(const char* msg)
+{
+    if (_connected) _link.println(msg);
+}
+
+bool UartLink::availableLine() const
+{
+    return _lineAvailable;
+}
+
+const char* UartLink::getLine()
+{
+    _lineAvailable = false;
+    return _line;
+}
+
+bool UartLink::isConnected() const
+{
+    return _connected;
+}
+
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\2_Hardware\src\UartLink.h
+============================================================
+//UartLink.h
+#ifndef UARTLINK_H
+#define UARTLINK_H
+
+#pragma once
+#include <Arduino.h>
+
+class UartLink
+{
+public:
+    UartLink(Stream& link, bool initiator = false);
+    void begin();
+    void update();
+    void sendLine(const char* msg);
+    bool isConnected() const;
+    bool availableLine() const;
+    const char* getLine();
+
+private:
+    Stream& _link;
+    bool _initiator;
+    bool _connected;
+
+    // Timing
+    unsigned long _lastPing;
+    unsigned long _lastSeen;
+
+    // Buffer
+    char _buf[64];
+    uint8_t _idx;
+
+    // Empfangene vollständige Zeile (non-handshake)
+    char _line[64];
+    bool _lineAvailable;
+
+    static constexpr unsigned long PING_INTERVAL = 500;
+    static constexpr unsigned long TIMEOUT = 2000;
+};
+
+#endif // UARTLINK_H
+
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\3_Control\src\Control.cpp
+============================================================
+// ============================================================
+// File: Control.cpp (3_Control)
+// Zweck:
+//  - Gemeinsame Steuerungs-Implementierung fuer vorne und hinten
+//  - Konfiguration kommt von der App via control_begin(cfg)
+// ============================================================
+
+#include "Control.h"
+#include "src/Encoder.h"   // Klasse Enc (aus 2_Hardware)
+#include "src/Motor.h"     // Klasse Motor (aus 2_Hardware)
+
+// ============================================================
+// enc[] und motor[] werden in der App definiert
+// (vorne/src/Hardware.cpp bzw. hinten/src/Hardware.cpp).
+// Hier nur als extern bekannt machen.
+// ============================================================
+extern Enc enc[WHEEL_COUNT];
+extern Motor motor[WHEEL_COUNT];
+
+// ============================================================
+// Globale Objekte
+//
+// Die Regler werden hier mit Default-Parametern (0.0f, 0.0f)
+// angelegt. Die echten Parameter setzt control_begin() spaeter
+// per setParams() / setDeadPwm().
+// ============================================================
+
+SpeedWeg speed[WHEEL_COUNT] =
+{
+    SpeedWeg(enc[Li]),
+    SpeedWeg(enc[Re])
+};
+
+PIRegler regler[WHEEL_COUNT] =
+{
+    PIRegler(0.0f, 0.0f, -MAX_PWM, MAX_PWM, SLEW_LIMIT_PWM),
+    PIRegler(0.0f, 0.0f, -MAX_PWM, MAX_PWM, SLEW_LIMIT_PWM)
+};
+
+Rad rad[WHEEL_COUNT] =
+{
+    Rad(motor[Li], speed[Li], regler[Li], RAD_REGEL_DT_MS, 0),
+    Rad(motor[Re], speed[Re], regler[Re], RAD_REGEL_DT_MS, 0)
+};
+
+// ============================================================
+// control_begin
+//
+// Wird von der App im setup() aufgerufen mit der gewuenschten
+// Konfiguration. Setzt PI-Parameter und DeadPWM in Reglern und
+// Raedern.
+// ============================================================
+void control_begin(const ControlConfig& cfg)
+{
+    for (uint8_t i = 0; i < WHEEL_COUNT; i++)
+    {
+        regler[i].setParams(cfg.pi[i].Kp, cfg.pi[i].Ki);
+        rad[i].setDeadPwm(cfg.deadPwm[i]);
+    }
+}
+
+// ============================================================
+// Bestehende Funktionen (unveraendert)
+// ============================================================
+
+void speed_reset_all()
+{
+    for (uint8_t i = 0; i < WHEEL_COUNT; i++)
+    {
+        speed[i].reset();
+        speed[i].setTimeoutMs(500);
+    }
+}
+
+void control_update(uint32_t now)
+{
+    for (uint8_t i = 0; i < WHEEL_COUNT; i++)
+    {
+        rad[i].update(now);
+    }
+}
+
+void control_setSoll(uint8_t w, float v)
+{
+    if (w < WHEEL_COUNT)
+        rad[w].setSoll(v);
+}
+
+void control_stopAll()
+{
+    for (uint8_t i = 0; i < WHEEL_COUNT; i++)
+        rad[i].stop();
+}
+
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\3_Control\src\Control.h
+============================================================
+// ============================================================
+// File: Control.h (3_Control)
+// Zweck:
+//  - Gemeinsame Steuerungs-Schnittstelle fuer vorne und hinten
+//  - Apps geben ihre Konfiguration via control_begin(cfg) mit
+// ============================================================
+
+#ifndef CONTROL_H
+#define CONTROL_H
+
+#pragma once
+
+#include <Arduino.h>
+#include "src/globals.h"
+#include "src/SpeedWeg.h"
+#include "src/PIRegler.h"
+#include "src/Rad.h"
+#include "ControlConfig.h"
+
+// --- SpeedWeg (Geschwindigkeit/Weg pro Rad) ---
+extern SpeedWeg speed[WHEEL_COUNT];
+
+// --- Regler / Rad ---
+extern PIRegler regler[WHEEL_COUNT];
+extern Rad rad[WHEEL_COUNT];
+
+// ============================================================
+// Initialisierung
+//
+// Die App ruft control_begin(cfg) im setup() auf und uebergibt
+// ihre gewuenschte Konfiguration (z.B. ConfigFront::CONFIG
+// oder ConfigRear::CONFIG).
+// ============================================================
+void control_begin(const ControlConfig& cfg);
+
+// SpeedWeg fuer alle Raeder zuruecksetzen
+void speed_reset_all();
+
+// Regelschleife pro Loop-Durchlauf aufrufen
+void control_update(uint32_t nowMs);
+
+// Sollwert eines bestimmten Rades setzen
+void control_setSoll(uint8_t wheel, float v);
+
+// Alle Raeder stoppen
+void control_stopAll();
+
+#endif // CONTROL_H
+
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\3_Control\src\ControlConfig.h
+============================================================
+// ============================================================
+// File: ControlConfig.h
+// Zweck:
+//  - Datentyp ControlConfig fuer PI-Parameter und DeadPWM
+//  - Vordefinierte Konfigurationen fuer vorne und hinten
+//
+//  Apps (vorne, hinten) waehlen ihre Konfiguration aus und
+//  uebergeben sie an control_begin().
+//  3_Control selbst kennt vorne/hinten nicht.
+// ============================================================
+
+#ifndef CONTROLCONFIG_H
+#define CONTROLCONFIG_H
+
+#pragma once
+
+#include <Arduino.h>
+#include "src/globals.h"
+#include "src/ControlTypes.h"   // PIParam
+
+// ============================================================
+// Datentyp: enthaelt alles, was Control zur Initialisierung
+// braucht.
+// ============================================================
+struct ControlConfig
+{
+    int16_t deadPwm[WHEEL_COUNT];   // Mindest-PWM zum Anfahren
+    PIParam pi[WHEEL_COUNT];        // Kp und Ki je Rad
+};
+
+// ============================================================
+// namespace ConfigFront
+//
+// Der namespace ist nur eine "Schublade" mit einem Namen.
+// Variablen darin spricht man mit "ConfigFront::CONFIG" an.
+// Damit koennen ConfigFront und ConfigRear je ein eigenes
+// CONFIG haben, ohne sich gegenseitig zu stoeren.
+// ============================================================
+namespace ConfigFront
+{
+    constexpr ControlConfig CONFIG =
+    {
+        // deadPwm: Li, Re
+        { 80, 60 },
+
+        // PI-Parameter: Li, Re
+        {
+            { 2.0f, 6.0f },   // Li: Kp, Ki
+            { 2.0f, 5.5f }    // Re: Kp, Ki
+        }
+    };
+}
+
+// ============================================================
+// namespace ConfigRear
+//
+// Aktuell identisch mit ConfigFront, aber als eigene
+// Schublade -> spaeter unabhaengig anpassbar.
+// ============================================================
+namespace ConfigRear
+{
+    constexpr ControlConfig CONFIG =
+    {
+        // deadPwm: Li, Re
+        { 80, 60 },
+
+        // PI-Parameter: Li, Re
+        {
+            { 2.0f, 6.0f },   // Li: Kp, Ki
+            { 2.0f, 5.5f }    // Re: Kp, Ki
+        }
+    };
+}
+
+#endif // CONTROLCONFIG_H
+
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\3_Control\src\PIRegler.cpp
+============================================================
+// PIRegler.cpp  (bidirektional)
+
+#include "PIRegler.h"
+#include <Arduino.h>
+#include <math.h> // fabsf
+
+PIRegler::PIRegler(float Kp, float Ki,
+    int16_t uMin, int16_t uMax,
+    int16_t slewLimit)
+    : _Kp(Kp), _Ki(Ki),
+    _uMin(uMin), _uMax(uMax),
+    _slewLimit(slewLimit),
+    _v_soll(0.0f),
+    _integral(0.0f),
+    _uPrev(0),
+    _lastE(0.0f),
+    _lastP(0.0f),
+    _lastI(0.0f)
+{
+}
+
+int16_t PIRegler::update(float v_ist, uint16_t dt_ms) {
+    if (dt_ms == 0) { return _uPrev; }
+
+    // --- Fehler ---
+    const float e = _v_soll - v_ist;
+    _lastE = e;
+
+    // --- Zeit ---
+    const float dt_s = (float)dt_ms * 0.001f;
+
+    // --- bidirektional: u_norm in [-1..+1] ---
+    const float uMinNorm = -1.0f;
+    const float uMaxNorm = +1.0f;
+
+    // --- PI vor Begrenzung ---
+    const float p_part = _Kp * e;
+    const float u_pre = p_part + _integral;
+
+    // --- Begrenzen (Sättigung) ---
+    const float u_limited = constrain(u_pre, uMinNorm, uMaxNorm);
+
+    // --- Anti-Windup: Clamping (Integrator nur, wenn nicht gesättigt) ---
+    const bool saturated = (u_pre <= uMinNorm) || (u_pre >= uMaxNorm);
+    if (!saturated) {
+        _integral += _Ki * e * dt_s;
+    }
+
+    // --- endgültiger PI-Ausgang ---
+    float u = p_part + _integral;
+    u = constrain(u, uMinNorm, uMaxNorm);
+
+    _lastP = p_part;
+    _lastI = _integral;
+
+    // --- PWM signed in [-255..+255] ---
+    float pwm_f = u * 255.0f;
+    if (pwm_f >= 0.0f) pwm_f += 0.5f;
+    else               pwm_f -= 0.5f;
+
+    int16_t pwm = (int16_t)pwm_f;
+
+    // --- Grenzen: signed ---
+    int16_t pwmMax = _uMax;
+    int16_t pwmMin = _uMin;
+
+    if (pwmMax < 0) pwmMax = (int16_t)(-pwmMax);
+    if (pwmMin > 0) pwmMin = (int16_t)(-pwmMax);
+    if (pwmMin >= 0) pwmMin = (int16_t)(-pwmMax);
+
+    pwm = constrain(pwm, pwmMin, pwmMax);
+
+    // --- Slewrate ---
+    pwm = applySlew(pwm);
+
+    return pwm;
+}
+
+int16_t PIRegler::applySlew(int16_t pwm)
+{
+    const int16_t du = pwm - _uPrev;
+
+    if (du > _slewLimit)        pwm = _uPrev + _slewLimit;
+    else if (du < -_slewLimit)  pwm = _uPrev - _slewLimit;
+
+    _uPrev = pwm;
+    return pwm;
+}
+
+void PIRegler::presetOutput(float u0_pwm) {
+    int16_t pwmMax = _uMax;
+    int16_t pwmMin = _uMin;
+
+    if (pwmMax < 0) pwmMax = (int16_t)(-pwmMax);
+    if (pwmMin >= 0) pwmMin = (int16_t)(-pwmMax);
+
+    if (u0_pwm > (float)pwmMax) u0_pwm = (float)pwmMax;
+    if (u0_pwm < (float)pwmMin) u0_pwm = (float)pwmMin;
+
+    const float u0_norm = u0_pwm / 255.0f;
+    _integral = u0_norm;
+
+    float pwm_f = u0_pwm;
+    if (pwm_f >= 0.0f) pwm_f += 0.5f;
+    else               pwm_f -= 0.5f;
+    _uPrev = (int16_t)pwm_f;
+}
+
+void PIRegler::setSoll(float v_soll) { _v_soll = v_soll; }
+
+float PIRegler::soll() const { return _v_soll; }
+
+void PIRegler::reset() {
+    _integral = 0.0f;
+    _uPrev = 0;
+
+    _lastE = 0.0f;
+    _lastP = 0.0f;
+    _lastI = 0.0f;
+}
+
+// PI-Parameter zur Laufzeit neu setzen
+void PIRegler::setParams(float Kp, float Ki)
+{
+    _Kp = Kp;
+    _Ki = Ki;
+}
+
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\3_Control\src\PIRegler.h
+============================================================
+// ============================================================
+// File: PIRegler.h
+// Beschreibung:
+//  - Bidirektionaler PI-Regler für Drehzahlregelung
+//  - Ausgang: signed PWM [-uMax .. +uMax]
+//  - Anti-Windup (Clamping)
+//  - Slew-Rate Begrenzung
+// ============================================================
+#pragma once
+#include <Arduino.h>
+
+class PIRegler {
+public:
+    PIRegler(float Kp, float Ki,
+        int16_t uMin, int16_t uMax,
+        int16_t slewLimit);
+
+    // v_ist in m/s, dt_ms = Zeit seit letztem Aufruf
+    int16_t update(float v_ist, uint16_t dt_ms);
+
+    // Start-PWM vorgeben (Feedforward / Arbeitspunkt-Vorbelegung)
+    void presetOutput(float u0_pwm);
+
+    void setSoll(float v_soll);
+    float soll() const;
+
+    float Kp() const { return _Kp; }
+    float Ki() const { return _Ki; }
+
+    void reset();
+
+    // PI-Parameter zur Laufzeit neu setzen
+    void setParams(float Kp, float Ki);
+
+    // --- Debug / Monitoring ---
+    float lastError() const { return _lastE; }
+    float lastP()     const { return _lastP; }
+    float lastI()     const { return _lastI; }
+
+private:
+    int16_t applySlew(int16_t pwm);
+
+    float   _Kp;
+    float   _Ki;
+
+    int16_t _uMin;
+    int16_t _uMax;
+    int16_t _slewLimit;
+
+    float   _v_soll;
+    float   _integral;
+
+    int16_t _uPrev;
+
+    // Debug
+    float _lastE;
+    float _lastP;
+    float _lastI;
+};
+
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\3_Control\src\Rad.cpp
+============================================================
+// Rad.cpp
+#include "Rad.h"
+#include <math.h>            // fabsf
+
+Rad::Rad(Motor& motor, SpeedWeg& speed, PIRegler& regler,
+    uint16_t dtMs, int16_t deadPwm)
+    : _motor(motor), _speed(speed), _regler(regler),
+    _dtMs(dtMs), _deadPwm(deadPwm),
+    _lastUpdateMs(0),
+    _lastPwm(0)
+{
+}
+
+void Rad::setSoll(float v_soll)
+{
+    const float v_alt = _regler.soll();
+    _regler.setSoll(v_soll);
+
+    const float EPS = 1e-6f;
+    const bool wasZero = (fabsf(v_alt) < EPS);
+    const bool nowZero = (fabsf(v_soll) < EPS);
+
+    if (!nowZero) {
+        const bool dirFlip =
+            (!wasZero) &&
+            ((v_alt > 0.0f && v_soll < 0.0f) ||
+                (v_alt < 0.0f && v_soll > 0.0f));
+
+        if (wasZero || dirFlip) {
+            const float sign = (v_soll >= 0.0f) ? 1.0f : -1.0f;
+            _regler.presetOutput(sign * (float)_deadPwm);
+
+            _lastUpdateMs = 0;
+            _lastPwm = 0;
+        }
+    }
+}
+
+float Rad::soll() const { return _regler.soll(); }
+
+float Rad::vIst() const { return _speed.mps(); }
+
+void Rad::stop()
+{
+    _regler.reset();
+    _regler.setSoll(0.0f);
+    _motor.bremse(HIGH);
+    _lastPwm = 0;
+    _lastUpdateMs = 0;
+}
+
+void Rad::update(uint32_t nowMs)
+{
+    _speed.update(nowMs);
+
+    if (_lastUpdateMs == 0) {
+        _lastUpdateMs = nowMs;
+        return;
+    }
+
+    if ((uint32_t)(nowMs - _lastUpdateMs) < _dtMs) {
+        return;
+    }
+
+    const uint16_t dt_ms = (uint16_t)(nowMs - _lastUpdateMs);
+    _lastUpdateMs = nowMs;
+
+    const float EPS = 1e-6f;
+    const float v_soll = _regler.soll();
+
+    // STOP
+    if (fabsf(v_soll) < EPS) {
+        _regler.reset();
+        _motor.bremse(HIGH);
+        _lastPwm = 0;
+        return;
+    }
+
+    const float v_ist = _speed.mps();
+
+    int16_t pwm = _regler.update(v_ist, dt_ms);
+
+    // Limit
+    if (pwm > MAX_PWM)  pwm = MAX_PWM;
+    if (pwm < -MAX_PWM) pwm = -MAX_PWM;
+
+    // Deadband
+    int16_t apwm = (pwm >= 0) ? pwm : -pwm;
+    if (apwm > 0 && apwm < _deadPwm) {
+        pwm = (pwm >= 0) ? _deadPwm : -_deadPwm;
+        apwm = _deadPwm;
+    }
+
+    // Motor
+    if (pwm > 0) {
+        _motor.vor((uint8_t)apwm);
+    }
+    else if (pwm < 0) {
+        _motor.rueck((uint8_t)apwm);
+    }
+    else {
+        _motor.bremse(HIGH);
+    }
+
+    _lastPwm = pwm;
+}
+
+PIParam Rad::getPI() const
+{
+    return { _regler.Kp(), _regler.Ki() };
+}
+
+void Rad::reset()
+{
+    _regler.reset();
+    _regler.setSoll(0.0f);
+    _lastUpdateMs = 0;
+    _lastPwm = 0;
+}
+
+// DeadPWM zur Laufzeit neu setzen
+void Rad::setDeadPwm(int16_t deadPwm)
+{
+    _deadPwm = deadPwm;
+}
+
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\3_Control\src\Rad.h
+============================================================
+// Rad.h
+#pragma once
+#include <Arduino.h>
+#include "src/ControlTypes.h"
+#include "src/Motor.h"
+#include "SpeedWeg.h"
+#include "PIRegler.h"
+
+class Rad {
+public:
+    Rad(Motor& motor, SpeedWeg& speed, PIRegler& regler,
+        uint16_t dtMs, int16_t deadPwm);
+
+    void  setSoll(float v_soll);
+    float soll() const;
+    float vIst() const;
+
+    void update(uint32_t nowMs);
+
+    int16_t lastPwm() const { return _lastPwm; }
+
+    PIParam getPI() const;
+    void reset();
+    void stop();
+
+    int16_t deadPwm() const { return _deadPwm; }
+    void setDeadPwm(int16_t deadPwm);
+
+private:
+    Motor& _motor;
+    SpeedWeg& _speed;
+    PIRegler& _regler;
+
+    uint16_t _dtMs;
+    uint32_t _lastUpdateMs;
+    int16_t _lastPwm;
+    int16_t _deadPwm;
+};
+
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\3_Control\src\SpeedWeg.cpp
+============================================================
+// ============================================================
+// File: SpeedWeg.cpp
+// ============================================================
+
+#include "SpeedWeg.h"
+#include "src/globals.h"
+#include "src/Encoder.h"
+#include <math.h>
+
+// ------------------------------------------------------------
+// Konstruktor
+// ------------------------------------------------------------
+SpeedWeg::SpeedWeg(Enc& enc)
+    : _enc(enc)
+{
+    _last_counts = _enc.getCounts();
+    _counts_total = 0;
+    _weg_mm_total = 0.0f;
+    _weg_abs_mm_total = 0.0f;
+
+    _acc_counts = 0;
+    _alpha = 0.2f;
+    _rps_filt = 0.0f;
+    _last_time_ms = 0;
+    _timeout_ms = 60;
+    _last_tick_ms = 0;
+}
+
+// ------------------------------------------------------------
+void SpeedWeg::reset() {
+    _counts_total = 0;
+    _weg_mm_total = 0.0f;
+    _weg_abs_mm_total = 0.0f;
+
+    _acc_counts = 0;
+    _rps_filt = 0.0f;
+    _last_time_ms = 0;
+    _last_tick_ms = 0;
+
+    _last_counts = _enc.getCounts();
+}
+
+// ------------------------------------------------------------
+void SpeedWeg::setAlpha(float a) {
+    if (a < 0.0f) a = 0.0f;
+    if (a > 1.0f) a = 1.0f;
+    _alpha = a;
+}
+
+// ------------------------------------------------------------
+void SpeedWeg::setTimeoutMs(uint16_t ms) {
+    _timeout_ms = (uint32_t)ms;
+}
+
+// ------------------------------------------------------------
+// Encoder poll + Berechnung  (Zeitbasis: ms)
+// ------------------------------------------------------------
+void SpeedWeg::update(uint32_t now_ms) {
+    long cur = _enc.getCounts();
+    long d = cur - _last_counts;
+
+    if (d != 0) {
+        if (d > 32767) d = 32767;
+        if (d < -32768) d = -32768;
+
+        updateFromTicks((int16_t)d, now_ms);
+        _last_counts = cur;
+        _last_tick_ms = now_ms;   // Zeitpunkt dieses Ticks merken
+    }
+
+    timeoutCheck(now_ms);
+}
+
+// ------------------------------------------------------------
+void SpeedWeg::updateFromTicks(int16_t dcounts, uint32_t now_ms) {
+
+    // 1) Weg immer summieren
+    const float d_mm =
+        ((float)dcounts / (float)COUNTS_PER_REV) * RAD_UMFANG_MM;
+
+    _counts_total += dcounts;
+    _weg_mm_total += d_mm;
+    _weg_abs_mm_total += fabsf(d_mm);
+
+    // 2) Tick-Sammelpuffer
+    _acc_counts += dcounts;
+
+    // 3) Zeit seit letzter Geschwindigkeitsmessung
+    if (_last_time_ms == 0) {
+        _last_time_ms = now_ms;
+        return;
+    }
+
+    uint32_t dt_ms = now_ms - _last_time_ms;
+
+    // Noch nicht genug Zeit? Nichts tun.
+    if (dt_ms < SPEED_MIN_DT_MS) {
+        return;
+    }
+
+    // Zeit aktualisieren (Fensterende)
+    _last_time_ms = now_ms;
+
+    // 4) Geschwindigkeit berechnen
+    const float dt_s = (float)dt_ms * 0.001f;
+    const float revs = (float)_acc_counts / (float)COUNTS_PER_REV;
+    const float rps_i = revs / dt_s;
+
+    // 5) Tiefpass
+    _rps_filt += _alpha * (rps_i - _rps_filt);
+
+    // 6) Fenster zurücksetzen
+    _acc_counts = 0;
+}
+
+// ------------------------------------------------------------
+void SpeedWeg::timeoutCheck(uint32_t now_ms) {
+    if (_last_tick_ms == 0) return;  // noch kein Tick
+
+    if ((now_ms - _last_tick_ms) > _timeout_ms) {
+        _rps_filt = 0.0f;
+    }
+}
+
+// ------------------------------------------------------------
+float SpeedWeg::mps() const {
+    return (_rps_filt * RAD_UMFANG_MM) / 1000.0f;
+}
+
+// ------------------------------------------------------------
+float SpeedWeg::rpm() const {
+    return _rps_filt * 60.0f;
+}
+
+float SpeedWeg::weg_mm() const {
+    return _weg_mm_total;
+}
+
+float SpeedWeg::weg_abs_mm() const {
+    return _weg_abs_mm_total;
+}
+
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\3_Control\src\SpeedWeg.h
+============================================================
+// ============================================================
+// File: SpeedWeg.h
+// Zweck: Geschwindigkeit (m/s) & Weg aus Encoder-Ticks
+//        inkl. Tiefpass-Filter für stabile v_Ist-Werte
+//        -> Zeitbasis: Millisekunden (ms)
+// ============================================================
+
+#pragma once
+
+#include <Arduino.h>
+#include "src/globals.h"
+
+class Enc;
+
+class SpeedWeg {
+public:
+    explicit SpeedWeg(Enc& enc);
+
+    void reset();
+    void setAlpha(float a);
+    void setTimeoutMs(uint16_t ms);
+
+    // now_ms = millis()
+    void update(uint32_t now_ms);
+
+    float mps() const;       // m/s
+    float rpm() const;       // U/min
+    float weg_mm() const;    // mm (signed)
+    float weg_abs_mm() const;
+
+    float weg_mm_total() const { return _weg_mm_total; }
+    float weg_abs_mm_total() const { return _weg_abs_mm_total; }
+    long  counts_total() const { return _counts_total; }
+
+private:
+    void updateFromTicks(int16_t dcounts, uint32_t now_ms);
+    void timeoutCheck(uint32_t now_ms);
+
+private:
+    Enc& _enc;
+
+    // Weg & Zähler
+    long  _last_counts = 0;
+    long  _counts_total = 0;
+    float _weg_mm_total = 0.0f;
+    float _weg_abs_mm_total = 0.0f;
+
+    // Tick-Sammelpuffer für das Geschwindigkeitsfenster
+    int32_t _acc_counts = 0;
+
+    // Filter & Zeit (in ms)
+    float    _rps_filt = 0.0f;
+    float    _alpha = 0.2f;
+    uint32_t _last_time_ms = 0;    // Zeitpunkt der letzten Geschwindigkeitsmessung
+    uint32_t _timeout_ms = 60;   // Stillstand nach 60 ms
+    uint32_t _last_tick_ms = 0;    // Zeitpunkt des letzten Ticks (für Timeout)
+};
+
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\4_Vehicle\src\VehicleController.cpp
+============================================================
+// ============================================================
+// VehicleController.cpp
+// ============================================================
+#include "VehicleController.h"
+#include <math.h>
+
+void VehicleController::begin(float Kp_vx, float Ki_vx,
+    float Kp_vy, float Ki_vy,
+    float Kp_wz, float Ki_wz)
+{
+    _regler.setParams(Kp_vx, Ki_vx, Kp_vy, Ki_vy, Kp_wz, Ki_wz);
+    _regler.reset();
+    _lastUpdateMs = 0;
+}
+
+void VehicleController::cmd(float vx, float vy, float wz)
+{
+    _vx = vx;
+    _vy = vy;
+    _wz = wz;
+    applyMixer(vx, vy, wz);
+}
+
+void VehicleController::updateIst(float v0, float v1, float v2, float v3)
+{
+    _vx_ist = (v0 + v1 + v2 + v3) / 4.0f;
+    _vy_ist = (-v0 + v1 - v2 + v3) / 4.0f;
+    _wz_ist = (-v0 + v1 + v2 - v3) / (4.0f * MECANUM_K);
+}
+
+void VehicleController::update(uint32_t now)
+{
+    if (_lastUpdateMs == 0)
+    {
+        _lastUpdateMs = now;
+        applyMixer(_vx, _vy, _wz);
+        return;
+    }
+    if ((uint32_t)(now - _lastUpdateMs) < VEHICLE_DT_MS) return;
+    uint16_t dt_ms = (uint16_t)(now - _lastUpdateMs);
+    _lastUpdateMs = now;
+    float vx_korr = _regler.updateVx(_vx, _vx_ist, dt_ms);
+    float vy_korr = _regler.updateVy(_vy, _vy_ist, dt_ms);
+    float wz_korr = _regler.updateWz(_wz, _wz_ist, dt_ms);
+    applyMixer(vx_korr, vy_korr, wz_korr);
+}
+
+void VehicleController::applyMixer(float vx, float vy, float wz)
+{
+    float v[WHEEL_VEHICLE_COUNT];
+    v[VoRe] = vx - vy - MECANUM_K * wz;
+    v[VoLi] = vx + vy + MECANUM_K * wz;
+    v[HiLi] = vx - vy + MECANUM_K * wz;
+    v[HiRe] = vx + vy - MECANUM_K * wz;
+    float maxVal = 0.0f;
+    for (int i = 0; i < WHEEL_VEHICLE_COUNT; i++)
+    {
+        float a = fabsf(v[i]);
+        if (a > maxVal) maxVal = a;
+    }
+    if (maxVal > V_WHEEL_MAX && maxVal > 0.0001f)
+    {
+        float scale = V_WHEEL_MAX / maxVal;
+        for (int i = 0; i < WHEEL_VEHICLE_COUNT; i++)
+            v[i] *= scale;
+    }
+    for (int i = 0; i < WHEEL_VEHICLE_COUNT; i++)
+        _wheelSoll[i] = v[i];
+}
+
+void VehicleController::stop()
+{
+    _vx = 0.0f;
+    _vy = 0.0f;
+    _wz = 0.0f;
+    _regler.reset();
+    for (int i = 0; i < WHEEL_VEHICLE_COUNT; i++)
+        _wheelSoll[i] = 0.0f;
+}
+
+float VehicleController::getWheelSoll(WheelVehicle w) const
+{
+    return _wheelSoll[w];
+}
+
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\4_Vehicle\src\VehicleController.h
+============================================================
+// ============================================================
+// VehicleController.h
+// ============================================================
+#ifndef VEHICLE_CONTROLLER_H
+#define VEHICLE_CONTROLLER_H
+
+#include "src/globals.h"
+#include "VehicleRegler.h"
+
+class VehicleController
+{
+public:
+    void begin(float Kp_vx, float Ki_vx,
+        float Kp_vy, float Ki_vy,
+        float Kp_wz, float Ki_wz);
+    void cmd(float vx, float vy, float wz);
+    void updateIst(float v0, float v1, float v2, float v3);
+    void update(uint32_t now);
+    void stop();
+
+    float getWheelSoll(WheelVehicle w) const;
+    float vxIst() const { return _vx_ist; }
+    float vyIst() const { return _vy_ist; }
+    float wzIst() const { return _wz_ist; }
+
+    float vxSoll() const { return _vx; }
+    float vySoll() const { return _vy; }
+    float wzSoll() const { return _wz; }
+
+    float KpVx() const { return _regler.KpVx(); }
+    float KiVx() const { return _regler.KiVx(); }
+    float KpVy() const { return _regler.KpVy(); }
+    float KiVy() const { return _regler.KiVy(); }
+    float KpWz() const { return _regler.KpWz(); }
+    float KiWz() const { return _regler.KiWz(); }
+
+private:
+    void applyMixer(float vx, float vy, float wz);
+
+    float _vx = 0.0f;
+    float _vy = 0.0f;
+    float _wz = 0.0f;
+
+    float _vx_ist = 0.0f;
+    float _vy_ist = 0.0f;
+    float _wz_ist = 0.0f;
+
+    float _wheelSoll[WHEEL_VEHICLE_COUNT] = { 0 };
+
+    VehicleRegler _regler;
+    uint32_t _lastUpdateMs = 0;
+};
+
+#endif
+
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\4_Vehicle\src\VehicleRegler.cpp
+============================================================
+// ============================================================
+// VehicleRegler.cpp
+// ============================================================
+#include "VehicleRegler.h"
+
+VehicleRegler::VehicleRegler()
+    : _Kp_vx(0.0f), _Ki_vx(0.0f)
+    , _Kp_vy(0.0f), _Ki_vy(0.0f)
+    , _Kp_wz(0.0f), _Ki_wz(0.0f)
+    , _integral_vx(0.0f)
+    , _integral_vy(0.0f)
+    , _integral_wz(0.0f)
+{
+}
+
+void VehicleRegler::setParams(float Kp_vx, float Ki_vx,
+    float Kp_vy, float Ki_vy,
+    float Kp_wz, float Ki_wz)
+{
+    _Kp_vx = Kp_vx; _Ki_vx = Ki_vx;
+    _Kp_vy = Kp_vy; _Ki_vy = Ki_vy;
+    _Kp_wz = Kp_wz; _Ki_wz = Ki_wz;
+}
+
+void VehicleRegler::reset()
+{
+    _integral_vx = 0.0f;
+    _integral_vy = 0.0f;
+    _integral_wz = 0.0f;
+}
+
+float VehicleRegler::updateVx(float soll, float ist, uint16_t dt_ms)
+{
+    if (_Kp_vx == 0.0f && _Ki_vx == 0.0f) return soll;
+    if (dt_ms == 0) return soll;
+    const float dt_s = dt_ms * 0.001f;
+    const float e = soll - ist;
+    _integral_vx += _Ki_vx * e * dt_s;
+    return _Kp_vx * e + _integral_vx;
+}
+
+float VehicleRegler::updateVy(float soll, float ist, uint16_t dt_ms)
+{
+    if (_Kp_vy == 0.0f && _Ki_vy == 0.0f) return soll;
+    if (dt_ms == 0) return soll;
+    const float dt_s = dt_ms * 0.001f;
+    const float e = soll - ist;
+    _integral_vy += _Ki_vy * e * dt_s;
+    return _Kp_vy * e + _integral_vy;
+}
+
+float VehicleRegler::updateWz(float soll, float ist, uint16_t dt_ms)
+{
+    if (_Kp_wz == 0.0f && _Ki_wz == 0.0f) return soll;
+    if (dt_ms == 0) return soll;
+    const float dt_s = dt_ms * 0.001f;
+    const float e = soll - ist;
+    _integral_wz += _Ki_wz * e * dt_s;
+    return _Kp_wz * e + _integral_wz;
+}
+
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\4_Vehicle\src\VehicleRegler.h
+============================================================
+// ============================================================
+// VehicleRegler.h
+// ============================================================
+#ifndef VEHICLE_REGLER_H
+#define VEHICLE_REGLER_H
+
+#include <Arduino.h>
+
+class VehicleRegler
+{
+public:
+    VehicleRegler();
+    void setParams(float Kp_vx, float Ki_vx,
+        float Kp_vy, float Ki_vy,
+        float Kp_wz, float Ki_wz);
+    void reset();
+
+    float updateVx(float soll, float ist, uint16_t dt_ms);
+    float updateVy(float soll, float ist, uint16_t dt_ms);
+    float updateWz(float soll, float ist, uint16_t dt_ms);
+
+    float KpVx() const { return _Kp_vx; }
+    float KiVx() const { return _Ki_vx; }
+    float KpVy() const { return _Kp_vy; }
+    float KiVy() const { return _Ki_vy; }
+    float KpWz() const { return _Kp_wz; }
+    float KiWz() const { return _Ki_wz; }
+
+private:
+    float _Kp_vx, _Ki_vx;
+    float _Kp_vy, _Ki_vy;
+    float _Kp_wz, _Ki_wz;
+
+    float _integral_vx;
+    float _integral_vy;
+    float _integral_wz;
+};
+
+#endif // VEHICLE_REGLER_H
+
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\5_System\src\CommandRunner\CommandRunner.cpp
+============================================================
+// ============================================================
+// CommandRunner.cpp
+// ============================================================
+#include "CommandRunner.h"
+
+CommandRunner::CommandRunner(VehicleController& vehicle, UartLink& uart, CommandParser& parser,
+    GetCmdFn getCmd, SizeFn size)
+    : _vehicle(vehicle), _uart(uart), _parser(parser),
+    _getCmd(getCmd), _size(size),
+    _cmdIndex(0), _active(false), _finished(false),
+    _startTime(0), _durationMs(0)
+{
+}
+
+void CommandRunner::begin()
+{
+    _cmdIndex = 0;
+    _active = false;
+    _finished = false;
+    _startTime = 0;
+    _durationMs = 0;
+}
+
+void CommandRunner::stopAll()
+{
+    _vehicle.cmd(0.0f, 0.0f, 0.0f);
+    _uart.sendLine("VSOL,0,0");
+}
+
+void CommandRunner::startCmd(const ParsedCommand& cmd, uint32_t now)
+{
+    Serial.print(F("#startCmd param="));
+    Serial.print(cmd.param);
+    Serial.print(F(" durationMs="));
+    Serial.println((uint32_t)(cmd.param * 1000.0f));
+    _vehicle.cmd(cmd.vx, cmd.vy, cmd.wz);
+    _startTime = now;
+    _durationMs = (uint32_t)(cmd.param * 1000.0f);
+    _active = true;
+}
+
+void CommandRunner::update(uint32_t now)
+{
+    if (!_finished)
+    {
+        if (_active)
+        {
+            if (now - _startTime >= _durationMs)
+            {
+                stopAll();
+                _active = false;
+                _cmdIndex++;
+            }
+        }
+        else
+        {
+            if (_cmdIndex >= _size()) _finished = true;
+            else
+            {
+                ParsedCommand cmd;
+                if (!CommandParser::parse(_getCmd(_cmdIndex), cmd)) _cmdIndex++;
+                else if (cmd.type == CMD_TIME) startCmd(cmd, now);
+            }
+        }
+    }
+}
+
+float CommandRunner::getWheelSoll(WheelVehicle w) const
+{
+    return _vehicle.getWheelSoll(w);
+}
+
+bool CommandRunner::isActive() const { return _active; }
+bool CommandRunner::isFinished() const { return _finished; }
+
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\5_System\src\CommandRunner\CommandRunner.h
+============================================================
+// ============================================================
+// CommandRunner.h
+// ============================================================
+#ifndef COMMAND_RUNNER_H
+#define COMMAND_RUNNER_H
+
+#include <Arduino.h>
+#include "src/Parser/CommandParser.h"
+#include "src/UartLink.h"
+#include "src/VehicleController.h"
+
+typedef const char* (*GetCmdFn)(uint8_t index);
+typedef uint8_t(*SizeFn)();
+
+class CommandRunner
+{
+public:
+    CommandRunner(VehicleController& vehicle, UartLink& uart, CommandParser& parser,
+        GetCmdFn getCmd, SizeFn size);
+    void begin();
+    void update(uint32_t now);
+
+    float getWheelSoll(WheelVehicle w) const;
+    bool  isActive() const;
+    bool isFinished() const;
+
+private:
+    void startCmd(const ParsedCommand& cmd, uint32_t now);
+    void stopAll();
+
+    VehicleController& _vehicle;
+    UartLink& _uart;
+    CommandParser& _parser;
+    GetCmdFn           _getCmd;
+    SizeFn             _size;
+
+    uint8_t   _cmdIndex;
+    bool      _active;
+    bool      _finished;
+    uint32_t  _startTime;
+    uint32_t  _durationMs;
+};
+
+#endif
+
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\5_System\src\Connection\ConnectionMonitor.cpp
+============================================================
+// ConnectionMonitor.cpp
+#include "ConnectionMonitor.h"
+
+ConnectionMonitor::ConnectionMonitor(UartLink& uart, uint8_t ledPin)
+    : _uart(uart), _ledPin(ledPin), _lastState(false), _lastOk(0)
+{
+}
+
+void ConnectionMonitor::waitForConnection()
+{
+    Serial.println("#Warte auf Handshake...");
+
+    while (!_uart.isConnected())
+    {
+        _uart.update();
+        update();   // eigene Logik
+    }
+
+    Serial.println("#Handshake1 OK");
+}
+
+void ConnectionMonitor::begin(bool wait)
+{
+    // 🔥 Hardware-Init
+    pinMode(_ledPin, OUTPUT);
+    digitalWrite(_ledPin, HIGH);   // wartet auf Verbindung
+
+    // 🔥 Zustand
+    _lastState = false;
+    _lastOk = millis();
+
+    // 🔥 optional blockierend
+    if (wait)
+    {
+        waitForConnection();
+    }
+}
+
+void ConnectionMonitor::update()
+{
+    bool now = _uart.isConnected();
+
+    // 🔴 Verbindung verloren
+    if (!now && _lastState)
+    {
+        Serial.println("#DISCONNECTED");
+        digitalWrite(_ledPin, HIGH);
+    }
+
+    // 🟢 Verbindung neu da
+    if (now && !_lastState)
+    {
+        Serial.println("#CONNECTED");
+        digitalWrite(_ledPin, LOW);
+    }
+
+    _lastState = now;
+}
+
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\5_System\src\Connection\ConnectionMonitor.h
+============================================================
+// ConnectionMonitor.h
+#pragma once
+
+#include <Arduino.h>
+#include "src/UartLink.h"
+
+class ConnectionMonitor
+{
+public:
+    ConnectionMonitor(UartLink& uart, uint8_t ledPin);
+
+    void begin(bool wait);
+    void update();
+    void waitForConnection();
+
+private:
+    UartLink& _uart;
+    uint8_t _ledPin;
+
+    bool _lastState;
+    uint32_t _lastOk;
+};
+
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\5_System\src\Parser\CommandParser.cpp
+============================================================
+// CommandParser.cpp    
+#include "CommandParser.h"
+#include <Arduino.h>
+#include <string.h>
+#include <stdlib.h>
+
+static bool readToken(const char*& p, char delim, char* buf, uint8_t maxLen)
+{
+    uint8_t i = 0;
+    while (*p != delim && *p != '\0' && i < maxLen - 1)
+        buf[i++] = *p++;
+    buf[i] = '\0';
+    if (*p != delim) return false;
+    p++;
+    return true;
+}
+
+static bool parseVxVyWzParam(const char* p, ParsedCommand& cmd)
+{
+    char buf[32];
+    if (!readToken(p, ',', buf, sizeof(buf))) return false;
+    cmd.vx = atof(buf);
+    if (!readToken(p, ',', buf, sizeof(buf))) return false;
+    cmd.vy = atof(buf);
+    if (!readToken(p, ')', buf, sizeof(buf))) return false;
+    cmd.wz = atof(buf);
+    if (*p == ' ') p++;
+    if (!readToken(p, ';', buf, sizeof(buf))) return false;
+    cmd.param = atof(buf);
+    return true;
+}
+
+bool CommandParser::parse(const char* line, ParsedCommand& cmd)
+{
+    cmd.type = CMD_NONE;
+    if (!line) return false;
+
+    if (strncmp(line, "CMDT(", 5) == 0)
+    {
+        if (!parseVxVyWzParam(line + 5, cmd)) return false;
+        cmd.type = CMD_TIME;
+        return true;
+    }
+    if (strncmp(line, "CMDP(", 5) == 0)
+    {
+        if (!parseVxVyWzParam(line + 5, cmd)) return false;
+        cmd.type = CMD_PATH;
+        return true;
+    }
+    return false;
+}
+
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\5_System\src\Parser\CommandParser.h
+============================================================
+// ============================================================
+// CommandParser.h
+// ============================================================
+#ifndef COMMAND_PARSER_H
+#define COMMAND_PARSER_H
+
+#include <Arduino.h>
+
+enum CmdType : uint8_t
+{
+    CMD_NONE = 0,
+    CMD_TIME = 1,
+    CMD_PATH = 2,   // später
+};
+
+struct ParsedCommand
+{
+    CmdType type;
+    float vx;
+    float vy;
+    float wz;
+    float param;     // CMD_TIME: Sekunden, CMD_PATH: cm
+};
+
+class CommandParser
+{
+public:
+    static bool parse(const char* line, ParsedCommand& cmd);
+};
+
+#endif
+
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\5_System\src\Printer.cpp
+============================================================
+// Printer.cpp
+#include "Printer.h"
+
+void Printer::printHeader(VehicleController& vehicle, const ControlConfig& cfg)
+{
+    Serial.print(F("# Raeder: Li Kp="));  Serial.print(cfg.pi[Li].Kp, 2);
+    Serial.print(F(" Ki="));              Serial.print(cfg.pi[Li].Ki, 2);
+    Serial.print(F(" dead="));            Serial.print(cfg.deadPwm[Li]);
+    Serial.print(F(" | Re Kp="));         Serial.print(cfg.pi[Re].Kp, 2);
+    Serial.print(F(" Ki="));              Serial.print(cfg.pi[Re].Ki, 2);
+    Serial.print(F(" dead="));            Serial.println(cfg.deadPwm[Re]);
+
+    Serial.print(F("# Chassis: vx Kp=")); Serial.print(vehicle.KpVx(), 2);
+    Serial.print(F(" Ki="));              Serial.print(vehicle.KiVx(), 2);
+    Serial.print(F(" | vy Kp="));         Serial.print(vehicle.KpVy(), 2);
+    Serial.print(F(" Ki="));              Serial.print(vehicle.KiVy(), 2);
+    Serial.print(F(" | wz Kp="));         Serial.print(vehicle.KpWz(), 2);
+    Serial.print(F(" Ki="));              Serial.println(vehicle.KiWz(), 2);
+
+#ifdef PRINTER_MODE_CHASSIS
+    Serial.print('#');
+    Serial.println(F("ms,VoLi_i,VoRe_i,HiLi_i,HiRe_i,vx_i,vy_i,wz_i"));
+#endif
+
+#ifdef PRINTER_MODE_RAEDER
+    Serial.print('#');
+    Serial.println(F("ms,VoLi_s,VoLi_i,VoLi_pwm,VoRe_s,VoRe_i,VoRe_pwm,HiLi_s,HiLi_i,HiLi_pwm,HiRe_s,HiRe_i,HiRe_pwm"));
+#endif
+}
+
+#ifdef PRINTER_MODE_CHASSIS
+
+void Printer::printWheels(VehicleController& vehicle,
+    float v2_ist, float v3_ist,
+    uint32_t t_ms)
+{
+    Serial.print('#');
+    Serial.print(t_ms);               Serial.print(',');
+    Serial.print(speed[Li].mps(), 2); Serial.print(',');
+    Serial.print(speed[Re].mps(), 2); Serial.print(',');
+    Serial.print(v2_ist, 2);          Serial.print(',');
+    Serial.print(v3_ist, 2);          Serial.print(',');
+    Serial.print(vehicle.vxIst(), 2); Serial.print(',');
+    Serial.print(vehicle.vyIst(), 2); Serial.print(',');
+    Serial.println(vehicle.wzIst(), 2);
+}
+
+void Printer::printFrame(VehicleController& vehicle,
+    uint32_t t_ms,
+    float voLi_i,
+    float voRe_i,
+    float hiLi_i,
+    float hiRe_i)
+{
+    Serial.print('#');
+    Serial.print(t_ms);               Serial.print(',');
+    Serial.print(voLi_i, 2);          Serial.print(',');
+    Serial.print(voRe_i, 2);          Serial.print(',');
+    Serial.print(hiLi_i, 2);          Serial.print(',');
+    Serial.print(hiRe_i, 2);          Serial.print(',');
+    Serial.print(vehicle.vxIst(), 2); Serial.print(',');
+    Serial.print(vehicle.vyIst(), 2); Serial.print(',');
+    Serial.println(vehicle.wzIst(), 2);
+}
+
+#endif
+
+#ifdef PRINTER_MODE_RAEDER
+
+void Printer::printWheels(VehicleController& vehicle,
+    float v2_ist, float v3_ist,
+    int16_t pwm2, int16_t pwm3,
+    uint32_t t_ms)
+{
+    Serial.print('#');
+    Serial.print(t_ms);                              Serial.print(',');
+    Serial.print(vehicle.getWheelSoll(VoLi), 2);    Serial.print(',');
+    Serial.print(speed[Li].mps(), 2);               Serial.print(',');
+    Serial.print(rad[Li].lastPwm());                Serial.print(',');
+    Serial.print(vehicle.getWheelSoll(VoRe), 2);    Serial.print(',');
+    Serial.print(speed[Re].mps(), 2);               Serial.print(',');
+    Serial.print(rad[Re].lastPwm());                Serial.print(',');
+    Serial.print(vehicle.getWheelSoll(HiLi), 2);    Serial.print(',');
+    Serial.print(v2_ist, 2);                        Serial.print(',');
+    Serial.print(pwm2);                             Serial.print(',');
+    Serial.print(vehicle.getWheelSoll(HiRe), 2);    Serial.print(',');
+    Serial.print(v3_ist, 2);                        Serial.print(',');
+    Serial.println(pwm3);
+}
+
+void Printer::printFrame(
+    uint32_t t_ms,
+    float voLi_s,
+    float voLi_i,
+    int16_t voLi_pwm,
+    float voRe_s,
+    float voRe_i,
+    int16_t voRe_pwm,
+    float hiLi_s,
+    float hiLi_i,
+    int16_t hiLi_pwm,
+    float hiRe_s,
+    float hiRe_i,
+    int16_t hiRe_pwm)
+{
+    Serial.print('#');
+    Serial.print(t_ms);          Serial.print(',');
+
+    Serial.print(voLi_s, 2);     Serial.print(',');
+    Serial.print(voLi_i, 2);     Serial.print(',');
+    Serial.print(voLi_pwm);      Serial.print(',');
+
+    Serial.print(voRe_s, 2);     Serial.print(',');
+    Serial.print(voRe_i, 2);     Serial.print(',');
+    Serial.print(voRe_pwm);      Serial.print(',');
+
+    Serial.print(hiLi_s, 2);     Serial.print(',');
+    Serial.print(hiLi_i, 2);     Serial.print(',');
+    Serial.print(hiLi_pwm);      Serial.print(',');
+
+    Serial.print(hiRe_s, 2);     Serial.print(',');
+    Serial.print(hiRe_i, 2);     Serial.print(',');
+    Serial.println(hiRe_pwm);
+}
+
+#endif
+
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\5_System\src\Printer.h
+============================================================
+#ifndef PRINTER_H
+#define PRINTER_H
+
+#include <Arduino.h>
+#include "src/globals.h"
+#include "src/VehicleController.h"
+#include "src/Control.h"
+#include "src/ControlConfig.h"
+#include "PrinterConfig.h"
+
+class Printer
+{
+public:
+    void printHeader(VehicleController& vehicle, const ControlConfig& cfg);
+
+#ifdef PRINTER_MODE_CHASSIS
+    void printWheels(VehicleController& vehicle,
+        float v2_ist, float v3_ist,
+        uint32_t t_ms);
+
+    void printFrame(VehicleController& vehicle,
+        uint32_t t_ms,
+        float voLi_i,
+        float voRe_i,
+        float hiLi_i,
+        float hiRe_i);
+#endif
+
+#ifdef PRINTER_MODE_RAEDER
+    void printWheels(VehicleController& vehicle,
+        float v2_ist, float v3_ist,
+        int16_t pwm2, int16_t pwm3,
+        uint32_t t_ms);
+
+    void printFrame(
+        uint32_t t_ms,
+        float voLi_s,
+        float voLi_i,
+        int16_t voLi_pwm,
+        float voRe_s,
+        float voRe_i,
+        int16_t voRe_pwm,
+        float hiLi_s,
+        float hiLi_i,
+        int16_t hiLi_pwm,
+        float hiRe_s,
+        float hiRe_i,
+        int16_t hiRe_pwm);
+#endif
+};
+
+#endif
+
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\5_System\src\PrinterConfig.h
+============================================================
+// PrinterConfig.h
+#ifndef PRINTER_CONFIG_H
+#define PRINTER_CONFIG_H
+
+//#define PRINTER_MODE_CHASSIS
+ #define PRINTER_MODE_RAEDER
+
+#endif // PRINTER_CONFIG_H
+
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\hinten\__vm\.hinten.vsarduino.h
+============================================================
+/* 
+	Editor: https://www.visualmicro.com/
+			This file is for intellisense purpose only.
+			Visual micro (and the arduino ide) ignore this code during compilation. This code is automatically maintained by visualmicro, manual changes to this file will be overwritten
+			The contents of the _vm sub folder can be deleted prior to publishing a project
+			All non-arduino files created by visual micro and all visual studio project or solution files can be freely deleted and are not required to compile a sketch (do not delete your own code!).
+			Note: debugger breakpoints are stored in '.sln' or '.asln' files, knowledge of last uploaded breakpoints is stored in the upload.vmps.xml file. Both files are required to continue a previous debug session without needing to compile and upload again
+	
+	Hardware: ATmega328P (Old Bootloader) (Arduino Nano) (nano_atmega328old), Platform=avr, Package=arduino
+*/
+
+#if defined(_VMICRO_INTELLISENSE)
+
+#ifndef _VSARDUINO_H_
+#define _VSARDUINO_H_
+#pragma diag_suppress=338,2925
+// User Defined Errors to Ignore below... [vm.intellisense.ignore-error-codes]
+#include <arduino.h>
+#include <pins_arduino.h> 
+#include "..\hinten.ino"
+#endif
+#endif
+
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\hinten\src\hinten.ino
+============================================================
+// hinten.ino
+#include <avr/wdt.h>
+#include "src/Hardware.h"
+#include "src/hardware_pins.h"
+#include "src/Control.h"
+#include "src/ControlConfig.h"
+#include "src/CommUtils.h"
+#include "src/UartLink.h"
+#include "src/Connection/ConnectionMonitor.h"
+
+UartLink uart(Serial, false);
+ConnectionMonitor conn(uart, 13);
+static uint32_t lastVsolMs = 0;
+
+volatile bool g_syncFlag = false;
+void syncISR() { g_syncFlag = true; }
+
+void setup()
+{
+    wdt_disable();
+    Serial.begin(115200);
+    hardware_begin(PinsRear::PINS);
+    control_begin(ConfigRear::CONFIG);
+    speed_reset_all();
+    uart.begin();
+    conn.begin(false);
+    hardware_enableMotors();
+    pinMode(3, INPUT);
+    attachInterrupt(digitalPinToInterrupt(3), syncISR, RISING);
+}
+
+void loop()
+{
+    uint32_t now = millis();
+
+    uart.update();
+    conn.update();
+
+    // VSOL-Timeout → Reset
+    if (lastVsolMs > 0 && now - lastVsolMs > 2 * VEHICLE_DT_MS)
+    {
+        wdt_enable(WDTO_15MS);
+        while (1) {}
+    }
+
+    if (uart.availableLine())
+    {
+        const char* line = uart.getLine();
+        int16_t v2_i, v3_i;
+        if (sscanf(line, "VSOL,%hd,%hd", &v2_i, &v3_i) == 2)
+        {
+            float vSollLi = int100ToFloat(v2_i);
+            float vSollRe = int100ToFloat(v3_i);
+            rad[Li].setSoll(vSollLi);
+            rad[Re].setSoll(vSollRe);
+            lastVsolMs = now;
+        }
+    }
+
+    control_update(now);
+
+    if (g_syncFlag)
+    {
+        g_syncFlag = false;
+        int16_t vIstLi = floatToInt100(speed[Li].mps());
+        int16_t vIstRe = floatToInt100(speed[Re].mps());
+        int16_t pwm2 = rad[Li].lastPwm();
+        int16_t pwm3 = rad[Re].lastPwm();
+        char bufVist[32];
+        snprintf(bufVist, sizeof(bufVist), "VIST,%d,%d,%d,%d", vIstLi, vIstRe, pwm2, pwm3);
+        uart.sendLine(bufVist);
+    }
+}
+
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\vorne\__vm\.vorne.vsarduino.h
+============================================================
+/* 
+	Editor: https://www.visualmicro.com/
+			This file is for intellisense purpose only.
+			Visual micro (and the arduino ide) ignore this code during compilation. This code is automatically maintained by visualmicro, manual changes to this file will be overwritten
+			The contents of the _vm sub folder can be deleted prior to publishing a project
+			All non-arduino files created by visual micro and all visual studio project or solution files can be freely deleted and are not required to compile a sketch (do not delete your own code!).
+			Note: debugger breakpoints are stored in '.sln' or '.asln' files, knowledge of last uploaded breakpoints is stored in the upload.vmps.xml file. Both files are required to continue a previous debug session without needing to compile and upload again
+	
+	Hardware: ATmega328P (Old Bootloader) (Arduino Nano) (nano_atmega328old), Platform=avr, Package=arduino
+*/
+
+#if defined(_VMICRO_INTELLISENSE)
+
+#ifndef _VSARDUINO_H_
+#define _VSARDUINO_H_
+#pragma diag_suppress=338,2925
+// User Defined Errors to Ignore below... [vm.intellisense.ignore-error-codes]
+#include <arduino.h>
+#include <pins_arduino.h> 
+#include "..\vorne.ino"
+#endif
+#endif
+
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\vorne\src\CommandScript.cpp
+============================================================
+// CommandScript.cpp
+#include "CommandScript.h"
+
+static const char* _script[] = {
+    "CMDT(0.3,0,0) 2;",
+    //"CMDT(0,0.3,0) 2;",
+    //"CMDT(-0.3,0,0) 2;"
+};
+
+const char* CommandScript::get(uint8_t index)
+{
+    return _script[index];
+}
+
+uint8_t CommandScript::size()
+{
+    return sizeof(_script) / sizeof(_script[0]);
+}
+
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\vorne\src\CommandScript.h
+============================================================
+// CommandScript.h
+#pragma once
+#include <Arduino.h>
+
+class CommandScript
+{
+public:
+    static const char* get(uint8_t index);
+    static uint8_t size();
+};
+
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\vorne\src\vorne.ino
+============================================================
+// vorne.ino
+#include <avr/wdt.h>
+#include "CommandScript.h"
+#include "src/Hardware.h"
+#include "src/hardware_pins.h"
+#include "src/Control.h"
+#include "src/ControlConfig.h"
+#include "src/CommUtils.h"
+#include "src/UartLink.h"
+#include "src/Connection/ConnectionMonitor.h"
+#include "src/CommandRunner/CommandRunner.h"
+#include "src/Printer.h"
+
+// ============================================================
+// Globale Variablen
+// ============================================================
+
+static float g_v2_ist = 0.0f;
+static float g_v3_ist = 0.0f;
+static int16_t g_pwm2 = 0;
+static int16_t g_pwm3 = 0;
+
+static uint32_t g_startMs = 0;
+static bool g_timerStarted = false;
+
+static uint32_t g_nextFrameMs = 0;
+static uint32_t g_requestMs = 0;
+static uint32_t g_lastVsolSendMs = 0;
+
+static bool g_waitingRear = false;
+
+// ============================================================
+// Gemeinsamer Log-Datensatz fuer einen Zeitpunkt
+// ============================================================
+
+struct PendingFrame
+{
+    uint32_t t;
+
+    float voLi_s;
+    float voLi_i;
+    int16_t voLi_pwm;
+
+    float voRe_s;
+    float voRe_i;
+    int16_t voRe_pwm;
+
+    float hiLi_s;
+    float hiRe_s;
+
+    bool valid;
+};
+
+static PendingFrame g_frame =
+{
+    0,
+
+    0.0f,
+    0.0f,
+    0,
+
+    0.0f,
+    0.0f,
+    0,
+
+    0.0f,
+    0.0f,
+
+    false
+};
+
+// ============================================================
+// Globale Objekte
+// ============================================================
+
+VehicleController vehicle;
+UartLink uart(Serial, true);
+ConnectionMonitor conn(uart, 13);
+CommandParser parser;
+
+CommandRunner commandRunner(vehicle, uart, parser,
+    CommandScript::get, CommandScript::size);
+
+Printer printer;
+
+// ============================================================
+// Hilfsfunktionen
+// ============================================================
+
+static void resetByWatchdog()
+{
+    wdt_enable(WDTO_15MS);
+    while (1) {}
+}
+
+static bool timeReached(uint32_t now, uint32_t target)
+{
+    return (int32_t)(now - target) >= 0;
+}
+
+static void sendRearSoll(uint32_t now)
+{
+    int16_t v2_i = floatToInt100(commandRunner.getWheelSoll(HiLi));
+    int16_t v3_i = floatToInt100(commandRunner.getWheelSoll(HiRe));
+
+    char bufVsoll[32];
+    snprintf(bufVsoll, sizeof(bufVsoll), "VSOL,%d,%d", v2_i, v3_i);
+
+    uart.sendLine(bufVsoll);
+    g_lastVsolSendMs = now;
+}
+
+static void printCompletedFrame(float hiLi_i, float hiRe_i, int16_t hiLi_pwm, int16_t hiRe_pwm)
+{
+#ifdef PRINTER_MODE_CHASSIS
+    printer.printFrame(
+        vehicle,
+        g_frame.t,
+        g_frame.voLi_i,
+        g_frame.voRe_i,
+        hiLi_i,
+        hiRe_i
+    );
+#endif
+
+#ifdef PRINTER_MODE_RAEDER
+    printer.printFrame(
+        g_frame.t,
+
+        g_frame.voLi_s,
+        g_frame.voLi_i,
+        g_frame.voLi_pwm,
+
+        g_frame.voRe_s,
+        g_frame.voRe_i,
+        g_frame.voRe_pwm,
+
+        g_frame.hiLi_s,
+        hiLi_i,
+        hiLi_pwm,
+
+        g_frame.hiRe_s,
+        hiRe_i,
+        hiRe_pwm
+    );
+#endif
+}
+
+static void requestRearFrame(uint32_t now, uint32_t frameTime)
+{
+    g_frame.t = frameTime;
+
+    g_frame.voLi_s = commandRunner.getWheelSoll(VoLi);
+    g_frame.voLi_i = speed[Li].mps();
+    g_frame.voLi_pwm = rad[VoLi].lastPwm();
+
+    g_frame.voRe_s = commandRunner.getWheelSoll(VoRe);
+    g_frame.voRe_i = speed[Re].mps();
+    g_frame.voRe_pwm = rad[VoRe].lastPwm();
+
+    g_frame.hiLi_s = commandRunner.getWheelSoll(HiLi);
+    g_frame.hiRe_s = commandRunner.getWheelSoll(HiRe);
+
+    g_frame.valid = true;
+    g_waitingRear = true;
+    g_requestMs = now;
+
+    sendRearSoll(now);
+    hardware_requestVist();
+}
+
+static void tryRequestFrame(uint32_t now)
+{
+    if (!commandRunner.isActive())
+    {
+        return;
+    }
+
+    if (g_waitingRear)
+    {
+        return;
+    }
+
+    if (!g_timerStarted)
+    {
+        return;
+    }
+
+    if (timeReached(now, g_nextFrameMs))
+    {
+        uint32_t frameTime = g_nextFrameMs - g_startMs;
+
+        requestRearFrame(now, frameTime);
+
+        g_nextFrameMs += VEHICLE_DT_MS;
+    }
+}
+
+// ============================================================
+// setup()
+// ============================================================
+
+void setup()
+{
+    wdt_disable();
+
+    Serial.begin(115200);
+
+    hardware_begin(PinsFront::PINS);
+    control_begin(ConfigFront::CONFIG);
+    speed_reset_all();
+
+    vehicle.begin(
+        0.0f, 0.0f,
+        0.0f, 0.0f,
+        0.0f, 0.0f
+    );
+
+    commandRunner.begin();
+
+    uart.begin();
+    conn.begin(true);
+
+    printer.printHeader(vehicle, ConfigFront::CONFIG);
+}
+
+// ============================================================
+// loop()
+// ============================================================
+
+void loop()
+{
+    uint32_t now = millis();
+
+    uart.update();
+    conn.update();
+
+    // --------------------------------------------------------
+    // DISCONNECT erkennen -> Reset
+    // --------------------------------------------------------
+
+    static bool prevConnected = false;
+    bool nowConnected = uart.isConnected();
+
+    if (prevConnected && !nowConnected)
+    {
+        resetByWatchdog();
+    }
+
+    prevConnected = nowConnected;
+
+    // --------------------------------------------------------
+    // Eingehende VIST-Daten auswerten
+    // --------------------------------------------------------
+
+    if (uart.availableLine())
+    {
+        const char* line = uart.getLine();
+
+        int16_t v2_i;
+        int16_t v3_i;
+        int16_t pwm2;
+        int16_t pwm3;
+
+        if (sscanf(line, "VIST,%hd,%hd,%hd,%hd", &v2_i, &v3_i, &pwm2, &pwm3) == 4)
+        {
+            g_v2_ist = int100ToFloat(v2_i);
+            g_v3_ist = int100ToFloat(v3_i);
+            g_pwm2 = pwm2;
+            g_pwm3 = pwm3;
+
+            vehicle.updateIst(
+                speed[Re].mps(),
+                speed[Li].mps(),
+                g_v2_ist,
+                g_v3_ist
+            );
+
+            if (g_waitingRear && g_frame.valid)
+            {
+                printCompletedFrame(g_v2_ist, g_v3_ist, g_pwm2, g_pwm3);
+
+                g_waitingRear = false;
+                g_frame.valid = false;
+            }
+        }
+    }
+
+    // --------------------------------------------------------
+    // Timeout: VIST-Antwort fehlt
+    // --------------------------------------------------------
+
+    if (g_waitingRear && now - g_requestMs > 2 * VEHICLE_DT_MS)
+    {
+        resetByWatchdog();
+    }
+
+    // --------------------------------------------------------
+    // Wichtiger Punkt:
+    // Vor commandRunner.update() noch pruefen, ob ein Frame faellig ist.
+    // Dadurch wird bei 2000 ms noch der letzte Frame des alten Befehls
+    // angefordert, bevor der CommandRunner den Befehl beendet.
+    // --------------------------------------------------------
+
+    if (uart.isConnected())
+    {
+        tryRequestFrame(now);
+    }
+
+    // --------------------------------------------------------
+    // CommandRunner aktualisieren
+    // --------------------------------------------------------
+
+    if (uart.isConnected())
+    {
+        commandRunner.update(now);
+    }
+
+    // --------------------------------------------------------
+    // Start/Stop des Log-Zeitrasters
+    // --------------------------------------------------------
+
+    if (!commandRunner.isActive())
+    {
+        g_timerStarted = false;
+
+        if (!g_waitingRear)
+        {
+            g_frame.valid = false;
+        }
+    }
+
+    if (commandRunner.isActive())
+    {
+        if (!g_timerStarted)
+        {
+            g_startMs = now;
+            g_nextFrameMs = now;
+            g_timerStarted = true;
+
+            g_waitingRear = false;
+            g_frame.valid = false;
+        }
+    }
+
+    // --------------------------------------------------------
+    // Vehicle-Istwerte aktualisieren
+    // --------------------------------------------------------
+
+    vehicle.updateIst(
+        speed[Re].mps(),
+        speed[Li].mps(),
+        g_v2_ist,
+        g_v3_ist
+    );
+
+    vehicle.update(now);
+
+    // --------------------------------------------------------
+    // Vorderachse lokal regeln
+    // --------------------------------------------------------
+
+    rad[VoLi].setSoll(commandRunner.getWheelSoll(VoLi));
+    rad[VoRe].setSoll(commandRunner.getWheelSoll(VoRe));
+
+    control_update(now);
+
+    // --------------------------------------------------------
+    // Wenn kein aktives Kommando laeuft:
+    // Rear trotzdem mit VSOL versorgen, damit hinten kein
+    // VSOL-Timeout ausloest.
+    //
+    // Aber nicht senden, solange noch ein Messframe auf VIST wartet.
+    // Sonst koennte direkt nach dem letzten 2000-ms-Frame schon VSOL,0,0
+    // dazwischenfunken.
+    // --------------------------------------------------------
+
+    if (uart.isConnected() && !commandRunner.isActive() && !g_waitingRear)
+    {
+        if (g_lastVsolSendMs == 0)
+        {
+            g_lastVsolSendMs = now;
+        }
+
+        if (now - g_lastVsolSendMs >= VEHICLE_DT_MS)
+        {
+            sendRearSoll(now);
+        }
+    }
+
+    // --------------------------------------------------------
+    // Aktiver Messframe nach commandRunner.update():
+    // Das ist wichtig fuer den ersten Frame bei 0 ms.
+    // Die Endmessung bei 2000 ms wird oben vor commandRunner.update()
+    // abgefangen.
+    // --------------------------------------------------------
+
+    if (uart.isConnected())
+    {
+        tryRequestFrame(now);
+    }
+}
+

@@ -113,22 +113,35 @@ static void sendRearSoll(uint32_t now)
 static void printCompletedFrame(float hiLi_i, float hiRe_i, int16_t hiLi_pwm, int16_t hiRe_pwm)
 {
 #ifdef PRINTER_MODE_CHASSIS
-    printer.printWheels(
+    printer.printFrame(
         vehicle,
+        g_frame.t,
+        g_frame.voLi_i,
+        g_frame.voRe_i,
         hiLi_i,
-        hiRe_i,
-        g_frame.t
+        hiRe_i
     );
 #endif
 
 #ifdef PRINTER_MODE_RAEDER
-    printer.printWheels(
-        vehicle,
+    printer.printFrame(
+        g_frame.t,
+
+        g_frame.voLi_s,
+        g_frame.voLi_i,
+        g_frame.voLi_pwm,
+
+        g_frame.voRe_s,
+        g_frame.voRe_i,
+        g_frame.voRe_pwm,
+
+        g_frame.hiLi_s,
         hiLi_i,
-        hiRe_i,
         hiLi_pwm,
-        hiRe_pwm,
-        g_frame.t
+
+        g_frame.hiRe_s,
+        hiRe_i,
+        hiRe_pwm
     );
 #endif
 }
@@ -154,6 +167,33 @@ static void requestRearFrame(uint32_t now, uint32_t frameTime)
 
     sendRearSoll(now);
     hardware_requestVist();
+}
+
+static void tryRequestFrame(uint32_t now)
+{
+    if (!commandRunner.isActive())
+    {
+        return;
+    }
+
+    if (g_waitingRear)
+    {
+        return;
+    }
+
+    if (!g_timerStarted)
+    {
+        return;
+    }
+
+    if (timeReached(now, g_nextFrameMs))
+    {
+        uint32_t frameTime = g_nextFrameMs - g_startMs;
+
+        requestRearFrame(now, frameTime);
+
+        g_nextFrameMs += VEHICLE_DT_MS;
+    }
 }
 
 // ============================================================
@@ -229,6 +269,13 @@ void loop()
             g_pwm2 = pwm2;
             g_pwm3 = pwm3;
 
+            vehicle.updateIst(
+                speed[Re].mps(),
+                speed[Li].mps(),
+                g_v2_ist,
+                g_v3_ist
+            );
+
             if (g_waitingRear && g_frame.valid)
             {
                 printCompletedFrame(g_v2_ist, g_v3_ist, g_pwm2, g_pwm3);
@@ -249,7 +296,19 @@ void loop()
     }
 
     // --------------------------------------------------------
-    // CommandRunner nur bei Verbindung aktualisieren
+    // Wichtiger Punkt:
+    // Vor commandRunner.update() noch pruefen, ob ein Frame faellig ist.
+    // Dadurch wird bei 2000 ms noch der letzte Frame des alten Befehls
+    // angefordert, bevor der CommandRunner den Befehl beendet.
+    // --------------------------------------------------------
+
+    if (uart.isConnected())
+    {
+        tryRequestFrame(now);
+    }
+
+    // --------------------------------------------------------
+    // CommandRunner aktualisieren
     // --------------------------------------------------------
 
     if (uart.isConnected())
@@ -264,8 +323,11 @@ void loop()
     if (!commandRunner.isActive())
     {
         g_timerStarted = false;
-        g_waitingRear = false;
-        g_frame.valid = false;
+
+        if (!g_waitingRear)
+        {
+            g_frame.valid = false;
+        }
     }
 
     if (commandRunner.isActive())
@@ -307,9 +369,13 @@ void loop()
     // Wenn kein aktives Kommando laeuft:
     // Rear trotzdem mit VSOL versorgen, damit hinten kein
     // VSOL-Timeout ausloest.
+    //
+    // Aber nicht senden, solange noch ein Messframe auf VIST wartet.
+    // Sonst koennte direkt nach dem letzten 2000-ms-Frame schon VSOL,0,0
+    // dazwischenfunken.
     // --------------------------------------------------------
 
-    if (uart.isConnected() && !commandRunner.isActive())
+    if (uart.isConnected() && !commandRunner.isActive() && !g_waitingRear)
     {
         if (g_lastVsolSendMs == 0)
         {
@@ -323,21 +389,14 @@ void loop()
     }
 
     // --------------------------------------------------------
-    // Aktiver Messframe:
-    // Frontwerte speichern, VSOL senden, VIST anfordern.
-    // Gedruckt wird NICHT hier, sondern erst bei VIST-Empfang.
-    // Die Ausgabe erfolgt wieder ueber die Printer-Klasse.
+    // Aktiver Messframe nach commandRunner.update():
+    // Das ist wichtig fuer den ersten Frame bei 0 ms.
+    // Die Endmessung bei 2000 ms wird oben vor commandRunner.update()
+    // abgefangen.
     // --------------------------------------------------------
 
-    if (commandRunner.isActive() && !g_waitingRear)
+    if (uart.isConnected())
     {
-        if (timeReached(now, g_nextFrameMs))
-        {
-            uint32_t frameTime = g_nextFrameMs - g_startMs;
-
-            requestRearFrame(now, frameTime);
-
-            g_nextFrameMs += VEHICLE_DT_MS;
-        }
+        tryRequestFrame(now);
     }
 }
