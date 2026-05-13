@@ -3,7 +3,7 @@
 
 static const char* _script[] = {
     "CMDT(0.3,0,0) 2;",
-    //"CMDT(0,0.3,0) 2;",
+    "CMDT(0.2,0,0) 3;",
     //"CMDT(-0.3,0,0) 2;"
 };
 
