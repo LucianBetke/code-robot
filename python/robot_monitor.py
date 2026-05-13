@@ -1,21 +1,35 @@
 """
 robot_monitor.py
 =================
-Serial-Monitor für das Roboter-System (vorne + hinten).
+Serial-Monitor fuer das Roboter-System (vorne + hinten).
 
 Verbinde dich mit dem COM-Port des VORNE-Arduino (USB).
 
-Was auf dem Port ankommt:
-  - PING / ACK / KA         -> UartLink-Protokoll (wird ignoriert)
-  - VSOL,xxx,xxx            -> Soll-Werte die an hinten gesendet werden (wird ignoriert)
-  - #ms,VoLi_s,...          -> CSV-Header (einmalig beim Start)
-  - #100,0.30,0.00,80,...   -> Datenzeilen (alle 100 ms, nur wenn Befehl aktiv)
+Aktuelle Log-Struktur:
 
-Modi (automatisch erkannt aus Header):
-  RAEDER:  ms, VoLi_s/i/pwm, VoRe_s/i/pwm, HiLi_s/i/pwm, HiRe_s/i/pwm
-  CHASSIS: ms, VoLi_i, VoRe_i, HiLi_i, HiRe_i, vx_i, vy_i, wz_i
+  Nutz-/Protokolldaten ohne '#':
+    PING / ACK / KA
+    VSOL,<frameId>,<hiLiSoll>,<hiReSoll>
+    VSOL_OK,<frameId>
+    VIST,<frameId>,<hiLiIst>,<hiReIst>,<hiLiPwm>,<hiRePwm>
 
-Abhängigkeiten:
+  Debug-/Messdaten mit '#':
+    #INFO,...
+    #EVENT,startCmd,param=2.00,durationMs=2000
+    #HDR,WHEELS,ms,VoLi_s,VoLi_i,VoLi_pwm,...
+    #WHEELS,0,0.30,0.00,0,...
+    #CHASSIS,...   optional spaeter
+
+Dieses Programm wertet aus:
+  #HDR
+  #WHEELS
+  #CHASSIS
+  #EVENT
+
+UART-Nutzdaten wie VSOL, VSOL_OK, VIST, KA, PING, ACK werden im Terminal angezeigt,
+aber nicht als Messdaten geplottet.
+
+Abhaengigkeiten:
   pip install pyserial matplotlib
 """
 
@@ -29,45 +43,141 @@ from collections import deque
 
 import serial
 import serial.tools.list_ports
+
 import matplotlib
-matplotlib.use("TkAgg")          # ggf. auf "Qt5Agg" ändern
+matplotlib.use("TkAgg")          # ggf. auf "Qt5Agg" aendern
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
+
 
 # ─────────────────────────────────────────────
 # Einstellungen
 # ─────────────────────────────────────────────
+
 DEFAULT_PORT = "COM7"
 DEFAULT_BAUD = 115200
-MAX_POINTS   = 3000       # Punkte im Ring-Puffer
-UPDATE_MS    = 200        # Plot-Update-Intervall
+MAX_POINTS = 3000
+UPDATE_MS = 200
+
 
 # ─────────────────────────────────────────────
-# Gemeinsamer Datenpuffer (thread-safe)
+# Gemeinsamer Datenpuffer
 # ─────────────────────────────────────────────
+
 class Store:
     def __init__(self):
-        self.lock        = threading.Lock()
-        self.ready       = False
-        self.mode        = None           # "RAEDER" oder "CHASSIS"
-        self.cols        = []
-        self.bufs        = {}
-        self._csv_file   = None
+        self.lock = threading.Lock()
+
+        self.ready = False
+        self.mode = None              # "WHEELS" oder "CHASSIS"
+
+        self.raw_cols = []            # Spalten vom Arduino-Header
+        self.cols = []                # CSV-/Puffer-Spalten inkl. Zusatzspalten
+        self.bufs = {}
+
+        self._csv_file = None
         self._csv_writer = None
 
-    def init_cols(self, cols):
-        with self.lock:
-            self.cols  = cols
-            self.bufs  = {c: deque(maxlen=MAX_POINTS) for c in cols}
-            self.mode  = "CHASSIS" if "vx_i" in cols else "RAEDER"
-            self.ready = True
-        print(f"[Mode] {self.mode}")
+        # Zusatzinformationen fuer mehrere CMDT-Befehle
+        self.cmd_index = 0
+        self.current_offset_ms = 0.0
+        self.current_duration_ms = 0.0
+        self.sample_index = 0
 
-    def push(self, row: dict):
+    def init_cols(self, mode: str, raw_cols):
+        mode = mode.upper()
+
         with self.lock:
+            self.mode = mode
+            self.raw_cols = list(raw_cols)
+
+            # Zusatzspalten:
+            # sample     = laufender Messpunktzaehler innerhalb des aktuellen Laufs
+            # cmd_index  = welcher CMDT-Befehl innerhalb des aktuellen Laufs
+            # t_plot_ms  = fortlaufende Zeit innerhalb des aktuellen Script-Laufs
+            self.cols = ["sample", "cmd_index", "t_plot_ms"] + self.raw_cols
+
+            # WICHTIG:
+            # Bei jeder neuen #HDR-Zeile wird ein neuer Arduino-/Script-Lauf angenommen.
+            # Deshalb werden Plotpuffer, Zeitbasis und CMDT-Zaehler zurueckgesetzt.
+            self.bufs = {c: deque(maxlen=MAX_POINTS) for c in self.cols}
+            self.ready = True
+
+            self.cmd_index = 0
+            self.current_offset_ms = 0.0
+            self.current_duration_ms = 0.0
+            self.sample_index = 0
+
+        print(f"[Mode] {self.mode}")
+        print(f"[Header] {self.cols}")
+        print("[Run] neuer Lauf, Zeitzaehler auf 0 gesetzt")
+
+    def open_csv(self, path):
+        with self.lock:
+            if self._csv_writer is not None:
+                return
+
+            self._csv_file = open(path, "w", newline="", encoding="utf-8")
+            self._csv_writer = csv.DictWriter(
+                self._csv_file,
+                fieldnames=self.cols,
+                extrasaction="ignore"
+            )
+            self._csv_writer.writeheader()
+
+        print(f"[CSV] Speichere nach: {path}")
+
+    def close_csv(self):
+        with self.lock:
+            if self._csv_file:
+                self._csv_file.close()
+                self._csv_file = None
+                self._csv_writer = None
+
+    def start_command(self, duration_ms: float):
+        with self.lock:
+            if self.cmd_index > 0:
+                self.current_offset_ms += self.current_duration_ms
+
+            self.cmd_index += 1
+            self.current_duration_ms = duration_ms
+
+        print(f"[CMD] start #{self.cmd_index}, durationMs={duration_ms:.0f}")
+
+    def push_values(self, mode: str, values):
+        mode = mode.upper()
+
+        with self.lock:
+            if not self.ready:
+                return
+
+            if mode != self.mode:
+                print(f"[Warnung] Datenmodus {mode} passt nicht zu Header {self.mode}")
+                return
+
+            if len(values) != len(self.raw_cols):
+                print(f"[Laenge?] erwartet {len(self.raw_cols)}, bekommen {len(values)}")
+                return
+
+            row_raw = dict(zip(self.raw_cols, values))
+
+            ms = row_raw.get("ms", 0.0)
+            t_plot_ms = self.current_offset_ms + ms
+
+            self.sample_index += 1
+
+            row = {
+                "sample": self.sample_index,
+                "cmd_index": self.cmd_index,
+                "t_plot_ms": t_plot_ms,
+            }
+
+            row.update(row_raw)
+
             for k, v in row.items():
                 if k in self.bufs:
                     self.bufs[k].append(v)
+
             if self._csv_writer:
                 self._csv_writer.writerow(row)
 
@@ -75,37 +185,59 @@ class Store:
         with self.lock:
             return {c: list(v) for c, v in self.bufs.items()}, self.mode
 
-    def open_csv(self, path):
-        self._csv_file   = open(path, "w", newline="", encoding="utf-8")
-        self._csv_writer = csv.DictWriter(
-            self._csv_file, fieldnames=self.cols, extrasaction="ignore")
-        self._csv_writer.writeheader()
-        print(f"[CSV] Speichere nach: {path}")
-
-    def close_csv(self):
-        if self._csv_file:
-            self._csv_file.close()
-
 
 store = Store()
 
 
 # ─────────────────────────────────────────────
+# Parser-Hilfsfunktionen
+# ─────────────────────────────────────────────
+
+IGNORE_PREFIXES = (
+    "PING",
+    "PONG",
+    "ACK",
+    "KA",
+    "VSOL",
+    "VSOL_OK",
+    "VIST",
+)
+
+
+def parse_key_value_parts(parts):
+    result = {}
+
+    for part in parts:
+        if "=" not in part:
+            continue
+
+        key, value = part.split("=", 1)
+        result[key.strip()] = value.strip()
+
+    return result
+
+
+def parse_float_list(parts):
+    return [float(p.strip()) for p in parts]
+
+
+# ─────────────────────────────────────────────
 # Serial-Thread
 # ─────────────────────────────────────────────
-IGNORE_PREFIXES = ("PING", "PONG", "ACK", "KA", "VSOL", "VIST")
 
 def serial_thread(port: str, baud: int, csv_path: str):
     try:
         ser = serial.Serial(port, baud, timeout=1)
     except serial.SerialException as e:
-        print(f"[Fehler] Port '{port}' nicht geöffnet: {e}")
-        print("Verfügbare Ports:")
+        print(f"[Fehler] Port '{port}' nicht geoeffnet: {e}")
+        print("Verfuegbare Ports:")
+
         for p in serial.tools.list_ports.comports():
             print(f"  {p.device}  {p.description}")
+
         sys.exit(1)
 
-    print(f"[Serial] {port} @ {baud} baud  – warte auf Daten …")
+    print(f"[Serial] {port} @ {baud} baud - warte auf Daten ...")
     time.sleep(2)
 
     while True:
@@ -119,42 +251,145 @@ def serial_thread(port: str, baud: int, csv_path: str):
             continue
 
         line = raw.decode("utf-8", errors="replace").strip()
+
         if not line:
             continue
 
+        # UART-/Nutztelegramme ignorieren, aber im Terminal zeigen.
         if any(line.startswith(p) for p in IGNORE_PREFIXES):
             print(f"[uart]  {line}")
             continue
 
-        if line.startswith("#"):
-            content = line[1:]
-            parts   = content.split(",")
+        # Nur Debug-/Messzeilen beginnen mit '#'
+        if not line.startswith("#"):
+            print(f"[?] {line}")
+            continue
 
-            if parts[0].strip() == "ms":
-                cols = [p.strip() for p in parts]
-                store.init_cols(cols)
-                store.open_csv(csv_path)
-                print(f"[Header] {cols}")
+        content = line[1:]
+        parts = [p.strip() for p in content.split(",")]
+
+        if not parts:
+            continue
+
+        tag = parts[0].upper()
+
+        # ----------------------------------------------------
+        # Neuer Header:
+        # #HDR,WHEELS,ms,...
+        # #HDR,CHASSIS,ms,...
+        #
+        # WICHTIG:
+        # Jeder neue Header startet im Python-Monitor einen neuen Lauf.
+        # Dadurch wird die Zeitachse nach erneutem Schliessen des Schalters
+        # wieder auf 0 gesetzt.
+        # ----------------------------------------------------
+
+        if tag == "HDR":
+            if len(parts) < 3:
+                print(f"[Header?] {line}")
                 continue
 
+            mode = parts[1].upper()
+            cols = parts[2:]
+
+            store.init_cols(mode, cols)
+            store.open_csv(csv_path)
+            continue
+
+        # ----------------------------------------------------
+        # Rueckwaertskompatibilitaet fuer alte Version:
+        # #ms,...
+        # ----------------------------------------------------
+
+        if tag == "MS":
+            cols = parts
+            mode = "CHASSIS" if "vx_i" in cols else "WHEELS"
+
+            store.init_cols(mode, cols)
+            store.open_csv(csv_path)
+            continue
+
+        # ----------------------------------------------------
+        # Events:
+        # #EVENT,startCmd,param=2.00,durationMs=2000
+        # ----------------------------------------------------
+
+        if tag == "EVENT":
+            print(f"[event] {line}")
+
+            if len(parts) >= 2 and parts[1] == "startCmd":
+                kv = parse_key_value_parts(parts[2:])
+
+                try:
+                    duration_ms = float(kv.get("durationMs", "0"))
+                except ValueError:
+                    duration_ms = 0.0
+
+                store.start_command(duration_ms)
+
+            continue
+
+        # ----------------------------------------------------
+        # Info-Zeilen:
+        # #INFO,...
+        # ----------------------------------------------------
+
+        if tag == "INFO":
+            print(f"[info]  {line}")
+            continue
+
+        # ----------------------------------------------------
+        # Sonstige Debug-/Statuszeilen:
+        # #CONNECTED
+        # #DISCONNECTED
+        # #Warte auf Handshake...
+        # #Handshake1 OK
+        # ----------------------------------------------------
+
+        if tag in ("CONNECTED", "DISCONNECTED"):
+            print(f"[link]  {line}")
+            continue
+
+        if content.startswith("Warte auf Handshake") or content.startswith("Handshake"):
+            print(f"[link]  {line}")
+            continue
+
+        # ----------------------------------------------------
+        # Messdaten:
+        # #WHEELS,0,...
+        # #CHASSIS,0,...
+        # ----------------------------------------------------
+
+        if tag in ("WHEELS", "CHASSIS"):
             if not store.ready:
+                print(f"[Daten ohne Header] {line}")
                 continue
 
             try:
-                vals = [float(p) for p in parts]
+                vals = parse_float_list(parts[1:])
             except ValueError:
-                print(f"[?] {line}")
+                print(f"[Wert?] {line}")
                 continue
 
-            if len(vals) != len(store.cols):
-                print(f"[Länge?] erwartet {len(store.cols)}, bekommen {len(vals)}: {line}")
-                continue
-
-            row = dict(zip(store.cols, vals))
-            store.push(row)
+            store.push_values(tag, vals)
             continue
 
-        print(f"[?] {line}")
+        # ----------------------------------------------------
+        # Alte Datenzeile:
+        # #100,0.30,...
+        # ----------------------------------------------------
+
+        if store.ready:
+            try:
+                vals = parse_float_list(parts)
+            except ValueError:
+                print(f"[debug] {line}")
+                continue
+
+            store.push_values(store.mode, vals)
+            continue
+
+        print(f"[debug] {line}")
 
     store.close_csv()
     ser.close()
@@ -163,12 +398,14 @@ def serial_thread(port: str, baud: int, csv_path: str):
 # ─────────────────────────────────────────────
 # Farben
 # ─────────────────────────────────────────────
+
 COLORS_RAD = {
     "VoLi": "#1f77b4",
     "VoRe": "#ff7f0e",
     "HiLi": "#2ca02c",
     "HiRe": "#d62728",
 }
+
 COLORS_VEH = {
     "vx_i": "#9467bd",
     "vy_i": "#8c564b",
@@ -177,8 +414,9 @@ COLORS_VEH = {
 
 
 # ─────────────────────────────────────────────
-# Live-Plot (läuft im Main-Thread)
+# Live-Plot
 # ─────────────────────────────────────────────
+
 def start_plot():
     fig, axes = plt.subplots(2, 1, figsize=(13, 8), sharex=True)
     fig.suptitle("Robot Monitor", fontsize=13)
@@ -188,7 +426,10 @@ def start_plot():
             return
 
         d, mode = store.snapshot()
-        t_ms = d.get("ms", [])
+
+        # Fortlaufende Plot-Zeit innerhalb des aktuellen Arduino-/Script-Laufs.
+        t_ms = d.get("t_plot_ms", [])
+
         if not t_ms:
             return
 
@@ -200,33 +441,52 @@ def start_plot():
 
         axes[1].set_xlabel("Zeit [s]")
 
-        if mode == "RAEDER":
-            ax_v   = axes[0]
+        if mode == "WHEELS":
+            ax_v = axes[0]
             ax_pwm = axes[1]
 
             ax_v.set_ylabel("Geschwindigkeit [m/s]")
             ax_pwm.set_ylabel("PWM")
 
             for name, col in COLORS_RAD.items():
-                s_key   = f"{name}_s"
-                i_key   = f"{name}_i"
+                s_key = f"{name}_s"
+                i_key = f"{name}_i"
                 pwm_key = f"{name}_pwm"
 
-                s   = d.get(s_key, [])
+                s = d.get(s_key, [])
                 ist = d.get(i_key, [])
                 pwm = d.get(pwm_key, [])
 
                 n = min(len(t), len(s), len(ist))
+
                 if n:
-                    ax_v.plot(t[:n], s[:n],   linestyle="--", color=col,
-                              alpha=0.6, label=f"{name} Soll")
-                    ax_v.plot(t[:n], ist[:n], linestyle="-",  color=col,
-                              label=f"{name} Ist")
+                    ax_v.plot(
+                        t[:n],
+                        s[:n],
+                        linestyle="--",
+                        color=col,
+                        alpha=0.6,
+                        label=f"{name} Soll"
+                    )
+
+                    ax_v.plot(
+                        t[:n],
+                        ist[:n],
+                        linestyle="-",
+                        color=col,
+                        label=f"{name} Ist"
+                    )
 
                 n_p = min(len(t), len(pwm))
+
                 if n_p:
-                    ax_pwm.plot(t[:n_p], pwm[:n_p], linestyle="-", color=col,
-                                label=f"{name} PWM")
+                    ax_pwm.plot(
+                        t[:n_p],
+                        pwm[:n_p],
+                        linestyle="-",
+                        color=col,
+                        label=f"{name} PWM"
+                    )
 
             ax_v.legend(loc="lower right", fontsize=7, ncol=4)
             ax_pwm.legend(loc="lower right", fontsize=7, ncol=4)
@@ -236,31 +496,53 @@ def start_plot():
             ax_veh = axes[1]
 
             ax_rad.set_ylabel("Radgeschwindigkeit Ist [m/s]")
-            ax_veh.set_ylabel("Fahrzeug [m/s  /  rad/s]")
+            ax_veh.set_ylabel("Fahrzeug [m/s / rad/s]")
 
             for name, col in COLORS_RAD.items():
                 vals = d.get(f"{name}_i", [])
                 n = min(len(t), len(vals))
+
                 if n:
-                    ax_rad.plot(t[:n], vals[:n], color=col, label=f"{name}")
+                    ax_rad.plot(
+                        t[:n],
+                        vals[:n],
+                        color=col,
+                        label=f"{name}"
+                    )
 
             for key, col in COLORS_VEH.items():
                 vals = d.get(key, [])
                 n = min(len(t), len(vals))
+
                 if n:
-                    ax_veh.plot(t[:n], vals[:n], color=col, label=key)
+                    ax_veh.plot(
+                        t[:n],
+                        vals[:n],
+                        color=col,
+                        label=key
+                    )
 
             ax_rad.legend(loc="lower right", fontsize=8, ncol=4)
             ax_veh.legend(loc="lower right", fontsize=8, ncol=3)
 
         n_pts = len(t)
+        cmd_values = d.get("cmd_index", [])
+        last_cmd = cmd_values[-1] if cmd_values else 0
+
         axes[0].set_title(
-            f"{mode}  –  {n_pts} Messpunkte  –  t = {t[-1]:.1f} s" if n_pts else "warte …",
-            fontsize=10)
+            f"{mode} - {n_pts} Messpunkte - CMDT #{int(last_cmd)} - t = {t[-1]:.1f} s",
+            fontsize=10
+        )
+
         fig.tight_layout()
 
     ani = animation.FuncAnimation(
-        fig, update, interval=UPDATE_MS, cache_frame_data=False)
+        fig,
+        update,
+        interval=UPDATE_MS,
+        cache_frame_data=False
+    )
+
     plt.show()
     return ani
 
@@ -268,24 +550,53 @@ def start_plot():
 # ─────────────────────────────────────────────
 # Main
 # ─────────────────────────────────────────────
+
 def main():
     p = argparse.ArgumentParser(
-        description="Robot Serial Monitor (vorne-Arduino, 4-Rad-System)")
-    p.add_argument("--port", "-p", default=DEFAULT_PORT,
-                   help=f"COM-Port des vorne-Arduino (Standard: {DEFAULT_PORT})")
-    p.add_argument("--baud", "-b", type=int, default=DEFAULT_BAUD,
-                   help=f"Baudrate (Standard: {DEFAULT_BAUD})")
-    p.add_argument("--csv", "-c", default=None,
-                   help="CSV-Dateiname (Standard: robot_YYYYMMDD_HHMMSS.csv)")
-    p.add_argument("--list", "-l", action="store_true",
-                   help="Verfügbare COM-Ports anzeigen")
-    p.add_argument("--no-plot", action="store_true",
-                   help="Nur Terminal, kein Live-Plot")
+        description="Robot Serial Monitor fuer vorne-Arduino"
+    )
+
+    p.add_argument(
+        "--port",
+        "-p",
+        default=DEFAULT_PORT,
+        help=f"COM-Port des vorne-Arduino (Standard: {DEFAULT_PORT})"
+    )
+
+    p.add_argument(
+        "--baud",
+        "-b",
+        type=int,
+        default=DEFAULT_BAUD,
+        help=f"Baudrate (Standard: {DEFAULT_BAUD})"
+    )
+
+    p.add_argument(
+        "--csv",
+        "-c",
+        default=None,
+        help="CSV-Dateiname (Standard: robot_YYYYMMDD_HHMMSS.csv)"
+    )
+
+    p.add_argument(
+        "--list",
+        "-l",
+        action="store_true",
+        help="Verfuegbare COM-Ports anzeigen"
+    )
+
+    p.add_argument(
+        "--no-plot",
+        action="store_true",
+        help="Nur Terminal, kein Live-Plot"
+    )
+
     args = p.parse_args()
 
     if args.list:
         for pt in serial.tools.list_ports.comports():
             print(f"  {pt.device:12s} {pt.description}")
+
         return
 
     csv_path = args.csv or f"robot_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
@@ -293,17 +604,20 @@ def main():
     t = threading.Thread(
         target=serial_thread,
         args=(args.port, args.baud, csv_path),
-        daemon=True)
+        daemon=True
+    )
+
     t.start()
 
     if args.no_plot:
         print("Kein Plot aktiv. STRG+C zum Beenden.")
+
         try:
             t.join()
         except KeyboardInterrupt:
             pass
     else:
-        ani = start_plot()
+        start_plot()
 
 
 if __name__ == "__main__":

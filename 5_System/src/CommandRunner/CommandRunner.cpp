@@ -48,57 +48,65 @@ void CommandRunner::update(uint32_t now)
         return;
     }
 
+    // --------------------------------------------------------
+    // Aktiver Befehl laeuft.
+    // --------------------------------------------------------
+
     if (_active)
     {
-        if (now - _startTime >= _durationMs)
+        if (now - _startTime < _durationMs)
         {
+            return;
+        }
+
+        // Befehl ist zeitlich fertig.
+        // Wichtig:
+        // NICHT sofort stopAll(), wenn danach noch ein weiterer Befehl kommt.
+        // Sonst entsteht zwischen zwei CMDT-Befehlen ein kuenstlicher
+        // Null-Sollwert.
+        _active = false;
+        _cmdIndex++;
+
+        if (_cmdIndex >= _size())
+        {
+            // Nur wenn das ganze Script fertig ist, wirklich stoppen.
             stopAll();
+            _finished = true;
+        }
 
-            _active = false;
+        return;
+    }
+
+    // --------------------------------------------------------
+    // Kein aktiver Befehl:
+    // Naechsten gueltigen Befehl suchen und starten.
+    // --------------------------------------------------------
+
+    while (_cmdIndex < _size())
+    {
+        ParsedCommand cmd;
+
+        if (!CommandParser::parse(_getCmd(_cmdIndex), cmd))
+        {
             _cmdIndex++;
-
-            if (_cmdIndex >= _size())
-            {
-                _finished = true;
-            }
+            continue;
         }
 
-        return;
-    }
-
-    if (_cmdIndex >= _size())
-    {
-        _finished = true;
-        return;
-    }
-
-    ParsedCommand cmd;
-
-    if (!CommandParser::parse(_getCmd(_cmdIndex), cmd))
-    {
-        _cmdIndex++;
-
-        if (_cmdIndex >= _size())
+        if (cmd.type == CMD_TIME)
         {
-            _finished = true;
+            startCmd(cmd, now);
+            return;
         }
 
-        return;
-    }
-
-    if (cmd.type == CMD_TIME)
-    {
-        startCmd(cmd, now);
-    }
-    else
-    {
         _cmdIndex++;
-
-        if (_cmdIndex >= _size())
-        {
-            _finished = true;
-        }
     }
+
+    // --------------------------------------------------------
+    // Kein weiterer gueltiger Befehl vorhanden.
+    // --------------------------------------------------------
+
+    stopAll();
+    _finished = true;
 }
 
 float CommandRunner::getWheelSoll(WheelVehicle w) const
