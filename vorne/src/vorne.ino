@@ -36,6 +36,7 @@ static uint16_t g_nextFrameId = 1;
 
 // Nach Befehlsende werden drei Stop-Telegramme gesendet.
 // Wichtig: erst nach dem letzten fertigen Messframe.
+// Und nur, wenn das ganze Script fertig ist.
 static const uint8_t STOP_SEND_MAX = 3;
 static uint8_t g_stopSendCount = 0;
 static bool g_stopSequenceArmed = false;
@@ -190,10 +191,7 @@ static void requestRearFrame(uint32_t now, uint32_t frameTime)
 
     sendRearSoll(now, frameId);
 
-    // Wichtig:
-    // VIST wird jetzt noch NICHT angefordert.
-    // Erst wenn hinten VSOL_OK,<frameId> bestaetigt hat,
-    // wird hardware_requestVist() ausgeloest.
+    // VIST wird erst nach VSOL_OK,<frameId> angefordert.
 }
 
 static void tryRequestFrame(uint32_t now)
@@ -352,8 +350,9 @@ void loop()
     // --------------------------------------------------------
     // Vor commandRunner.update() pruefen, ob ein Frame faellig ist.
     //
-    // Dadurch wird bei 2000 ms noch der letzte Frame des alten Befehls
-    // angefordert, bevor der CommandRunner den Befehl beendet.
+    // Dadurch wird bei 2000 ms bzw. 3000 ms noch der letzte Frame
+    // des aktuellen Befehls angefordert, bevor der CommandRunner
+    // den Befehl beendet.
     // --------------------------------------------------------
 
     if (uart.isConnected())
@@ -363,14 +362,15 @@ void loop()
 
     // --------------------------------------------------------
     // CommandRunner aktualisieren
-    // Dabei merken wir uns den Uebergang:
-    // aktiv -> nicht aktiv.
     //
-    // Genau bei diesem Uebergang wird die Stop-Sequenz nur vorgemerkt.
-    // Gesendet wird sie weiter unten erst, wenn kein Frame mehr offen ist.
+    // Wichtig:
+    // Solange noch VSOL_OK oder VIST offen ist, darf der CommandRunner
+    // NICHT zum naechsten Befehl springen.
+    //
+    // Sonst geht der letzte Frame eines Befehls verloren.
     // --------------------------------------------------------
 
-    if (uart.isConnected())
+    if (uart.isConnected() && !g_waitingVsolOk && !g_waitingVist)
     {
         bool wasActive = commandRunner.isActive();
 
@@ -378,7 +378,9 @@ void loop()
 
         bool isActive = commandRunner.isActive();
 
-        if (wasActive && !isActive)
+        // Stop-Sequenz nur dann vormerken, wenn das ganze Script fertig ist.
+        // Nicht zwischen zwei direkt aufeinanderfolgenden CMDT-Befehlen.
+        if (wasActive && !isActive && commandRunner.isFinished())
         {
             g_stopSequenceArmed = true;
             g_stopSendCount = 0;
@@ -441,17 +443,14 @@ void loop()
     // --------------------------------------------------------
     // Stop-Sequenz fuer hinten:
     //
-    // Der CommandRunner sendet keinen Stop mehr direkt.
-    // Stattdessen sendet vorne nach abgeschlossenem letztem Messframe
-    // drei Stop-Telegramme an hinten.
-    //
-    // Wichtig:
+    // Nur wenn das ganze Script fertig ist.
+    // Nicht zwischen zwei Befehlen.
     // Nicht senden, solange noch VSOL_OK oder VIST offen ist.
-    // Dadurch kommt #WHEELS,2000 vor VSOL,0,0.
     // --------------------------------------------------------
 
     if (uart.isConnected() &&
         !commandRunner.isActive() &&
+        commandRunner.isFinished() &&
         !g_waitingVsolOk &&
         !g_waitingVist &&
         g_stopSequenceArmed)
@@ -475,8 +474,8 @@ void loop()
     // Aktiver Messframe nach commandRunner.update():
     // wichtig fuer den ersten Frame bei 0 ms.
     //
-    // Die Endmessung bei 2000 ms wird oben vor commandRunner.update()
-    // abgefangen.
+    // Die Endmessung bei 2000/3000 ms wird oben vor
+    // commandRunner.update() abgefangen.
     // --------------------------------------------------------
 
     if (uart.isConnected())

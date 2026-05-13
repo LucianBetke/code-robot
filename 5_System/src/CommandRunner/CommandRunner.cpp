@@ -43,36 +43,60 @@ void CommandRunner::startCmd(const ParsedCommand& cmd, uint32_t now)
 
 void CommandRunner::update(uint32_t now)
 {
-    if (!_finished)
+    if (_finished)
     {
-        if (_active)
+        return;
+    }
+
+    if (_active)
+    {
+        if (now - _startTime >= _durationMs)
         {
-            if (now - _startTime >= _durationMs)
-            {
-                stopAll();
-                _active = false;
-                _cmdIndex++;
-            }
-        }
-        else
-        {
+            stopAll();
+
+            _active = false;
+            _cmdIndex++;
+
             if (_cmdIndex >= _size())
             {
                 _finished = true;
             }
-            else
-            {
-                ParsedCommand cmd;
+        }
 
-                if (!CommandParser::parse(_getCmd(_cmdIndex), cmd))
-                {
-                    _cmdIndex++;
-                }
-                else if (cmd.type == CMD_TIME)
-                {
-                    startCmd(cmd, now);
-                }
-            }
+        return;
+    }
+
+    if (_cmdIndex >= _size())
+    {
+        _finished = true;
+        return;
+    }
+
+    ParsedCommand cmd;
+
+    if (!CommandParser::parse(_getCmd(_cmdIndex), cmd))
+    {
+        _cmdIndex++;
+
+        if (_cmdIndex >= _size())
+        {
+            _finished = true;
+        }
+
+        return;
+    }
+
+    if (cmd.type == CMD_TIME)
+    {
+        startCmd(cmd, now);
+    }
+    else
+    {
+        _cmdIndex++;
+
+        if (_cmdIndex >= _size())
+        {
+            _finished = true;
         }
     }
 }
