@@ -75,7 +75,6 @@ Printer printer;
 
 // ============================================================
 // Fester Integer-Parser fuer UART-Telegramme
-// Ersetzt sscanf() fuer:
 //   VSOL_OK,<frameId>
 //   VIST,<frameId>,<hiLiIst>,<hiReIst>,<hiLiPwm>,<hiRePwm>
 // ============================================================
@@ -292,19 +291,28 @@ static uint16_t nextFrameId()
     return id;
 }
 
+static void sendVsolLine(uint16_t frameId, int16_t v2, int16_t v3)
+{
+    if (!uart.isConnected())
+    {
+        return;
+    }
+
+    Serial.print(F("VSOL,"));
+    Serial.print((unsigned int)frameId);
+    Serial.print(',');
+    Serial.print((int)v2);
+    Serial.print(',');
+    Serial.println((int)v3);
+}
+
 static void sendRearSoll(uint32_t now, uint16_t frameId)
 {
     int16_t v2_i = floatToInt100(commandRunner.getWheelSoll(HiLi));
     int16_t v3_i = floatToInt100(commandRunner.getWheelSoll(HiRe));
 
-    char bufVsoll[36];
-    snprintf(bufVsoll, sizeof(bufVsoll), "VSOL,%u,%d,%d",
-        (unsigned int)frameId,
-        v2_i,
-        v3_i
-    );
+    sendVsolLine(frameId, v2_i, v3_i);
 
-    uart.sendLine(bufVsoll);
     g_lastVsolSendMs = now;
 }
 
@@ -312,12 +320,8 @@ static void sendRearStop(uint32_t now)
 {
     uint16_t frameId = nextFrameId();
 
-    char bufVsoll[24];
-    snprintf(bufVsoll, sizeof(bufVsoll), "VSOL,%u,0,0",
-        (unsigned int)frameId
-    );
+    sendVsolLine(frameId, 0, 0);
 
-    uart.sendLine(bufVsoll);
     g_lastVsolSendMs = now;
 }
 

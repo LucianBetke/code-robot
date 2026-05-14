@@ -30,7 +30,6 @@ void syncISR()
 
 // ============================================================
 // Fester Integer-Parser fuer UART-Telegramme
-// Ersetzt sscanf() fuer:
 //   VSOL,<frameId>,<hiLiSoll>,<hiReSoll>
 // ============================================================
 
@@ -189,9 +188,32 @@ static void stopRearWheels()
 
 static void sendVsolOk(uint16_t frameId)
 {
-    char bufOk[24];
-    snprintf(bufOk, sizeof(bufOk), "VSOL_OK,%u", (unsigned int)frameId);
-    uart.sendLine(bufOk);
+    if (!uart.isConnected())
+    {
+        return;
+    }
+
+    Serial.print(F("VSOL_OK,"));
+    Serial.println((unsigned int)frameId);
+}
+
+static void sendVist(uint16_t frameId, int16_t vIstLi, int16_t vIstRe, int16_t pwm2, int16_t pwm3)
+{
+    if (!uart.isConnected())
+    {
+        return;
+    }
+
+    Serial.print(F("VIST,"));
+    Serial.print((unsigned int)frameId);
+    Serial.print(',');
+    Serial.print((int)vIstLi);
+    Serial.print(',');
+    Serial.print((int)vIstRe);
+    Serial.print(',');
+    Serial.print((int)pwm2);
+    Serial.print(',');
+    Serial.println((int)pwm3);
 }
 
 void setup()
@@ -303,15 +325,6 @@ void loop()
         int16_t pwm2 = rad[Li].lastPwm();
         int16_t pwm3 = rad[Re].lastPwm();
 
-        char bufVist[48];
-        snprintf(bufVist, sizeof(bufVist), "VIST,%u,%d,%d,%d,%d",
-            (unsigned int)g_lastVsolFrameId,
-            vIstLi,
-            vIstRe,
-            pwm2,
-            pwm3
-        );
-
-        uart.sendLine(bufVist);
+        sendVist(g_lastVsolFrameId, vIstLi, vIstRe, pwm2, pwm3);
     }
 }
