@@ -28,14 +28,30 @@ void CommandRunner::stopAll()
 
 void CommandRunner::startCmd(const ParsedCommand& cmd, uint32_t now)
 {
-    _durationMs = (uint32_t)(cmd.param * 1000.0f);
+    _durationMs = (uint32_t)cmd.param * 1000UL;
 
-    Serial.print(F("#EVENT,startCmd,param="));
-    Serial.print(cmd.param, 2);
+    Serial.print(F("#EVENT,startCmd,vx="));
+    Serial.print(cmd.vx);
+    Serial.print(F(",vy="));
+    Serial.print(cmd.vy);
+    Serial.print(F(",wz="));
+    Serial.print(cmd.wz);
+    Serial.print(F(",duration="));
+    Serial.print(cmd.param);
     Serial.print(F(",durationMs="));
     Serial.println(_durationMs);
 
-    _vehicle.cmd(cmd.vx, cmd.vy, cmd.wz);
+    // Integer-Protokoll:
+    // vx, vy kommen aus dem Script als cm/s.
+    // VehicleController arbeitet weiterhin mit m/s.
+    //
+    // wz kommt aus dem Script als Grad/s.
+    // VehicleController arbeitet weiterhin mit rad/s.
+    const float vx = (float)cmd.vx * 0.01f;
+    const float vy = (float)cmd.vy * 0.01f;
+    const float wz = (float)cmd.wz * 0.01745329252f;
+
+    _vehicle.cmd(vx, vy, wz);
 
     _startTime = now;
     _active = true;
