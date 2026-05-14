@@ -74,6 +74,198 @@ CommandRunner commandRunner(vehicle, uart, parser,
 Printer printer;
 
 // ============================================================
+// Fester Integer-Parser fuer UART-Telegramme
+// Ersetzt sscanf() fuer:
+//   VSOL_OK,<frameId>
+//   VIST,<frameId>,<hiLiIst>,<hiReIst>,<hiLiPwm>,<hiRePwm>
+// ============================================================
+
+static void skipSpaces(const char*& p)
+{
+    while (*p == ' ' || *p == '\t')
+    {
+        p++;
+    }
+}
+
+static bool expectChar(const char*& p, char expected)
+{
+    if (*p != expected)
+    {
+        return false;
+    }
+
+    p++;
+    return true;
+}
+
+static bool expectText(const char*& p, const char* text)
+{
+    while (*text != '\0')
+    {
+        if (*p != *text)
+        {
+            return false;
+        }
+
+        p++;
+        text++;
+    }
+
+    return true;
+}
+
+static bool parseUInt16(const char*& p, uint16_t& out)
+{
+    skipSpaces(p);
+
+    if (*p < '0' || *p > '9')
+    {
+        return false;
+    }
+
+    uint32_t value = 0;
+
+    while (*p >= '0' && *p <= '9')
+    {
+        value = value * 10UL + (uint32_t)(*p - '0');
+
+        if (value > 65535UL)
+        {
+            return false;
+        }
+
+        p++;
+    }
+
+    out = (uint16_t)value;
+    return true;
+}
+
+static bool parseInt16(const char*& p, int16_t& out)
+{
+    skipSpaces(p);
+
+    bool negative = false;
+
+    if (*p == '-')
+    {
+        negative = true;
+        p++;
+    }
+
+    if (*p < '0' || *p > '9')
+    {
+        return false;
+    }
+
+    int32_t value = 0;
+    const int32_t limit = negative ? 32768L : 32767L;
+
+    while (*p >= '0' && *p <= '9')
+    {
+        value = value * 10L + (int32_t)(*p - '0');
+
+        if (value > limit)
+        {
+            return false;
+        }
+
+        p++;
+    }
+
+    if (negative)
+    {
+        value = -value;
+    }
+
+    out = (int16_t)value;
+    return true;
+}
+
+static bool parseVsolOkLine(const char* line, uint16_t& frameId)
+{
+    if (!line)
+    {
+        return false;
+    }
+
+    const char* p = line;
+    uint16_t frameIdTmp = 0;
+
+    if (!expectText(p, "VSOL_OK,")) return false;
+    if (!parseUInt16(p, frameIdTmp)) return false;
+
+    skipSpaces(p);
+
+    if (*p != '\0')
+    {
+        return false;
+    }
+
+    frameId = frameIdTmp;
+
+    return true;
+}
+
+static bool parseVistLine(
+    const char* line,
+    uint16_t& frameId,
+    int16_t& v2,
+    int16_t& v3,
+    int16_t& pwm2,
+    int16_t& pwm3)
+{
+    if (!line)
+    {
+        return false;
+    }
+
+    const char* p = line;
+
+    uint16_t frameIdTmp = 0;
+    int16_t v2Tmp = 0;
+    int16_t v3Tmp = 0;
+    int16_t pwm2Tmp = 0;
+    int16_t pwm3Tmp = 0;
+
+    if (!expectText(p, "VIST,")) return false;
+
+    if (!parseUInt16(p, frameIdTmp)) return false;
+    skipSpaces(p);
+    if (!expectChar(p, ',')) return false;
+
+    if (!parseInt16(p, v2Tmp)) return false;
+    skipSpaces(p);
+    if (!expectChar(p, ',')) return false;
+
+    if (!parseInt16(p, v3Tmp)) return false;
+    skipSpaces(p);
+    if (!expectChar(p, ',')) return false;
+
+    if (!parseInt16(p, pwm2Tmp)) return false;
+    skipSpaces(p);
+    if (!expectChar(p, ',')) return false;
+
+    if (!parseInt16(p, pwm3Tmp)) return false;
+
+    skipSpaces(p);
+
+    if (*p != '\0')
+    {
+        return false;
+    }
+
+    frameId = frameIdTmp;
+    v2 = v2Tmp;
+    v3 = v3Tmp;
+    pwm2 = pwm2Tmp;
+    pwm3 = pwm3Tmp;
+
+    return true;
+}
+
+// ============================================================
 // Hilfsfunktionen
 // ============================================================
 
@@ -275,17 +467,17 @@ void loop()
     {
         const char* line = uart.getLine();
 
-        unsigned int frameIdRx;
-
         // ----------------------------------------------------
         // VSOL_OK auswerten
         // ----------------------------------------------------
 
-        if (sscanf(line, "VSOL_OK,%u", &frameIdRx) == 1)
+        uint16_t frameIdOk = 0;
+
+        if (parseVsolOkLine(line, frameIdOk))
         {
             if (g_waitingVsolOk &&
                 g_frame.hasFrontSnapshot &&
-                (uint16_t)frameIdRx == g_frame.frameId)
+                frameIdOk == g_frame.frameId)
             {
                 g_waitingVsolOk = false;
                 g_waitingVist = true;
@@ -299,21 +491,17 @@ void loop()
         // VIST auswerten
         // ----------------------------------------------------
 
-        int16_t v2_i;
-        int16_t v3_i;
-        int16_t pwm2;
-        int16_t pwm3;
+        uint16_t frameIdVist = 0;
+        int16_t v2_i = 0;
+        int16_t v3_i = 0;
+        int16_t pwm2 = 0;
+        int16_t pwm3 = 0;
 
-        if (sscanf(line, "VIST,%u,%hd,%hd,%hd,%hd",
-            &frameIdRx,
-            &v2_i,
-            &v3_i,
-            &pwm2,
-            &pwm3) == 5)
+        if (parseVistLine(line, frameIdVist, v2_i, v3_i, pwm2, pwm3))
         {
             if (g_waitingVist &&
                 g_frame.hasFrontSnapshot &&
-                (uint16_t)frameIdRx == g_frame.frameId)
+                frameIdVist == g_frame.frameId)
             {
                 g_v2_ist = int100ToFloat(v2_i);
                 g_v3_ist = int100ToFloat(v3_i);
