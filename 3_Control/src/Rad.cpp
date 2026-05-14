@@ -36,9 +36,15 @@ void Rad::setSoll(float v_soll)
     }
 }
 
-float Rad::soll() const { return _regler.soll(); }
+float Rad::soll() const
+{
+    return _regler.soll();
+}
 
-float Rad::vIst() const { return _speed.mps(); }
+float Rad::vIst() const
+{
+    return _speed.mps();
+}
 
 void Rad::stop()
 {
@@ -85,11 +91,34 @@ void Rad::update(uint32_t nowMs)
     if (pwm < -MAX_PWM) pwm = -MAX_PWM;
 
     // Deadband
+    
     int16_t apwm = (pwm >= 0) ? pwm : -pwm;
+
     if (apwm > 0 && apwm < _deadPwm) {
-        pwm = (pwm >= 0) ? _deadPwm : -_deadPwm;
-        apwm = _deadPwm;
+        const bool sollVor = (v_soll > EPS);
+        const bool sollRueck = (v_soll < -EPS);
+        const bool pwmVor = (pwm > 0);
+        const bool pwmRueck = (pwm < 0);
+
+        const bool pwmInSollrichtung =
+            (sollVor && pwmVor) ||
+            (sollRueck && pwmRueck);
+
+        if (pwmInSollrichtung) {
+            pwm = pwmVor ? _deadPwm : -_deadPwm;
+            apwm = _deadPwm;
+        }
+        else {
+            pwm = 0;
+            apwm = 0;
+        }
     }
+
+    // Sicherheit: falls _deadPwm versehentlich groesser als MAX_PWM gesetzt wurde
+    if (pwm > MAX_PWM)  pwm = MAX_PWM;
+    if (pwm < -MAX_PWM) pwm = -MAX_PWM;
+
+    apwm = (pwm >= 0) ? pwm : -pwm;
 
     // Motor
     if (pwm > 0) {
