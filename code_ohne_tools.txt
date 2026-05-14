@@ -1,4 +1,4 @@
-============================================================
+ï»¿============================================================
 FILE: C:\Users\Acer\source\repos\robot\1_Common\src\CommUtils.h
 ============================================================
 // CommUtils.h
@@ -31,7 +31,7 @@ FILE: C:\Users\Acer\source\repos\robot\1_Common\src\globals.h
 // ============================================================
 // File: globals.h
 // Zweck:
-//  - Zentrale Definitionen für Logik, Geometrie und Zeit
+//  - Zentrale Definitionen fÃ¼r Logik, Geometrie und Zeit
 //  - KEINE Hardware-Pins!
 // ============================================================
 
@@ -43,8 +43,8 @@ FILE: C:\Users\Acer\source\repos\robot\1_Common\src\globals.h
 #include <Arduino.h>
 
 // ============================================================
-// Wheel Index – Fahrzeug (alle 4 Räder)
-// Für Vehicle Controller / Mecanum / Fahrzeuglogik
+// Wheel Index â€“ Fahrzeug (alle 4 RÃ¤der)
+// FÃ¼r Vehicle Controller / Mecanum / Fahrzeuglogik
 // Feste Reihenfolge:
 //   0 = Vorne Rechts
 //   1 = Vorne Links
@@ -70,8 +70,8 @@ constexpr const char* WHEEL_VEHICLE_NAME[WHEEL_VEHICLE_COUNT] =
 };
 
 // ============================================================
-// Wheel Index – Lokal (pro Nano: links / rechts)
-// Für Motor, Encoder, PI, Rad
+// Wheel Index â€“ Lokal (pro Nano: links / rechts)
+// FÃ¼r Motor, Encoder, PI, Rad
 // ============================================================
 
 enum Wheel : uint8_t
@@ -91,7 +91,7 @@ constexpr const char* WHEEL_NAME[WHEEL_COUNT] =
 // ==== Zeitkonstanten ====
 // ============================================================
 
-/** Minimaler Messabstand für Drehzahl (ms) */
+/** Minimaler Messabstand fÃ¼r Drehzahl (ms) */
 constexpr uint32_t SPEED_MIN_DT_MS = 5;
 
 /** Regelperiode pro Rad (ms) */
@@ -129,10 +129,10 @@ constexpr float METER_PRO_TICK = RAD_UMFANG_M / float(COUNTS_PER_REV);
 // ==== Fahrzeug-Geometrie ====
 // ============================================================
 
-/** Spurweite links ? rechts (mm) */
+/** Spurweite links â†” rechts (mm) */
 constexpr float TRACK_WIDTH_MM = 200.0f;
 
-/** Radstand vorne ? hinten (mm) */
+/** Radstand vorne â†” hinten (mm) */
 constexpr float WHEEL_BASE_MM = 100.0f;
 
 /** Spurweite in Meter */
@@ -274,10 +274,10 @@ FILE: C:\Users\Acer\source\repos\robot\2_Hardware\src\Encoder.h
 // ============================================================
 /* File: Encoder.h
  * Zweck:
- *  - Quadratur-Encoder (Port C / PCINT1: A0..A5) zählen
- *  - Atomarer Zugriff auf Zählerstand
+ *  - Quadratur-Encoder (Port C / PCINT1: A0..A5) zÃ¤hlen
+ *  - Atomarer Zugriff auf ZÃ¤hlerstand
  *  - Dispatcher ruft handleIsr() mit PINC-Snapshot
- * Abhängigkeiten: Arduino.h, <avr/io.h>, <avr/interrupt.h>
+ * AbhÃ¤ngigkeiten: Arduino.h, <avr/io.h>, <avr/interrupt.h>
  */
  // ============================================================
 #pragma once
@@ -388,7 +388,7 @@ FILE: C:\Users\Acer\source\repos\robot\2_Hardware\src\hardware_pins.h
 #define HARDWARE_PINS_H
 #include <Arduino.h>
 // ============================================================
-// HardwarePinSet — fasst alle Pins für hardware_begin() zusammen
+// HardwarePinSet â€” fasst alle Pins fÃ¼r hardware_begin() zusammen
 // ============================================================
 struct HardwarePinSet
 {
@@ -407,16 +407,16 @@ struct HardwarePinSet
 // ============================================================
 namespace PinsFront
 {
-    constexpr uint8_t M_Li_BIN1 = 9;   // D9  BIN1 ? physisch LINKS
-    constexpr uint8_t M_Li_BIN2 = 10;  // D10 BIN2 ? physisch LINKS
-    constexpr uint8_t M_Re_AIN1 = 6;   // D6  AIN1 ? physisch RECHTS
-    constexpr uint8_t M_Re_AIN2 = 5;   // D5  AIN2 ? physisch RECHTS
+    constexpr uint8_t M_Li_BIN1 = 9;   // D9  BIN1 â†’ physisch LINKS
+    constexpr uint8_t M_Li_BIN2 = 10;  // D10 BIN2 â†’ physisch LINKS
+    constexpr uint8_t M_Re_AIN1 = 6;   // D6  AIN1 â†’ physisch RECHTS
+    constexpr uint8_t M_Re_AIN2 = 5;   // D5  AIN2 â†’ physisch RECHTS
     constexpr uint8_t STBY_SYNC_PIN = 8;
 
-    constexpr uint8_t ENC_Li_PIN_A = A2;  // A2 ? Encoder LINKS,  Kanal A
-    constexpr uint8_t ENC_Li_PIN_B = A3;  // A3 ? Encoder LINKS,  Kanal B
-    constexpr uint8_t ENC_Re_PIN_A = A0;  // A0 ? Encoder RECHTS, Kanal A
-    constexpr uint8_t ENC_Re_PIN_B = A1;  // A1 ? Encoder RECHTS, Kanal B
+    constexpr uint8_t ENC_Li_PIN_A = A2;  // A2 â†’ Encoder LINKS,  Kanal A
+    constexpr uint8_t ENC_Li_PIN_B = A3;  // A3 â†’ Encoder LINKS,  Kanal B
+    constexpr uint8_t ENC_Re_PIN_A = A0;  // A0 â†’ Encoder RECHTS, Kanal A
+    constexpr uint8_t ENC_Re_PIN_B = A1;  // A1 â†’ Encoder RECHTS, Kanal B
 
     constexpr HardwarePinSet PINS = {
         ENC_Li_PIN_A, ENC_Li_PIN_B,
@@ -496,7 +496,7 @@ FILE: C:\Users\Acer\source\repos\robot\2_Hardware\src\Motor.h
 //  - Steuerung eines einzelnen Motors (DRV8833/TB6612, 2-Pin-Modus)
 //  - Richtung, PWM-Leistung, Bremse
 //  - Optionale Encoder-Anbindung
-// Abhängigkeiten: Arduino.h, Enc forward-deklariert
+// AbhÃ¤ngigkeiten: Arduino.h, Enc forward-deklariert
 // ============================================================
 
 #ifndef MOTOR_H
@@ -511,8 +511,8 @@ class Enc;
  * @class Motor
  * @brief Steuert einen Motor mit 2-Pin-Ansteuerung (z. B. DRV8833).
  *
- * Unterstützt:
- *  - Vorwärts- und Rückwärtsfahrt über PWM
+ * UnterstÃ¼tzt:
+ *  - VorwÃ¤rts- und RÃ¼ckwÃ¤rtsfahrt Ã¼ber PWM
  *  - Bremse (Brake oder Coast)
  *  - Optionale Verbindung zu einem Encoder (Enc)
  *
@@ -597,7 +597,7 @@ void UartLink::update()
             }
             else if (strcmp(_buf, "KA") != 0 && _buf[0] != '#')
             {
-                // ?? Nutzdaten speichern
+                // ðŸ‘‰ Nutzdaten speichern
                 strncpy(_line, _buf, sizeof(_line) - 1);
                 _line[sizeof(_line) - 1] = '\0';
                 _lineAvailable = true;
@@ -688,7 +688,7 @@ private:
     char _buf[64];
     uint8_t _idx;
 
-    // Empfangene vollständige Zeile (non-handshake)
+    // Empfangene vollstÃ¤ndige Zeile (non-handshake)
     char _line[64];
     bool _lineAvailable;
 
@@ -968,16 +968,16 @@ int16_t PIRegler::update(float v_ist, uint16_t dt_ms) {
     const float p_part = _Kp * e;
     const float u_pre = p_part + _integral;
 
-    // --- Begrenzen (Sättigung) ---
+    // --- Begrenzen (SÃ¤ttigung) ---
     const float u_limited = constrain(u_pre, uMinNorm, uMaxNorm);
 
-    // --- Anti-Windup: Clamping (Integrator nur, wenn nicht gesättigt) ---
+    // --- Anti-Windup: Clamping (Integrator nur, wenn nicht gesÃ¤ttigt) ---
     const bool saturated = (u_pre <= uMinNorm) || (u_pre >= uMaxNorm);
     if (!saturated) {
         _integral += _Ki * e * dt_s;
     }
 
-    // --- endgültiger PI-Ausgang ---
+    // --- endgÃ¼ltiger PI-Ausgang ---
     float u = p_part + _integral;
     u = constrain(u, uMinNorm, uMaxNorm);
 
@@ -1063,7 +1063,7 @@ FILE: C:\Users\Acer\source\repos\robot\3_Control\src\PIRegler.h
 // ============================================================
 // File: PIRegler.h
 // Beschreibung:
-//  - Bidirektionaler PI-Regler für Drehzahlregelung
+//  - Bidirektionaler PI-Regler fÃ¼r Drehzahlregelung
 //  - Ausgang: signed PWM [-uMax .. +uMax]
 //  - Anti-Windup (Clamping)
 //  - Slew-Rate Begrenzung
@@ -1405,7 +1405,7 @@ void SpeedWeg::updateFromTicks(int16_t dcounts, uint32_t now_ms) {
     // 5) Tiefpass
     _rps_filt += _alpha * (rps_i - _rps_filt);
 
-    // 6) Fenster zurücksetzen
+    // 6) Fenster zurÃ¼cksetzen
     _acc_counts = 0;
 }
 
@@ -1442,7 +1442,7 @@ FILE: C:\Users\Acer\source\repos\robot\3_Control\src\SpeedWeg.h
 // ============================================================
 // File: SpeedWeg.h
 // Zweck: Geschwindigkeit (m/s) & Weg aus Encoder-Ticks
-//        inkl. Tiefpass-Filter für stabile v_Ist-Werte
+//        inkl. Tiefpass-Filter fÃ¼r stabile v_Ist-Werte
 //        -> Zeitbasis: Millisekunden (ms)
 // ============================================================
 
@@ -1480,13 +1480,13 @@ private:
 private:
     Enc& _enc;
 
-    // Weg & Zähler
+    // Weg & ZÃ¤hler
     long  _last_counts = 0;
     long  _counts_total = 0;
     float _weg_mm_total = 0.0f;
     float _weg_abs_mm_total = 0.0f;
 
-    // Tick-Sammelpuffer für das Geschwindigkeitsfenster
+    // Tick-Sammelpuffer fÃ¼r das Geschwindigkeitsfenster
     int32_t _acc_counts = 0;
 
     // Filter & Zeit (in ms)
@@ -1494,7 +1494,7 @@ private:
     float    _alpha = 0.2f;
     uint32_t _last_time_ms = 0;    // Zeitpunkt der letzten Geschwindigkeitsmessung
     uint32_t _timeout_ms = 60;   // Stillstand nach 60 ms
-    uint32_t _last_tick_ms = 0;    // Zeitpunkt des letzten Ticks (für Timeout)
+    uint32_t _last_tick_ms = 0;    // Zeitpunkt des letzten Ticks (fÃ¼r Timeout)
 };
 
 ============================================================
@@ -1969,15 +1969,15 @@ void ConnectionMonitor::waitForConnection()
 
 void ConnectionMonitor::begin(bool wait)
 {
-    // ?? Hardware-Init
+    // ðŸ”¥ Hardware-Init
     pinMode(_ledPin, OUTPUT);
     digitalWrite(_ledPin, HIGH);   // wartet auf Verbindung
 
-    // ?? Zustand
+    // ðŸ”¥ Zustand
     _lastState = false;
     _lastOk = millis();
 
-    // ?? optional blockierend
+    // ðŸ”¥ optional blockierend
     if (wait)
     {
         waitForConnection();
@@ -1988,14 +1988,14 @@ void ConnectionMonitor::update()
 {
     bool now = _uart.isConnected();
 
-    // ?? Verbindung verloren
+    // ðŸ”´ Verbindung verloren
     if (!now && _lastState)
     {
         Serial.println("#DISCONNECTED");
         digitalWrite(_ledPin, HIGH);
     }
 
-    // ?? Verbindung neu da
+    // ðŸŸ¢ Verbindung neu da
     if (now && !_lastState)
     {
         Serial.println("#CONNECTED");
@@ -3234,11 +3234,11 @@ static void requestRearFrame(uint32_t now, uint32_t frameTime)
 
     g_frame.voLi_s = commandRunner.getWheelSoll(VoLi);
     g_frame.voLi_i = speed[Li].mps();
-    g_frame.voLi_pwm = rad[VoLi].lastPwm();
+    g_frame.voLi_pwm = rad[Li].lastPwm();
 
     g_frame.voRe_s = commandRunner.getWheelSoll(VoRe);
     g_frame.voRe_i = speed[Re].mps();
-    g_frame.voRe_pwm = rad[VoRe].lastPwm();
+    g_frame.voRe_pwm = rad[Re].lastPwm();
 
     g_frame.hiLi_s = commandRunner.getWheelSoll(HiLi);
     g_frame.hiRe_s = commandRunner.getWheelSoll(HiRe);
@@ -3465,7 +3465,7 @@ void loop()
         if (!g_timerStarted)
         {
             g_startMs = now;
-            g_nextFrameMs = now;
+            g_nextFrameMs = now + VEHICLE_DT_MS;
             g_timerStarted = true;
 
             g_waitingVsolOk = false;
@@ -3491,8 +3491,8 @@ void loop()
     // Vorderachse lokal regeln
     // --------------------------------------------------------
 
-    rad[VoLi].setSoll(commandRunner.getWheelSoll(VoLi));
-    rad[VoRe].setSoll(commandRunner.getWheelSoll(VoRe));
+    rad[Li].setSoll(commandRunner.getWheelSoll(VoLi));
+    rad[Re].setSoll(commandRunner.getWheelSoll(VoRe));
 
     control_update(now);
 
@@ -3527,12 +3527,14 @@ void loop()
     }
 
     // --------------------------------------------------------
-    // Aktiver Messframe nach commandRunner.update():
-    // wichtig fuer den ersten Frame bei 0 ms.
-    //
-    // Die Endmessung bei 2000/3000 ms wird oben vor
-    // commandRunner.update() abgefangen.
-    // --------------------------------------------------------
+// Aktiver Messframe nach commandRunner.update():
+//
+// Der erste Frame eines neuen Befehls startet bewusst erst
+// bei VEHICLE_DT_MS. Dadurch entsteht nach einem Befehlswechsel
+// kein Misch-Snapshot bei t = 0 ms.
+// Die Endmessung bei 2000/3000 ms wird oben vor
+// commandRunner.update() abgefangen.
+// --------------------------------------------------------
 
     if (uart.isConnected())
     {

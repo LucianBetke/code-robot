@@ -570,6 +570,16 @@ void loop()
 
         bool isActive = commandRunner.isActive();
 
+        // Neuer CMDT-Befehl wurde gestartet.
+        // Den neuen Sollwert sofort an den hinteren Nano senden.
+        // Das ist ein reines Steuer-Telegramm, kein Messframe.
+        // Deshalb werden g_waitingVsolOk / g_waitingVist hier nicht gesetzt.
+        if (!wasActive && isActive)
+        {
+            uint16_t frameId = nextFrameId();
+            sendRearSoll(now, frameId);
+        }
+
         // Stop-Sequenz nur dann vormerken, wenn das ganze Script fertig ist.
         // Nicht zwischen zwei direkt aufeinanderfolgenden CMDT-Befehlen.
         if (wasActive && !isActive && commandRunner.isFinished())
@@ -601,7 +611,7 @@ void loop()
         if (!g_timerStarted)
         {
             g_startMs = now;
-            g_nextFrameMs = now;
+            g_nextFrameMs = now + VEHICLE_DT_MS;
             g_timerStarted = true;
 
             g_waitingVsolOk = false;
@@ -663,12 +673,14 @@ void loop()
     }
 
     // --------------------------------------------------------
-    // Aktiver Messframe nach commandRunner.update():
-    // wichtig fuer den ersten Frame bei 0 ms.
-    //
-    // Die Endmessung bei 2000/3000 ms wird oben vor
-    // commandRunner.update() abgefangen.
-    // --------------------------------------------------------
+// Aktiver Messframe nach commandRunner.update():
+//
+// Der erste Frame eines neuen Befehls startet bewusst erst
+// bei VEHICLE_DT_MS. Dadurch entsteht nach einem Befehlswechsel
+// kein Misch-Snapshot bei t = 0 ms.
+// Die Endmessung bei 2000/3000 ms wird oben vor
+// commandRunner.update() abgefangen.
+// --------------------------------------------------------
 
     if (uart.isConnected())
     {
