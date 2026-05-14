@@ -414,6 +414,56 @@ COLORS_VEH = {
 
 
 # ─────────────────────────────────────────────
+# Plot-Hilfsfunktion
+# ─────────────────────────────────────────────
+
+def build_command_boundary_series(t_sec, values, cmd_indices, local_ms):
+    """
+    Erzeugt eine durchgehende Linie mit senkrechtem Sprung an CMDT-Grenzen.
+
+    Zweck:
+      - innerhalb eines CMDT-Befehls normale Linien
+      - keine Treppe bei jedem Messpunkt
+      - keine Luecken zwischen Befehlen
+      - keine schraege Verbindung ueber einen CMDT-Wechsel
+
+    Diese Funktion ist nur fuer Sollwerte und PWM gedacht.
+    Istwerte werden bewusst normal geplottet.
+    """
+    n = min(len(t_sec), len(values), len(cmd_indices), len(local_ms))
+
+    if n == 0:
+        return [], []
+
+    x = [t_sec[0]]
+    y = [values[0]]
+
+    for i in range(1, n):
+        cmd_changed = cmd_indices[i] != cmd_indices[i - 1]
+
+        if cmd_changed:
+            # Die echte CMDT-Grenze liegt bei t_plot_ms - lokaler ms-Zeit
+            boundary = t_sec[i] - (local_ms[i] / 1000.0)
+
+            # Schutz gegen Rundungsfehler oder minimal unsaubere Zeitstempel
+            if boundary < x[-1]:
+                boundary = x[-1]
+
+            # alten Wert bis zur Grenze halten
+            x.append(boundary)
+            y.append(y[-1])
+
+            # an derselben x-Position auf den neuen Wert springen
+            x.append(boundary)
+            y.append(values[i])
+
+        x.append(t_sec[i])
+        y.append(values[i])
+
+    return x, y
+
+
+# ─────────────────────────────────────────────
 # Live-Plot
 # ─────────────────────────────────────────────
 
@@ -448,6 +498,9 @@ def start_plot():
             ax_v.set_ylabel("Geschwindigkeit [m/s]")
             ax_pwm.set_ylabel("PWM")
 
+            cmd_indices = d.get("cmd_index", [])
+            local_ms = d.get("ms", [])
+
             for name, col in COLORS_RAD.items():
                 s_key = f"{name}_s"
                 i_key = f"{name}_i"
@@ -457,18 +510,28 @@ def start_plot():
                 ist = d.get(i_key, [])
                 pwm = d.get(pwm_key, [])
 
-                n = min(len(t), len(s), len(ist))
+                n = min(len(t), len(s), len(ist), len(cmd_indices), len(local_ms))
 
                 if n:
-                    ax_v.plot(
+                    # Sollwerte: normal verbunden, aber an CMDT-Grenzen senkrecht.
+                    x_soll, y_soll = build_command_boundary_series(
                         t[:n],
                         s[:n],
+                        cmd_indices[:n],
+                        local_ms[:n]
+                    )
+
+                    ax_v.plot(
+                        x_soll,
+                        y_soll,
                         linestyle="--",
                         color=col,
                         alpha=0.6,
                         label=f"{name} Soll"
                     )
 
+                    # Istwerte: echte Messwerte, ganz normal durchzeichnen.
+                    # Keine kuenstliche Unterbrechung, keine kuenstliche Treppe.
                     ax_v.plot(
                         t[:n],
                         ist[:n],
@@ -477,12 +540,20 @@ def start_plot():
                         label=f"{name} Ist"
                     )
 
-                n_p = min(len(t), len(pwm))
+                n_p = min(len(t), len(pwm), len(cmd_indices), len(local_ms))
 
                 if n_p:
-                    ax_pwm.plot(
+                    # PWM: normale Linie, aber an CMDT-Grenzen senkrecht.
+                    x_pwm, y_pwm = build_command_boundary_series(
                         t[:n_p],
                         pwm[:n_p],
+                        cmd_indices[:n_p],
+                        local_ms[:n_p]
+                    )
+
+                    ax_pwm.plot(
+                        x_pwm,
+                        y_pwm,
                         linestyle="-",
                         color=col,
                         label=f"{name} PWM"
