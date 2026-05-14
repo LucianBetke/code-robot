@@ -1,6 +1,6 @@
-==============================
-DATEI: C:\Users\Acer\source\repos\robot\1_Common\src\CommUtils.h
-==============================
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\1_Common\src\CommUtils.h
+============================================================
 // CommUtils.h
 #pragma once
 #include <stdint.h>
@@ -15,9 +15,9 @@ inline float int100ToFloat(int16_t v)
     return (float)v / 100.0f;
 }
 
-==============================
-DATEI: C:\Users\Acer\source\repos\robot\1_Common\src\ControlTypes.h
-==============================
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\1_Common\src\ControlTypes.h
+============================================================
 // ControlTypes.h
 #pragma once
 struct PIParam {
@@ -25,9 +25,9 @@ struct PIParam {
     float Ki;
 };
 
-==============================
-DATEI: C:\Users\Acer\source\repos\robot\1_Common\src\globals.h
-==============================
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\1_Common\src\globals.h
+============================================================
 // ============================================================
 // File: globals.h
 // Zweck:
@@ -162,9 +162,9 @@ constexpr float V_WHEEL_MAX = 0.30f;
 
 #endif // GLOBALS_H
 
-==============================
-DATEI: C:\Users\Acer\source\repos\robot\2_Hardware\src\Encoder.cpp
-==============================
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\2_Hardware\src\Encoder.cpp
+============================================================
 // Encoder.cpp
 #include "Encoder.h"
 
@@ -268,9 +268,9 @@ ISR(PCINT1_vect)
     PCINT1_Dispatcher::isr(pinc);         // an alle Encoder verteilen
 }
 
-==============================
-DATEI: C:\Users\Acer\source\repos\robot\2_Hardware\src\Encoder.h
-==============================
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\2_Hardware\src\Encoder.h
+============================================================
 // ============================================================
 /* File: Encoder.h
  * Zweck:
@@ -318,9 +318,9 @@ namespace PCINT1_Dispatcher {
     void isr(uint8_t pinc_snapshot);
 }
 
-==============================
-DATEI: C:\Users\Acer\source\repos\robot\2_Hardware\src\Hardware.cpp
-==============================
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\2_Hardware\src\Hardware.cpp
+============================================================
 #include <Arduino.h>
 #include "src/globals.h"
 #include "Encoder.h"
@@ -360,9 +360,9 @@ void hardware_requestVist()
     digitalWrite(s_stby_sync, LOW);
 }
 
-==============================
-DATEI: C:\Users\Acer\source\repos\robot\2_Hardware\src\Hardware.h
-==============================
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\2_Hardware\src\Hardware.h
+============================================================
 #ifndef HARDWARE_H
 #define HARDWARE_H
 #include <Arduino.h>
@@ -380,9 +380,9 @@ void hardware_disableMotors();
 void hardware_requestVist();
 #endif // HARDWARE_H
 
-==============================
-DATEI: C:\Users\Acer\source\repos\robot\2_Hardware\src\hardware_pins.h
-==============================
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\2_Hardware\src\hardware_pins.h
+============================================================
 // hardware_pins.h
 #ifndef HARDWARE_PINS_H
 #define HARDWARE_PINS_H
@@ -452,9 +452,9 @@ namespace PinsRear
 }
 #endif // HARDWARE_PINS_H
 
-==============================
-DATEI: C:\Users\Acer\source\repos\robot\2_Hardware\src\Motor.cpp
-==============================
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\2_Hardware\src\Motor.cpp
+============================================================
 // Motor.cpp
 #include "Motor.h"
 
@@ -487,9 +487,9 @@ void Motor::bremse(bool art) {
 void Motor::attachEnc(Enc& enc) { _enc = &enc; }
 Enc* Motor::enc() const { return _enc; }
 
-==============================
-DATEI: C:\Users\Acer\source\repos\robot\2_Hardware\src\Motor.h
-==============================
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\2_Hardware\src\Motor.h
+============================================================
 // ============================================================
 // File: Motor.h
 // Zweck:
@@ -545,9 +545,9 @@ private:
 
 #endif // MOTOR_H
 
-==============================
-DATEI: C:\Users\Acer\source\repos\robot\2_Hardware\src\UartLink.cpp
-==============================
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\2_Hardware\src\UartLink.cpp
+============================================================
 #include "UartLink.h"
 #include <string.h>
 
@@ -654,9 +654,9 @@ bool UartLink::isConnected() const
     return _connected;
 }
 
-==============================
-DATEI: C:\Users\Acer\source\repos\robot\2_Hardware\src\UartLink.h
-==============================
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\2_Hardware\src\UartLink.h
+============================================================
 //UartLink.h
 #ifndef UARTLINK_H
 #define UARTLINK_H
@@ -698,9 +698,9 @@ private:
 
 #endif // UARTLINK_H
 
-==============================
-DATEI: C:\Users\Acer\source\repos\robot\3_Control\src\Control.cpp
-==============================
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\3_Control\src\Control.cpp
+============================================================
 // ============================================================
 // File: Control.cpp (3_Control)
 // Zweck:
@@ -795,9 +795,9 @@ void control_stopAll()
         rad[i].stop();
 }
 
-==============================
-DATEI: C:\Users\Acer\source\repos\robot\3_Control\src\Control.h
-==============================
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\3_Control\src\Control.h
+============================================================
 // ============================================================
 // File: Control.h (3_Control)
 // Zweck:
@@ -847,9 +847,9 @@ void control_stopAll();
 
 #endif // CONTROL_H
 
-==============================
-DATEI: C:\Users\Acer\source\repos\robot\3_Control\src\ControlConfig.h
-==============================
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\3_Control\src\ControlConfig.h
+============================================================
 // ============================================================
 // File: ControlConfig.h
 // Zweck:
@@ -926,9 +926,9 @@ namespace ConfigRear
 
 #endif // CONTROLCONFIG_H
 
-==============================
-DATEI: C:\Users\Acer\source\repos\robot\3_Control\src\PIRegler.cpp
-==============================
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\3_Control\src\PIRegler.cpp
+============================================================
 // PIRegler.cpp  (bidirektional)
 
 #include "PIRegler.h"
@@ -1057,9 +1057,9 @@ void PIRegler::setParams(float Kp, float Ki)
     _Ki = Ki;
 }
 
-==============================
-DATEI: C:\Users\Acer\source\repos\robot\3_Control\src\PIRegler.h
-==============================
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\3_Control\src\PIRegler.h
+============================================================
 // ============================================================
 // File: PIRegler.h
 // Beschreibung:
@@ -1120,9 +1120,9 @@ private:
     float _lastI;
 };
 
-==============================
-DATEI: C:\Users\Acer\source\repos\robot\3_Control\src\Rad.cpp
-==============================
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\3_Control\src\Rad.cpp
+============================================================
 // Rad.cpp
 #include "Rad.h"
 #include <math.h>            // fabsf
@@ -1249,9 +1249,9 @@ void Rad::setDeadPwm(int16_t deadPwm)
     _deadPwm = deadPwm;
 }
 
-==============================
-DATEI: C:\Users\Acer\source\repos\robot\3_Control\src\Rad.h
-==============================
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\3_Control\src\Rad.h
+============================================================
 // Rad.h
 #pragma once
 #include <Arduino.h>
@@ -1291,9 +1291,9 @@ private:
     int16_t _deadPwm;
 };
 
-==============================
-DATEI: C:\Users\Acer\source\repos\robot\3_Control\src\SpeedWeg.cpp
-==============================
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\3_Control\src\SpeedWeg.cpp
+============================================================
 // ============================================================
 // File: SpeedWeg.cpp
 // ============================================================
@@ -1436,9 +1436,9 @@ float SpeedWeg::weg_abs_mm() const {
     return _weg_abs_mm_total;
 }
 
-==============================
-DATEI: C:\Users\Acer\source\repos\robot\3_Control\src\SpeedWeg.h
-==============================
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\3_Control\src\SpeedWeg.h
+============================================================
 // ============================================================
 // File: SpeedWeg.h
 // Zweck: Geschwindigkeit (m/s) & Weg aus Encoder-Ticks
@@ -1497,9 +1497,9 @@ private:
     uint32_t _last_tick_ms = 0;    // Zeitpunkt des letzten Ticks (für Timeout)
 };
 
-==============================
-DATEI: C:\Users\Acer\source\repos\robot\4_Vehicle\src\VehicleController.cpp
-==============================
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\4_Vehicle\src\VehicleController.cpp
+============================================================
 // ============================================================
 // VehicleController.cpp
 // ============================================================
@@ -1585,9 +1585,9 @@ float VehicleController::getWheelSoll(WheelVehicle w) const
     return _wheelSoll[w];
 }
 
-==============================
-DATEI: C:\Users\Acer\source\repos\robot\4_Vehicle\src\VehicleController.h
-==============================
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\4_Vehicle\src\VehicleController.h
+============================================================
 // ============================================================
 // VehicleController.h
 // ============================================================
@@ -1643,9 +1643,9 @@ private:
 
 #endif
 
-==============================
-DATEI: C:\Users\Acer\source\repos\robot\4_Vehicle\src\VehicleRegler.cpp
-==============================
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\4_Vehicle\src\VehicleRegler.cpp
+============================================================
 // ============================================================
 // VehicleRegler.cpp
 // ============================================================
@@ -1707,9 +1707,9 @@ float VehicleRegler::updateWz(float soll, float ist, uint16_t dt_ms)
     return _Kp_wz * e + _integral_wz;
 }
 
-==============================
-DATEI: C:\Users\Acer\source\repos\robot\4_Vehicle\src\VehicleRegler.h
-==============================
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\4_Vehicle\src\VehicleRegler.h
+============================================================
 // ============================================================
 // VehicleRegler.h
 // ============================================================
@@ -1750,9 +1750,9 @@ private:
 
 #endif // VEHICLE_REGLER_H
 
-==============================
-DATEI: C:\Users\Acer\source\repos\robot\5_System\src\CommandRunner\CommandRunner.cpp
-==============================
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\5_System\src\CommandRunner\CommandRunner.cpp
+============================================================
 // ============================================================
 // CommandRunner.cpp
 // ============================================================
@@ -1783,14 +1783,30 @@ void CommandRunner::stopAll()
 
 void CommandRunner::startCmd(const ParsedCommand& cmd, uint32_t now)
 {
-    _durationMs = (uint32_t)(cmd.param * 1000.0f);
+    _durationMs = (uint32_t)cmd.param * 1000UL;
 
-    Serial.print(F("#EVENT,startCmd,param="));
-    Serial.print(cmd.param, 2);
+    Serial.print(F("#EVENT,startCmd,vx="));
+    Serial.print(cmd.vx);
+    Serial.print(F(",vy="));
+    Serial.print(cmd.vy);
+    Serial.print(F(",wz="));
+    Serial.print(cmd.wz);
+    Serial.print(F(",duration="));
+    Serial.print(cmd.param);
     Serial.print(F(",durationMs="));
     Serial.println(_durationMs);
 
-    _vehicle.cmd(cmd.vx, cmd.vy, cmd.wz);
+    // Integer-Protokoll:
+    // vx, vy kommen aus dem Script als cm/s.
+    // VehicleController arbeitet weiterhin mit m/s.
+    //
+    // wz kommt aus dem Script als Grad/s.
+    // VehicleController arbeitet weiterhin mit rad/s.
+    const float vx = (float)cmd.vx * 0.01f;
+    const float vy = (float)cmd.vy * 0.01f;
+    const float wz = (float)cmd.wz * 0.01745329252f;
+
+    _vehicle.cmd(vx, vy, wz);
 
     _startTime = now;
     _active = true;
@@ -1879,9 +1895,9 @@ bool CommandRunner::isFinished() const
     return _finished;
 }
 
-==============================
-DATEI: C:\Users\Acer\source\repos\robot\5_System\src\CommandRunner\CommandRunner.h
-==============================
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\5_System\src\CommandRunner\CommandRunner.h
+============================================================
 // ============================================================
 // CommandRunner.h
 // ============================================================
@@ -1927,9 +1943,9 @@ private:
 
 #endif
 
-==============================
-DATEI: C:\Users\Acer\source\repos\robot\5_System\src\Connection\ConnectionMonitor.cpp
-==============================
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\5_System\src\Connection\ConnectionMonitor.cpp
+============================================================
 // ConnectionMonitor.cpp
 #include "ConnectionMonitor.h"
 
@@ -1989,9 +2005,9 @@ void ConnectionMonitor::update()
     _lastState = now;
 }
 
-==============================
-DATEI: C:\Users\Acer\source\repos\robot\5_System\src\Connection\ConnectionMonitor.h
-==============================
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\5_System\src\Connection\ConnectionMonitor.h
+============================================================
 // ConnectionMonitor.h
 #pragma once
 
@@ -2015,64 +2031,172 @@ private:
     uint32_t _lastOk;
 };
 
-==============================
-DATEI: C:\Users\Acer\source\repos\robot\5_System\src\Parser\CommandParser.cpp
-==============================
-// CommandParser.cpp    
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\5_System\src\Parser\CommandParser.cpp
+============================================================
+// CommandParser.cpp
 #include "CommandParser.h"
-#include <Arduino.h>
 #include <string.h>
-#include <stdlib.h>
 
-static bool readToken(const char*& p, char delim, char* buf, uint8_t maxLen)
+// ============================================================
+// Hilfsfunktionen
+// ============================================================
+
+static void skipSpaces(const char*& p)
 {
-    uint8_t i = 0;
-    while (*p != delim && *p != '\0' && i < maxLen - 1)
-        buf[i++] = *p++;
-    buf[i] = '\0';
-    if (*p != delim) return false;
+    while (*p == ' ' || *p == '\t')
+    {
+        p++;
+    }
+}
+
+static bool expectChar(const char*& p, char expected)
+{
+    if (*p != expected)
+    {
+        return false;
+    }
+
     p++;
+    return true;
+}
+
+static bool parseInt16(const char*& p, int16_t& out)
+{
+    bool negative = false;
+
+    if (*p == '-')
+    {
+        negative = true;
+        p++;
+    }
+
+    if (*p < '0' || *p > '9')
+    {
+        return false;
+    }
+
+    int32_t value = 0;
+    const int32_t limit = negative ? 32768L : 32767L;
+
+    while (*p >= '0' && *p <= '9')
+    {
+        value = value * 10L + (int32_t)(*p - '0');
+
+        if (value > limit)
+        {
+            return false;
+        }
+
+        p++;
+    }
+
+    if (negative)
+    {
+        value = -value;
+    }
+
+    out = (int16_t)value;
+    return true;
+}
+
+static bool parseUInt16(const char*& p, uint16_t& out)
+{
+    if (*p < '0' || *p > '9')
+    {
+        return false;
+    }
+
+    uint32_t value = 0;
+
+    while (*p >= '0' && *p <= '9')
+    {
+        value = value * 10UL + (uint32_t)(*p - '0');
+
+        if (value > 65535UL)
+        {
+            return false;
+        }
+
+        p++;
+    }
+
+    out = (uint16_t)value;
     return true;
 }
 
 static bool parseVxVyWzParam(const char* p, ParsedCommand& cmd)
 {
-    char buf[32];
-    if (!readToken(p, ',', buf, sizeof(buf))) return false;
-    cmd.vx = atof(buf);
-    if (!readToken(p, ',', buf, sizeof(buf))) return false;
-    cmd.vy = atof(buf);
-    if (!readToken(p, ')', buf, sizeof(buf))) return false;
-    cmd.wz = atof(buf);
-    if (*p == ' ') p++;
-    if (!readToken(p, ';', buf, sizeof(buf))) return false;
-    cmd.param = atof(buf);
-    return true;
+    skipSpaces(p);
+
+    if (!parseInt16(p, cmd.vx)) return false;
+    skipSpaces(p);
+    if (!expectChar(p, ',')) return false;
+    skipSpaces(p);
+
+    if (!parseInt16(p, cmd.vy)) return false;
+    skipSpaces(p);
+    if (!expectChar(p, ',')) return false;
+    skipSpaces(p);
+
+    if (!parseInt16(p, cmd.wz)) return false;
+    skipSpaces(p);
+    if (!expectChar(p, ')')) return false;
+    skipSpaces(p);
+
+    if (!parseUInt16(p, cmd.param)) return false;
+    skipSpaces(p);
+    if (!expectChar(p, ';')) return false;
+    skipSpaces(p);
+
+    return *p == '\0';
 }
+
+// ============================================================
+// CommandParser
+// ============================================================
 
 bool CommandParser::parse(const char* line, ParsedCommand& cmd)
 {
     cmd.type = CMD_NONE;
-    if (!line) return false;
+    cmd.vx = 0;
+    cmd.vy = 0;
+    cmd.wz = 0;
+    cmd.param = 0;
+
+    if (!line)
+    {
+        return false;
+    }
 
     if (strncmp(line, "CMDT(", 5) == 0)
     {
-        if (!parseVxVyWzParam(line + 5, cmd)) return false;
+        if (!parseVxVyWzParam(line + 5, cmd))
+        {
+            return false;
+        }
+
         cmd.type = CMD_TIME;
         return true;
     }
+
     if (strncmp(line, "CMDP(", 5) == 0)
     {
-        if (!parseVxVyWzParam(line + 5, cmd)) return false;
+        if (!parseVxVyWzParam(line + 5, cmd))
+        {
+            return false;
+        }
+
         cmd.type = CMD_PATH;
         return true;
     }
+
     return false;
 }
 
-==============================
-DATEI: C:\Users\Acer\source\repos\robot\5_System\src\Parser\CommandParser.h
-==============================
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\5_System\src\Parser\CommandParser.h
+============================================================
 // ============================================================
 // CommandParser.h
 // ============================================================
@@ -2085,16 +2209,22 @@ enum CmdType : uint8_t
 {
     CMD_NONE = 0,
     CMD_TIME = 1,
-    CMD_PATH = 2,   // später
+    CMD_PATH = 2,   // spaeter
 };
 
 struct ParsedCommand
 {
     CmdType type;
-    float vx;
-    float vy;
-    float wz;
-    float param;     // CMD_TIME: Sekunden, CMD_PATH: cm
+
+    // Integer-Protokoll:
+    // vx    = Geschwindigkeit in cm/s
+    // vy    = Geschwindigkeit in cm/s
+    // wz    = Winkelgeschwindigkeit in Grad/s
+    // param = Dauer in Sekunden bei CMDT
+    int16_t  vx;
+    int16_t  vy;
+    int16_t  wz;
+    uint16_t param;
 };
 
 class CommandParser
@@ -2105,9 +2235,9 @@ public:
 
 #endif
 
-==============================
-DATEI: C:\Users\Acer\source\repos\robot\5_System\src\Printer.cpp
-==============================
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\5_System\src\Printer.cpp
+============================================================
 // Printer.cpp
 #include "Printer.h"
 
@@ -2237,9 +2367,9 @@ void Printer::printFrame(
 
 #endif
 
-==============================
-DATEI: C:\Users\Acer\source\repos\robot\5_System\src\Printer.h
-==============================
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\5_System\src\Printer.h
+============================================================
 #ifndef PRINTER_H
 #define PRINTER_H
 
@@ -2293,9 +2423,9 @@ public:
 
 #endif
 
-==============================
-DATEI: C:\Users\Acer\source\repos\robot\5_System\src\PrinterConfig.h
-==============================
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\5_System\src\PrinterConfig.h
+============================================================
 // PrinterConfig.h
 #ifndef PRINTER_CONFIG_H
 #define PRINTER_CONFIG_H
@@ -2305,9 +2435,35 @@ DATEI: C:\Users\Acer\source\repos\robot\5_System\src\PrinterConfig.h
 
 #endif // PRINTER_CONFIG_H
 
-==============================
-DATEI: C:\Users\Acer\source\repos\robot\hinten\src\hinten.ino
-==============================
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\hinten\__vm\.hinten.vsarduino.h
+============================================================
+/* 
+	Editor: https://www.visualmicro.com/
+			This file is for intellisense purpose only.
+			Visual micro (and the arduino ide) ignore this code during compilation. This code is automatically maintained by visualmicro, manual changes to this file will be overwritten
+			The contents of the _vm sub folder can be deleted prior to publishing a project
+			All non-arduino files created by visual micro and all visual studio project or solution files can be freely deleted and are not required to compile a sketch (do not delete your own code!).
+			Note: debugger breakpoints are stored in '.sln' or '.asln' files, knowledge of last uploaded breakpoints is stored in the upload.vmps.xml file. Both files are required to continue a previous debug session without needing to compile and upload again
+	
+	Hardware: ATmega328P (Old Bootloader) (Arduino Nano) (nano_atmega328old), Platform=avr, Package=arduino
+*/
+
+#if defined(_VMICRO_INTELLISENSE)
+
+#ifndef _VSARDUINO_H_
+#define _VSARDUINO_H_
+#pragma diag_suppress=338,2925
+// User Defined Errors to Ignore below... [vm.intellisense.ignore-error-codes]
+#include <arduino.h>
+#include <pins_arduino.h> 
+#include "..\hinten.ino"
+#endif
+#endif
+
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\hinten\src\hinten.ino
+============================================================
 // hinten.ino
 #include <avr/wdt.h>
 #include "src/Hardware.h"
@@ -2338,6 +2494,157 @@ void syncISR()
     g_syncFlag = true;
 }
 
+// ============================================================
+// Fester Integer-Parser fuer UART-Telegramme
+//   VSOL,<frameId>,<hiLiSoll>,<hiReSoll>
+// ============================================================
+
+static void skipSpaces(const char*& p)
+{
+    while (*p == ' ' || *p == '\t')
+    {
+        p++;
+    }
+}
+
+static bool expectChar(const char*& p, char expected)
+{
+    if (*p != expected)
+    {
+        return false;
+    }
+
+    p++;
+    return true;
+}
+
+static bool expectText(const char*& p, const char* text)
+{
+    while (*text != '\0')
+    {
+        if (*p != *text)
+        {
+            return false;
+        }
+
+        p++;
+        text++;
+    }
+
+    return true;
+}
+
+static bool parseUInt16(const char*& p, uint16_t& out)
+{
+    skipSpaces(p);
+
+    if (*p < '0' || *p > '9')
+    {
+        return false;
+    }
+
+    uint32_t value = 0;
+
+    while (*p >= '0' && *p <= '9')
+    {
+        value = value * 10UL + (uint32_t)(*p - '0');
+
+        if (value > 65535UL)
+        {
+            return false;
+        }
+
+        p++;
+    }
+
+    out = (uint16_t)value;
+    return true;
+}
+
+static bool parseInt16(const char*& p, int16_t& out)
+{
+    skipSpaces(p);
+
+    bool negative = false;
+
+    if (*p == '-')
+    {
+        negative = true;
+        p++;
+    }
+
+    if (*p < '0' || *p > '9')
+    {
+        return false;
+    }
+
+    int32_t value = 0;
+    const int32_t limit = negative ? 32768L : 32767L;
+
+    while (*p >= '0' && *p <= '9')
+    {
+        value = value * 10L + (int32_t)(*p - '0');
+
+        if (value > limit)
+        {
+            return false;
+        }
+
+        p++;
+    }
+
+    if (negative)
+    {
+        value = -value;
+    }
+
+    out = (int16_t)value;
+    return true;
+}
+
+static bool parseVsolLine(const char* line, uint16_t& frameId, int16_t& v2, int16_t& v3)
+{
+    if (!line)
+    {
+        return false;
+    }
+
+    const char* p = line;
+
+    uint16_t frameIdTmp = 0;
+    int16_t v2Tmp = 0;
+    int16_t v3Tmp = 0;
+
+    if (!expectText(p, "VSOL,")) return false;
+
+    if (!parseUInt16(p, frameIdTmp)) return false;
+    skipSpaces(p);
+    if (!expectChar(p, ',')) return false;
+
+    if (!parseInt16(p, v2Tmp)) return false;
+    skipSpaces(p);
+    if (!expectChar(p, ',')) return false;
+
+    if (!parseInt16(p, v3Tmp)) return false;
+
+    skipSpaces(p);
+
+    if (*p != '\0')
+    {
+        return false;
+    }
+
+    frameId = frameIdTmp;
+    v2 = v2Tmp;
+    v3 = v3Tmp;
+
+    return true;
+}
+
+// ============================================================
+// Hilfsfunktionen
+// ============================================================
+
 static void stopRearWheels()
 {
     rad[Li].setSoll(0.0f);
@@ -2347,9 +2654,32 @@ static void stopRearWheels()
 
 static void sendVsolOk(uint16_t frameId)
 {
-    char bufOk[24];
-    snprintf(bufOk, sizeof(bufOk), "VSOL_OK,%u", (unsigned int)frameId);
-    uart.sendLine(bufOk);
+    if (!uart.isConnected())
+    {
+        return;
+    }
+
+    Serial.print(F("VSOL_OK,"));
+    Serial.println((unsigned int)frameId);
+}
+
+static void sendVist(uint16_t frameId, int16_t vIstLi, int16_t vIstRe, int16_t pwm2, int16_t pwm3)
+{
+    if (!uart.isConnected())
+    {
+        return;
+    }
+
+    Serial.print(F("VIST,"));
+    Serial.print((unsigned int)frameId);
+    Serial.print(',');
+    Serial.print((int)vIstLi);
+    Serial.print(',');
+    Serial.print((int)vIstRe);
+    Serial.print(',');
+    Serial.print((int)pwm2);
+    Serial.print(',');
+    Serial.println((int)pwm3);
 }
 
 void setup()
@@ -2415,13 +2745,13 @@ void loop()
     {
         const char* line = uart.getLine();
 
-        unsigned int frameIdRx;
-        int16_t v2_i;
-        int16_t v3_i;
+        uint16_t frameIdRx = 0;
+        int16_t v2_i = 0;
+        int16_t v3_i = 0;
 
-        if (sscanf(line, "VSOL,%u,%hd,%hd", &frameIdRx, &v2_i, &v3_i) == 3)
+        if (parseVsolLine(line, frameIdRx, v2_i, v3_i))
         {
-            g_lastVsolFrameId = (uint16_t)frameIdRx;
+            g_lastVsolFrameId = frameIdRx;
 
             float vSollLi = int100ToFloat(v2_i);
             float vSollRe = int100ToFloat(v3_i);
@@ -2461,22 +2791,13 @@ void loop()
         int16_t pwm2 = rad[Li].lastPwm();
         int16_t pwm3 = rad[Re].lastPwm();
 
-        char bufVist[48];
-        snprintf(bufVist, sizeof(bufVist), "VIST,%u,%d,%d,%d,%d",
-            (unsigned int)g_lastVsolFrameId,
-            vIstLi,
-            vIstRe,
-            pwm2,
-            pwm3
-        );
-
-        uart.sendLine(bufVist);
+        sendVist(g_lastVsolFrameId, vIstLi, vIstRe, pwm2, pwm3);
     }
 }
 
-==============================
-DATEI: C:\Users\Acer\source\repos\robot\hinten\__vm\.hinten.vsarduino.h
-==============================
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\vorne\__vm\.vorne.vsarduino.h
+============================================================
 /* 
 	Editor: https://www.visualmicro.com/
 			This file is for intellisense purpose only.
@@ -2496,13 +2817,13 @@ DATEI: C:\Users\Acer\source\repos\robot\hinten\__vm\.hinten.vsarduino.h
 // User Defined Errors to Ignore below... [vm.intellisense.ignore-error-codes]
 #include <arduino.h>
 #include <pins_arduino.h> 
-#include "..\hinten.ino"
+#include "..\vorne.ino"
 #endif
 #endif
 
-==============================
-DATEI: C:\Users\Acer\source\repos\robot\vorne\src\CommandScript.cpp
-==============================
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\vorne\src\CommandScript.cpp
+============================================================
 // CommandScript.cpp
 #include "CommandScript.h"
 
@@ -2524,9 +2845,9 @@ uint8_t CommandScript::size()
     return sizeof(_script) / sizeof(_script[0]);
 }
 
-==============================
-DATEI: C:\Users\Acer\source\repos\robot\vorne\src\CommandScript.h
-==============================
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\vorne\src\CommandScript.h
+============================================================
 // CommandScript.h
 #pragma once
 #include <Arduino.h>
@@ -2538,9 +2859,9 @@ public:
     static uint8_t size();
 };
 
-==============================
-DATEI: C:\Users\Acer\source\repos\robot\vorne\src\vorne.ino
-==============================
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\vorne\src\vorne.ino
+============================================================
 // vorne.ino
 #include <avr/wdt.h>
 #include "CommandScript.h"
@@ -2617,6 +2938,197 @@ CommandRunner commandRunner(vehicle, uart, parser,
 Printer printer;
 
 // ============================================================
+// Fester Integer-Parser fuer UART-Telegramme
+//   VSOL_OK,<frameId>
+//   VIST,<frameId>,<hiLiIst>,<hiReIst>,<hiLiPwm>,<hiRePwm>
+// ============================================================
+
+static void skipSpaces(const char*& p)
+{
+    while (*p == ' ' || *p == '\t')
+    {
+        p++;
+    }
+}
+
+static bool expectChar(const char*& p, char expected)
+{
+    if (*p != expected)
+    {
+        return false;
+    }
+
+    p++;
+    return true;
+}
+
+static bool expectText(const char*& p, const char* text)
+{
+    while (*text != '\0')
+    {
+        if (*p != *text)
+        {
+            return false;
+        }
+
+        p++;
+        text++;
+    }
+
+    return true;
+}
+
+static bool parseUInt16(const char*& p, uint16_t& out)
+{
+    skipSpaces(p);
+
+    if (*p < '0' || *p > '9')
+    {
+        return false;
+    }
+
+    uint32_t value = 0;
+
+    while (*p >= '0' && *p <= '9')
+    {
+        value = value * 10UL + (uint32_t)(*p - '0');
+
+        if (value > 65535UL)
+        {
+            return false;
+        }
+
+        p++;
+    }
+
+    out = (uint16_t)value;
+    return true;
+}
+
+static bool parseInt16(const char*& p, int16_t& out)
+{
+    skipSpaces(p);
+
+    bool negative = false;
+
+    if (*p == '-')
+    {
+        negative = true;
+        p++;
+    }
+
+    if (*p < '0' || *p > '9')
+    {
+        return false;
+    }
+
+    int32_t value = 0;
+    const int32_t limit = negative ? 32768L : 32767L;
+
+    while (*p >= '0' && *p <= '9')
+    {
+        value = value * 10L + (int32_t)(*p - '0');
+
+        if (value > limit)
+        {
+            return false;
+        }
+
+        p++;
+    }
+
+    if (negative)
+    {
+        value = -value;
+    }
+
+    out = (int16_t)value;
+    return true;
+}
+
+static bool parseVsolOkLine(const char* line, uint16_t& frameId)
+{
+    if (!line)
+    {
+        return false;
+    }
+
+    const char* p = line;
+    uint16_t frameIdTmp = 0;
+
+    if (!expectText(p, "VSOL_OK,")) return false;
+    if (!parseUInt16(p, frameIdTmp)) return false;
+
+    skipSpaces(p);
+
+    if (*p != '\0')
+    {
+        return false;
+    }
+
+    frameId = frameIdTmp;
+
+    return true;
+}
+
+static bool parseVistLine(
+    const char* line,
+    uint16_t& frameId,
+    int16_t& v2,
+    int16_t& v3,
+    int16_t& pwm2,
+    int16_t& pwm3)
+{
+    if (!line)
+    {
+        return false;
+    }
+
+    const char* p = line;
+
+    uint16_t frameIdTmp = 0;
+    int16_t v2Tmp = 0;
+    int16_t v3Tmp = 0;
+    int16_t pwm2Tmp = 0;
+    int16_t pwm3Tmp = 0;
+
+    if (!expectText(p, "VIST,")) return false;
+
+    if (!parseUInt16(p, frameIdTmp)) return false;
+    skipSpaces(p);
+    if (!expectChar(p, ',')) return false;
+
+    if (!parseInt16(p, v2Tmp)) return false;
+    skipSpaces(p);
+    if (!expectChar(p, ',')) return false;
+
+    if (!parseInt16(p, v3Tmp)) return false;
+    skipSpaces(p);
+    if (!expectChar(p, ',')) return false;
+
+    if (!parseInt16(p, pwm2Tmp)) return false;
+    skipSpaces(p);
+    if (!expectChar(p, ',')) return false;
+
+    if (!parseInt16(p, pwm3Tmp)) return false;
+
+    skipSpaces(p);
+
+    if (*p != '\0')
+    {
+        return false;
+    }
+
+    frameId = frameIdTmp;
+    v2 = v2Tmp;
+    v3 = v3Tmp;
+    pwm2 = pwm2Tmp;
+    pwm3 = pwm3Tmp;
+
+    return true;
+}
+
+// ============================================================
 // Hilfsfunktionen
 // ============================================================
 
@@ -2643,19 +3155,28 @@ static uint16_t nextFrameId()
     return id;
 }
 
+static void sendVsolLine(uint16_t frameId, int16_t v2, int16_t v3)
+{
+    if (!uart.isConnected())
+    {
+        return;
+    }
+
+    Serial.print(F("VSOL,"));
+    Serial.print((unsigned int)frameId);
+    Serial.print(',');
+    Serial.print((int)v2);
+    Serial.print(',');
+    Serial.println((int)v3);
+}
+
 static void sendRearSoll(uint32_t now, uint16_t frameId)
 {
     int16_t v2_i = floatToInt100(commandRunner.getWheelSoll(HiLi));
     int16_t v3_i = floatToInt100(commandRunner.getWheelSoll(HiRe));
 
-    char bufVsoll[36];
-    snprintf(bufVsoll, sizeof(bufVsoll), "VSOL,%u,%d,%d",
-        (unsigned int)frameId,
-        v2_i,
-        v3_i
-    );
+    sendVsolLine(frameId, v2_i, v3_i);
 
-    uart.sendLine(bufVsoll);
     g_lastVsolSendMs = now;
 }
 
@@ -2663,12 +3184,8 @@ static void sendRearStop(uint32_t now)
 {
     uint16_t frameId = nextFrameId();
 
-    char bufVsoll[24];
-    snprintf(bufVsoll, sizeof(bufVsoll), "VSOL,%u,0,0",
-        (unsigned int)frameId
-    );
+    sendVsolLine(frameId, 0, 0);
 
-    uart.sendLine(bufVsoll);
     g_lastVsolSendMs = now;
 }
 
@@ -2818,17 +3335,17 @@ void loop()
     {
         const char* line = uart.getLine();
 
-        unsigned int frameIdRx;
-
         // ----------------------------------------------------
         // VSOL_OK auswerten
         // ----------------------------------------------------
 
-        if (sscanf(line, "VSOL_OK,%u", &frameIdRx) == 1)
+        uint16_t frameIdOk = 0;
+
+        if (parseVsolOkLine(line, frameIdOk))
         {
             if (g_waitingVsolOk &&
                 g_frame.hasFrontSnapshot &&
-                (uint16_t)frameIdRx == g_frame.frameId)
+                frameIdOk == g_frame.frameId)
             {
                 g_waitingVsolOk = false;
                 g_waitingVist = true;
@@ -2842,21 +3359,17 @@ void loop()
         // VIST auswerten
         // ----------------------------------------------------
 
-        int16_t v2_i;
-        int16_t v3_i;
-        int16_t pwm2;
-        int16_t pwm3;
+        uint16_t frameIdVist = 0;
+        int16_t v2_i = 0;
+        int16_t v3_i = 0;
+        int16_t pwm2 = 0;
+        int16_t pwm3 = 0;
 
-        if (sscanf(line, "VIST,%u,%hd,%hd,%hd,%hd",
-            &frameIdRx,
-            &v2_i,
-            &v3_i,
-            &pwm2,
-            &pwm3) == 5)
+        if (parseVistLine(line, frameIdVist, v2_i, v3_i, pwm2, pwm3))
         {
             if (g_waitingVist &&
                 g_frame.hasFrontSnapshot &&
-                (uint16_t)frameIdRx == g_frame.frameId)
+                frameIdVist == g_frame.frameId)
             {
                 g_v2_ist = int100ToFloat(v2_i);
                 g_v3_ist = int100ToFloat(v3_i);
@@ -3026,30 +3539,4 @@ void loop()
         tryRequestFrame(now);
     }
 }
-
-==============================
-DATEI: C:\Users\Acer\source\repos\robot\vorne\__vm\.vorne.vsarduino.h
-==============================
-/* 
-	Editor: https://www.visualmicro.com/
-			This file is for intellisense purpose only.
-			Visual micro (and the arduino ide) ignore this code during compilation. This code is automatically maintained by visualmicro, manual changes to this file will be overwritten
-			The contents of the _vm sub folder can be deleted prior to publishing a project
-			All non-arduino files created by visual micro and all visual studio project or solution files can be freely deleted and are not required to compile a sketch (do not delete your own code!).
-			Note: debugger breakpoints are stored in '.sln' or '.asln' files, knowledge of last uploaded breakpoints is stored in the upload.vmps.xml file. Both files are required to continue a previous debug session without needing to compile and upload again
-	
-	Hardware: ATmega328P (Old Bootloader) (Arduino Nano) (nano_atmega328old), Platform=avr, Package=arduino
-*/
-
-#if defined(_VMICRO_INTELLISENSE)
-
-#ifndef _VSARDUINO_H_
-#define _VSARDUINO_H_
-#pragma diag_suppress=338,2925
-// User Defined Errors to Ignore below... [vm.intellisense.ignore-error-codes]
-#include <arduino.h>
-#include <pins_arduino.h> 
-#include "..\vorne.ino"
-#endif
-#endif
 

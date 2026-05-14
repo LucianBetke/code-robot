@@ -370,11 +370,11 @@ static void requestRearFrame(uint32_t now, uint32_t frameTime)
 
     g_frame.voLi_s = commandRunner.getWheelSoll(VoLi);
     g_frame.voLi_i = speed[Li].mps();
-    g_frame.voLi_pwm = rad[VoLi].lastPwm();
+    g_frame.voLi_pwm = rad[Li].lastPwm();
 
     g_frame.voRe_s = commandRunner.getWheelSoll(VoRe);
     g_frame.voRe_i = speed[Re].mps();
-    g_frame.voRe_pwm = rad[VoRe].lastPwm();
+    g_frame.voRe_pwm = rad[Re].lastPwm();
 
     g_frame.hiLi_s = commandRunner.getWheelSoll(HiLi);
     g_frame.hiRe_s = commandRunner.getWheelSoll(HiRe);
@@ -627,8 +627,8 @@ void loop()
     // Vorderachse lokal regeln
     // --------------------------------------------------------
 
-    rad[VoLi].setSoll(commandRunner.getWheelSoll(VoLi));
-    rad[VoRe].setSoll(commandRunner.getWheelSoll(VoRe));
+    rad[Li].setSoll(commandRunner.getWheelSoll(VoLi));
+    rad[Re].setSoll(commandRunner.getWheelSoll(VoRe));
 
     control_update(now);
 
