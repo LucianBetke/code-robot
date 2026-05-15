@@ -61,6 +61,9 @@ constexpr const char* WHEEL_NAME[WHEEL_COUNT] =
 // ==== Zeitkonstanten ====
 // ============================================================
 
+/** Stillstands-Timeout für Drehzahlmessung (ms) */
+constexpr uint16_t SPEED_TIMEOUT_MS = 60;
+
 /** Minimaler Messabstand für Drehzahl (ms) */
 constexpr uint32_t SPEED_MIN_DT_MS = 5;
 

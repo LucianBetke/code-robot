@@ -15,19 +15,26 @@ Aktuelle Log-Struktur:
 
   Debug-/Messdaten mit '#':
     #INFO,...
-    #EVENT,startCmd,param=2.00,durationMs=2000
+    #EVENT,startCmd,vx=-20,vy=0,wz=0,duration=3,durationMs=3000
     #HDR,WHEELS,ms,VoLi_s,VoLi_i,VoLi_pwm,...
-    #WHEELS,0,0.30,0.00,0,...
+    #HDR,CNTF,ms,VoLi_cnt,VoRe_cnt
+    #WHEELS,100,-0.20,-0.15,-144,...
+    #CNTF,100,-69,-47
     #CHASSIS,...   optional spaeter
 
 Dieses Programm wertet aus:
-  #HDR
+  #HDR,WHEELS
+  #HDR,CHASSIS
   #WHEELS
   #CHASSIS
   #EVENT
 
-UART-Nutzdaten wie VSOL, VSOL_OK, VIST, KA, PING, ACK werden im Terminal angezeigt,
-aber nicht als Messdaten geplottet.
+Dieses Programm ignoriert bewusst:
+  #HDR,CNTF
+  #CNTF
+
+Grund:
+  CNTF ist Diagnose. Es darf den WHEELS-Plot nicht ueberschreiben.
 
 Abhaengigkeiten:
   pip install pyserial matplotlib
@@ -58,6 +65,8 @@ DEFAULT_PORT = "COM7"
 DEFAULT_BAUD = 115200
 MAX_POINTS = 3000
 UPDATE_MS = 200
+
+PLOT_MODES = ("WHEELS", "CHASSIS")
 
 
 # ─────────────────────────────────────────────
@@ -98,8 +107,10 @@ class Store:
             self.cols = ["sample", "cmd_index", "t_plot_ms"] + self.raw_cols
 
             # WICHTIG:
-            # Bei jeder neuen #HDR-Zeile wird ein neuer Arduino-/Script-Lauf angenommen.
-            # Deshalb werden Plotpuffer, Zeitbasis und CMDT-Zaehler zurueckgesetzt.
+            # Bei jeder neuen #HDR,WHEELS oder #HDR,CHASSIS-Zeile wird ein neuer
+            # Arduino-/Script-Lauf angenommen.
+            #
+            # #HDR,CNTF wird NICHT hier verarbeitet, weil CNTF nur Diagnose ist.
             self.bufs = {c: deque(maxlen=MAX_POINTS) for c in self.cols}
             self.ready = True
 
@@ -277,11 +288,11 @@ def serial_thread(port: str, baud: int, csv_path: str):
         # Neuer Header:
         # #HDR,WHEELS,ms,...
         # #HDR,CHASSIS,ms,...
+        # #HDR,CNTF,ms,...
         #
-        # WICHTIG:
-        # Jeder neue Header startet im Python-Monitor einen neuen Lauf.
-        # Dadurch wird die Zeitachse nach erneutem Schliessen des Schalters
-        # wieder auf 0 gesetzt.
+        # Wichtig:
+        # Nur WHEELS und CHASSIS sind Plot-Modi.
+        # CNTF ist nur Diagnose und darf den Plotmodus nicht ueberschreiben.
         # ----------------------------------------------------
 
         if tag == "HDR":
@@ -291,6 +302,10 @@ def serial_thread(port: str, baud: int, csv_path: str):
 
             mode = parts[1].upper()
             cols = parts[2:]
+
+            if mode not in PLOT_MODES:
+                print(f"[Header ignoriert] {line}")
+                continue
 
             store.init_cols(mode, cols)
             store.open_csv(csv_path)
@@ -311,7 +326,7 @@ def serial_thread(port: str, baud: int, csv_path: str):
 
         # ----------------------------------------------------
         # Events:
-        # #EVENT,startCmd,param=2.00,durationMs=2000
+        # #EVENT,startCmd,vx=-20,vy=0,wz=0,duration=3,durationMs=3000
         # ----------------------------------------------------
 
         if tag == "EVENT":
@@ -352,6 +367,17 @@ def serial_thread(port: str, baud: int, csv_path: str):
 
         if content.startswith("Warte auf Handshake") or content.startswith("Handshake"):
             print(f"[link]  {line}")
+            continue
+
+        # ----------------------------------------------------
+        # CNTF-Diagnosezeilen:
+        # #CNTF,ms,VoLi_cnt,VoRe_cnt
+        #
+        # Diese Zeilen werden absichtlich ignoriert.
+        # Sie duerfen nicht in den WHEELS-Plot laufen.
+        # ----------------------------------------------------
+
+        if tag == "CNTF":
             continue
 
         # ----------------------------------------------------

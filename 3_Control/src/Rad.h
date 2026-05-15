@@ -25,6 +25,7 @@ public:
 
     int16_t deadPwm() const { return _deadPwm; }
     void setDeadPwm(int16_t deadPwm);
+    long countsTotal() const;
 
 private:
     Motor& _motor;

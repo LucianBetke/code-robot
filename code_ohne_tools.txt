@@ -91,6 +91,9 @@ constexpr const char* WHEEL_NAME[WHEEL_COUNT] =
 // ==== Zeitkonstanten ====
 // ============================================================
 
+/** Stillstands-Timeout für Drehzahlmessung (ms) */
+constexpr uint16_t SPEED_TIMEOUT_MS = 60;
+
 /** Minimaler Messabstand für Drehzahl (ms) */
 constexpr uint32_t SPEED_MIN_DT_MS = 5;
 
@@ -771,7 +774,6 @@ void speed_reset_all()
     for (uint8_t i = 0; i < WHEEL_COUNT; i++)
     {
         speed[i].reset();
-        speed[i].setTimeoutMs(500);
     }
 }
 
@@ -1139,31 +1141,46 @@ Rad::Rad(Motor& motor, SpeedWeg& speed, PIRegler& regler,
 void Rad::setSoll(float v_soll)
 {
     const float v_alt = _regler.soll();
-    _regler.setSoll(v_soll);
 
     const float EPS = 1e-6f;
     const bool wasZero = (fabsf(v_alt) < EPS);
     const bool nowZero = (fabsf(v_soll) < EPS);
 
-    if (!nowZero) {
-        const bool dirFlip =
-            (!wasZero) &&
-            ((v_alt > 0.0f && v_soll < 0.0f) ||
-                (v_alt < 0.0f && v_soll > 0.0f));
+    // Harter Stop sofort beim Setzen des Sollwerts 0
+    if (nowZero) {
+        _regler.reset();
+        _regler.setSoll(0.0f);
+        _motor.bremse(HIGH);
+        _lastPwm = 0;
+        _lastUpdateMs = 0;
+        return;
+    }
 
-        if (wasZero || dirFlip) {
-            const float sign = (v_soll >= 0.0f) ? 1.0f : -1.0f;
-            _regler.presetOutput(sign * (float)_deadPwm);
+    _regler.setSoll(v_soll);
 
-            _lastUpdateMs = 0;
-            _lastPwm = 0;
-        }
+    const bool dirFlip =
+        (!wasZero) &&
+        ((v_alt > 0.0f && v_soll < 0.0f) ||
+            (v_alt < 0.0f && v_soll > 0.0f));
+
+    if (wasZero || dirFlip) {
+        const float sign = (v_soll >= 0.0f) ? 1.0f : -1.0f;
+        _regler.presetOutput(sign * (float)_deadPwm);
+
+        _lastUpdateMs = 0;
+        _lastPwm = 0;
     }
 }
 
-float Rad::soll() const { return _regler.soll(); }
+float Rad::soll() const
+{
+    return _regler.soll();
+}
 
-float Rad::vIst() const { return _speed.mps(); }
+float Rad::vIst() const
+{
+    return _speed.mps();
+}
 
 void Rad::stop()
 {
@@ -1178,6 +1195,19 @@ void Rad::update(uint32_t nowMs)
 {
     _speed.update(nowMs);
 
+    const float EPS = 1e-6f;
+    const float v_soll = _regler.soll();
+
+    // STOP muss VOR der Zeitabfrage kommen.
+    // Sonst kann ein frisch gesetzter Stop-Befehl bis zum nächsten Regeltakt verzögert werden.
+    if (fabsf(v_soll) < EPS) {
+        _regler.reset();
+        _motor.bremse(HIGH);
+        _lastPwm = 0;
+        _lastUpdateMs = 0;
+        return;
+    }
+
     if (_lastUpdateMs == 0) {
         _lastUpdateMs = nowMs;
         return;
@@ -1190,17 +1220,6 @@ void Rad::update(uint32_t nowMs)
     const uint16_t dt_ms = (uint16_t)(nowMs - _lastUpdateMs);
     _lastUpdateMs = nowMs;
 
-    const float EPS = 1e-6f;
-    const float v_soll = _regler.soll();
-
-    // STOP
-    if (fabsf(v_soll) < EPS) {
-        _regler.reset();
-        _motor.bremse(HIGH);
-        _lastPwm = 0;
-        return;
-    }
-
     const float v_ist = _speed.mps();
 
     int16_t pwm = _regler.update(v_ist, dt_ms);
@@ -1211,10 +1230,32 @@ void Rad::update(uint32_t nowMs)
 
     // Deadband
     int16_t apwm = (pwm >= 0) ? pwm : -pwm;
+
     if (apwm > 0 && apwm < _deadPwm) {
-        pwm = (pwm >= 0) ? _deadPwm : -_deadPwm;
-        apwm = _deadPwm;
+        const bool sollVor = (v_soll > EPS);
+        const bool sollRueck = (v_soll < -EPS);
+        const bool pwmVor = (pwm > 0);
+        const bool pwmRueck = (pwm < 0);
+
+        const bool pwmInSollrichtung =
+            (sollVor && pwmVor) ||
+            (sollRueck && pwmRueck);
+
+        if (pwmInSollrichtung) {
+            pwm = pwmVor ? _deadPwm : -_deadPwm;
+            apwm = _deadPwm;
+        }
+        else {
+            pwm = 0;
+            apwm = 0;
+        }
     }
+
+    // Sicherheit: falls _deadPwm versehentlich groesser als MAX_PWM gesetzt wurde
+    if (pwm > MAX_PWM)  pwm = MAX_PWM;
+    if (pwm < -MAX_PWM) pwm = -MAX_PWM;
+
+    apwm = (pwm >= 0) ? pwm : -pwm;
 
     // Motor
     if (pwm > 0) {
@@ -1249,6 +1290,11 @@ void Rad::setDeadPwm(int16_t deadPwm)
     _deadPwm = deadPwm;
 }
 
+long Rad::countsTotal() const
+{
+    return _speed.counts_total();
+}
+
 ============================================================
 FILE: C:\Users\Acer\source\repos\robot\3_Control\src\Rad.h
 ============================================================
@@ -1279,6 +1325,7 @@ public:
 
     int16_t deadPwm() const { return _deadPwm; }
     void setDeadPwm(int16_t deadPwm);
+    long countsTotal() const;
 
 private:
     Motor& _motor;
@@ -1318,7 +1365,6 @@ SpeedWeg::SpeedWeg(Enc& enc)
     _alpha = 0.2f;
     _rps_filt = 0.0f;
     _last_time_ms = 0;
-    _timeout_ms = 60;
     _last_tick_ms = 0;
 }
 
@@ -1493,7 +1539,7 @@ private:
     float    _rps_filt = 0.0f;
     float    _alpha = 0.2f;
     uint32_t _last_time_ms = 0;    // Zeitpunkt der letzten Geschwindigkeitsmessung
-    uint32_t _timeout_ms = 60;   // Stillstand nach 60 ms
+    uint32_t _timeout_ms = SPEED_TIMEOUT_MS;
     uint32_t _last_tick_ms = 0;    // Zeitpunkt des letzten Ticks (für Timeout)
 };
 
@@ -2263,6 +2309,7 @@ void Printer::printHeader(VehicleController& vehicle, const ControlConfig& cfg)
 
 #ifdef PRINTER_MODE_RAEDER
     Serial.println(F("#HDR,WHEELS,ms,VoLi_s,VoLi_i,VoLi_pwm,VoRe_s,VoRe_i,VoRe_pwm,HiLi_s,HiLi_i,HiLi_pwm,HiRe_s,HiRe_i,HiRe_pwm"));
+    Serial.println(F("#HDR,CNTF,ms,VoLi_cnt,VoRe_cnt"));
 #endif
 }
 
@@ -2328,6 +2375,11 @@ void Printer::printWheels(VehicleController& vehicle,
     Serial.print(vehicle.getWheelSoll(HiRe), 2); Serial.print(',');
     Serial.print(v3_ist, 2);                     Serial.print(',');
     Serial.println(pwm3);
+
+    Serial.print(F("#CNTF,"));
+    Serial.print(t_ms);                          Serial.print(',');
+    Serial.print(speed[Li].counts_total());      Serial.print(',');
+    Serial.println(speed[Re].counts_total());
 }
 
 void Printer::printFrame(
@@ -2363,6 +2415,11 @@ void Printer::printFrame(
     Serial.print(hiRe_s, 2); Serial.print(',');
     Serial.print(hiRe_i, 2); Serial.print(',');
     Serial.println(hiRe_pwm);
+
+    Serial.print(F("#CNTF,"));
+    Serial.print(t_ms);                     Serial.print(',');
+    Serial.print(speed[Li].counts_total()); Serial.print(',');
+    Serial.println(speed[Re].counts_total());
 }
 
 #endif
@@ -2828,9 +2885,9 @@ FILE: C:\Users\Acer\source\repos\robot\vorne\src\CommandScript.cpp
 #include "CommandScript.h"
 
 static const char* _script[] = {
-    "CMDT(30,0,0) 2;",
-    "CMDT(20,0,0) 3;",
-    "CMDT(0,0,0) 2;",
+    //"CMDT(30,0,0) 2;",
+    //"CMDT(20,0,0) 3;",
+    //"CMDT(0,0,0) 2;",
     "CMDT(-20,0,0) 3;",
     "CMDT(0,0,0) 2;"
 };
@@ -3433,6 +3490,16 @@ void loop()
         commandRunner.update(now);
 
         bool isActive = commandRunner.isActive();
+
+        // Neuer CMDT-Befehl wurde gestartet.
+        // Den neuen Sollwert sofort an den hinteren Nano senden.
+        // Das ist ein reines Steuer-Telegramm, kein Messframe.
+        // Deshalb werden g_waitingVsolOk / g_waitingVist hier nicht gesetzt.
+        if (!wasActive && isActive)
+        {
+            uint16_t frameId = nextFrameId();
+            sendRearSoll(now, frameId);
+        }
 
         // Stop-Sequenz nur dann vormerken, wenn das ganze Script fertig ist.
         // Nicht zwischen zwei direkt aufeinanderfolgenden CMDT-Befehlen.

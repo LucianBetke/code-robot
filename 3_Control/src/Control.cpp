@@ -68,7 +68,6 @@ void speed_reset_all()
     for (uint8_t i = 0; i < WHEEL_COUNT; i++)
     {
         speed[i].reset();
-        speed[i].setTimeoutMs(500);
     }
 }
 

@@ -14,25 +14,34 @@ Rad::Rad(Motor& motor, SpeedWeg& speed, PIRegler& regler,
 void Rad::setSoll(float v_soll)
 {
     const float v_alt = _regler.soll();
-    _regler.setSoll(v_soll);
 
     const float EPS = 1e-6f;
     const bool wasZero = (fabsf(v_alt) < EPS);
     const bool nowZero = (fabsf(v_soll) < EPS);
 
-    if (!nowZero) {
-        const bool dirFlip =
-            (!wasZero) &&
-            ((v_alt > 0.0f && v_soll < 0.0f) ||
-                (v_alt < 0.0f && v_soll > 0.0f));
+    // Harter Stop sofort beim Setzen des Sollwerts 0
+    if (nowZero) {
+        _regler.reset();
+        _regler.setSoll(0.0f);
+        _motor.bremse(HIGH);
+        _lastPwm = 0;
+        _lastUpdateMs = 0;
+        return;
+    }
 
-        if (wasZero || dirFlip) {
-            const float sign = (v_soll >= 0.0f) ? 1.0f : -1.0f;
-            _regler.presetOutput(sign * (float)_deadPwm);
+    _regler.setSoll(v_soll);
 
-            _lastUpdateMs = 0;
-            _lastPwm = 0;
-        }
+    const bool dirFlip =
+        (!wasZero) &&
+        ((v_alt > 0.0f && v_soll < 0.0f) ||
+            (v_alt < 0.0f && v_soll > 0.0f));
+
+    if (wasZero || dirFlip) {
+        const float sign = (v_soll >= 0.0f) ? 1.0f : -1.0f;
+        _regler.presetOutput(sign * (float)_deadPwm);
+
+        _lastUpdateMs = 0;
+        _lastPwm = 0;
     }
 }
 
@@ -59,6 +68,19 @@ void Rad::update(uint32_t nowMs)
 {
     _speed.update(nowMs);
 
+    const float EPS = 1e-6f;
+    const float v_soll = _regler.soll();
+
+    // STOP muss VOR der Zeitabfrage kommen.
+    // Sonst kann ein frisch gesetzter Stop-Befehl bis zum nächsten Regeltakt verzögert werden.
+    if (fabsf(v_soll) < EPS) {
+        _regler.reset();
+        _motor.bremse(HIGH);
+        _lastPwm = 0;
+        _lastUpdateMs = 0;
+        return;
+    }
+
     if (_lastUpdateMs == 0) {
         _lastUpdateMs = nowMs;
         return;
@@ -71,17 +93,6 @@ void Rad::update(uint32_t nowMs)
     const uint16_t dt_ms = (uint16_t)(nowMs - _lastUpdateMs);
     _lastUpdateMs = nowMs;
 
-    const float EPS = 1e-6f;
-    const float v_soll = _regler.soll();
-
-    // STOP
-    if (fabsf(v_soll) < EPS) {
-        _regler.reset();
-        _motor.bremse(HIGH);
-        _lastPwm = 0;
-        return;
-    }
-
     const float v_ist = _speed.mps();
 
     int16_t pwm = _regler.update(v_ist, dt_ms);
@@ -91,7 +102,6 @@ void Rad::update(uint32_t nowMs)
     if (pwm < -MAX_PWM) pwm = -MAX_PWM;
 
     // Deadband
-    
     int16_t apwm = (pwm >= 0) ? pwm : -pwm;
 
     if (apwm > 0 && apwm < _deadPwm) {
@@ -151,4 +161,9 @@ void Rad::reset()
 void Rad::setDeadPwm(int16_t deadPwm)
 {
     _deadPwm = deadPwm;
+}
+
+long Rad::countsTotal() const
+{
+    return _speed.counts_total();
 }

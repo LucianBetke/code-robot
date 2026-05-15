@@ -23,6 +23,7 @@ void Printer::printHeader(VehicleController& vehicle, const ControlConfig& cfg)
 
 #ifdef PRINTER_MODE_RAEDER
     Serial.println(F("#HDR,WHEELS,ms,VoLi_s,VoLi_i,VoLi_pwm,VoRe_s,VoRe_i,VoRe_pwm,HiLi_s,HiLi_i,HiLi_pwm,HiRe_s,HiRe_i,HiRe_pwm"));
+    Serial.println(F("#HDR,CNTF,ms,VoLi_cnt,VoRe_cnt"));
 #endif
 }
 
@@ -88,6 +89,11 @@ void Printer::printWheels(VehicleController& vehicle,
     Serial.print(vehicle.getWheelSoll(HiRe), 2); Serial.print(',');
     Serial.print(v3_ist, 2);                     Serial.print(',');
     Serial.println(pwm3);
+
+    Serial.print(F("#CNTF,"));
+    Serial.print(t_ms);                          Serial.print(',');
+    Serial.print(speed[Li].counts_total());      Serial.print(',');
+    Serial.println(speed[Re].counts_total());
 }
 
 void Printer::printFrame(
@@ -123,6 +129,11 @@ void Printer::printFrame(
     Serial.print(hiRe_s, 2); Serial.print(',');
     Serial.print(hiRe_i, 2); Serial.print(',');
     Serial.println(hiRe_pwm);
+
+    Serial.print(F("#CNTF,"));
+    Serial.print(t_ms);                     Serial.print(',');
+    Serial.print(speed[Li].counts_total()); Serial.print(',');
+    Serial.println(speed[Re].counts_total());
 }
 
 #endif

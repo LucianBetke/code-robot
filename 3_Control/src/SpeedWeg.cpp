@@ -22,7 +22,6 @@ SpeedWeg::SpeedWeg(Enc& enc)
     _alpha = 0.2f;
     _rps_filt = 0.0f;
     _last_time_ms = 0;
-    _timeout_ms = 60;
     _last_tick_ms = 0;
 }
 

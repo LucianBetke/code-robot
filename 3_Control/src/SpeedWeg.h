@@ -52,6 +52,6 @@ private:
     float    _rps_filt = 0.0f;
     float    _alpha = 0.2f;
     uint32_t _last_time_ms = 0;    // Zeitpunkt der letzten Geschwindigkeitsmessung
-    uint32_t _timeout_ms = 60;   // Stillstand nach 60 ms
+    uint32_t _timeout_ms = SPEED_TIMEOUT_MS;
     uint32_t _last_tick_ms = 0;    // Zeitpunkt des letzten Ticks (für Timeout)
 };
