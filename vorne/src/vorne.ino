@@ -325,6 +325,19 @@ static void sendRearStop(uint32_t now)
     g_lastVsolSendMs = now;
 }
 
+static void applyFrontWheelSoll()
+{
+    rad[Li].setSoll(commandRunner.getWheelSoll(VoLi));
+    rad[Re].setSoll(commandRunner.getWheelSoll(VoRe));
+}
+
+static void startCommandLogRaster(uint32_t now)
+{
+    g_startMs = now;
+    g_nextFrameMs = now + VEHICLE_DT_MS;
+    g_timerStarted = true;
+}
+
 static void printCompletedFrame(float hiLi_i, float hiRe_i, int16_t hiLi_pwm, int16_t hiRe_pwm)
 {
 #ifdef PRINTER_MODE_CHASSIS
@@ -388,6 +401,28 @@ static void requestRearFrame(uint32_t now, uint32_t frameTime)
     sendRearSoll(now, frameId);
 
     // VIST wird erst nach VSOL_OK,<frameId> angefordert.
+}
+
+static void requestStartFrameForNewCommand(uint32_t now)
+{
+    if (!uart.isConnected()) return;
+    if (g_waitingVsolOk) return;
+    if (g_waitingVist) return;
+
+    // Front-Sollwerte sofort auf den neuen CMDT-Befehl setzen.
+    // Dadurch zeigt der Startframe bei t = 0 bereits den neuen Sollwert.
+    // Die Istwerte bleiben echte Messwerte und werden nicht kuenstlich auf 0 gesetzt.
+    applyFrontWheelSoll();
+
+    g_waitingVsolOk = false;
+    g_waitingVist = false;
+    g_frame.hasFrontSnapshot = false;
+
+    startCommandLogRaster(now);
+
+    // Echter Startframe des neuen Befehls:
+    // t = 0, neue Sollwerte, aktuelle Istwerte, aktuelle PWM-Zustaende.
+    requestRearFrame(now, 0);
 }
 
 static void tryRequestFrame(uint32_t now)
@@ -571,13 +606,11 @@ void loop()
         bool isActive = commandRunner.isActive();
 
         // Neuer CMDT-Befehl wurde gestartet.
-        // Den neuen Sollwert sofort an den hinteren Nano senden.
-        // Das ist ein reines Steuer-Telegramm, kein Messframe.
-        // Deshalb werden g_waitingVsolOk / g_waitingVist hier nicht gesetzt.
-        if (!wasActive && isActive)
+        // Jetzt wird sofort ein echter Messframe mit t = 0 angefordert.
+        // Dieses Frame sendet gleichzeitig die neuen hinteren Sollwerte.
+        if (isActive && commandRunner.consumeStartFramePending())
         {
-            uint16_t frameId = nextFrameId();
-            sendRearSoll(now, frameId);
+            requestStartFrameForNewCommand(now);
         }
 
         // Stop-Sequenz nur dann vormerken, wenn das ganze Script fertig ist.
@@ -608,15 +641,12 @@ void loop()
         g_stopSequenceArmed = false;
         g_stopSendCount = 0;
 
+        // Normalerweise wird das Raster schon im Startframe gesetzt.
+        // Das hier bleibt als Fallback, falls ein aktiver Befehl ohne
+        // Startframe laufen sollte.
         if (!g_timerStarted)
         {
-            g_startMs = now;
-            g_nextFrameMs = now + VEHICLE_DT_MS;
-            g_timerStarted = true;
-
-            g_waitingVsolOk = false;
-            g_waitingVist = false;
-            g_frame.hasFrontSnapshot = false;
+            startCommandLogRaster(now);
         }
     }
 
@@ -637,8 +667,7 @@ void loop()
     // Vorderachse lokal regeln
     // --------------------------------------------------------
 
-    rad[Li].setSoll(commandRunner.getWheelSoll(VoLi));
-    rad[Re].setSoll(commandRunner.getWheelSoll(VoRe));
+    applyFrontWheelSoll();
 
     control_update(now);
 
@@ -673,14 +702,14 @@ void loop()
     }
 
     // --------------------------------------------------------
-// Aktiver Messframe nach commandRunner.update():
-//
-// Der erste Frame eines neuen Befehls startet bewusst erst
-// bei VEHICLE_DT_MS. Dadurch entsteht nach einem Befehlswechsel
-// kein Misch-Snapshot bei t = 0 ms.
-// Die Endmessung bei 2000/3000 ms wird oben vor
-// commandRunner.update() abgefangen.
-// --------------------------------------------------------
+    // Aktiver Messframe nach commandRunner.update():
+    //
+    // Der Startframe eines neuen Befehls wird jetzt bewusst bei
+    // t = 0 ms angefordert. Danach laufen die normalen Messframes
+    // weiter bei 100, 200, 300 ... ms.
+    // Die Endmessung bei 2000/3000 ms wird oben vor
+    // commandRunner.update() abgefangen.
+    // --------------------------------------------------------
 
     if (uart.isConnected())
     {

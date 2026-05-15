@@ -24,6 +24,8 @@ public:
     bool  isActive() const;
     bool isFinished() const;
 
+    bool consumeStartFramePending();
+
 private:
     void startCmd(const ParsedCommand& cmd, uint32_t now);
     void stopAll();
@@ -37,6 +39,7 @@ private:
     uint8_t   _cmdIndex;
     bool      _active;
     bool      _finished;
+    bool      _startFramePending;
     uint32_t  _startTime;
     uint32_t  _durationMs;
 };

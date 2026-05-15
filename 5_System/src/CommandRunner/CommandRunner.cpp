@@ -8,6 +8,7 @@ CommandRunner::CommandRunner(VehicleController& vehicle, UartLink& uart, Command
     : _vehicle(vehicle), _uart(uart), _parser(parser),
     _getCmd(getCmd), _size(size),
     _cmdIndex(0), _active(false), _finished(false),
+    _startFramePending(false),
     _startTime(0), _durationMs(0)
 {
 }
@@ -17,6 +18,7 @@ void CommandRunner::begin()
     _cmdIndex = 0;
     _active = false;
     _finished = false;
+    _startFramePending = false;
     _startTime = 0;
     _durationMs = 0;
 }
@@ -55,6 +57,7 @@ void CommandRunner::startCmd(const ParsedCommand& cmd, uint32_t now)
 
     _startTime = now;
     _active = true;
+    _startFramePending = true;
 }
 
 void CommandRunner::update(uint32_t now)
@@ -138,4 +141,15 @@ bool CommandRunner::isActive() const
 bool CommandRunner::isFinished() const
 {
     return _finished;
+}
+
+bool CommandRunner::consumeStartFramePending()
+{
+    if (!_startFramePending)
+    {
+        return false;
+    }
+
+    _startFramePending = false;
+    return true;
 }

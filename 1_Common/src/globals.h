@@ -131,6 +131,6 @@ constexpr int16_t SLEW_LIMIT_PWM = 255;
 // ============================================================
 
 /** Maximale Radgeschwindigkeit (m/s) */
-constexpr float V_WHEEL_MAX = 0.30f;
+constexpr float V_WHEEL_MAX = 0.50f;
 
 #endif // GLOBALS_H
