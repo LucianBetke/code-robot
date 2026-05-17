@@ -247,15 +247,17 @@ static uint16_t nextFrameId()
     return id;
 }
 
-// Neues VSOL-Format:
+// VSOL-Format:
 //   VSOL,<frameId>,<resetPi>,<hiLiSoll>,<hiReSoll>
 //
 // resetPi = 1:
-//   Neuer CMDT-Fahrabschnitt. Hinten soll die PI-Zustaende loeschen.
+//   Hinten soll die PI-Zustaende hart loeschen.
 //
 // resetPi = 0:
-//   Normales VSOL innerhalb eines laufenden CMDT.
-//   Hinten soll den Integrator weiterlaufen lassen.
+//   Hinten soll keinen globalen PI-Reset ausfuehren.
+//   Die lokale Logik in Rad::setSoll() entscheidet dann:
+//   Stop -> reset(), Start/Richtungswechsel -> presetOutput(),
+//   gleiche Richtung -> Integrator behalten.
 static void sendVsolLine(uint16_t frameId, bool resetPi, int16_t v2, int16_t v3)
 {
     if (!uart.isConnected()) return;
@@ -377,12 +379,13 @@ static void requestStartFrameForNewCommand(uint32_t now)
     if (g_waitingVist) return;
 
     // Neuer CMDT-Fahrabschnitt:
-    // PI-Zustaende der vorderen Raeder loeschen, ohne Sollwerte auf 0 zu setzen.
-    control_resetPiStates();
-
-    // Front-Sollwerte sofort auf den neuen CMDT-Befehl setzen.
-    // Dadurch zeigt der Startframe bei t = 0 bereits den neuen Sollwert.
-    // Die Istwerte bleiben echte Messwerte und werden nicht kuenstlich auf 0 gesetzt.
+    // Kein globaler PI-Hard-Reset mehr.
+    // Rad::setSoll() entscheidet lokal:
+    // - gleicher Vortrieb: Integrator behalten
+    // - Stop: reset() + Bremse
+    // - Start/Richtungswechsel: presetOutput()
+    //
+    // Dadurch bleibt bei Uebergaengen wie 30 -> 20 der PWM-Arbeitspunkt erhalten.
     applyFrontWheelSoll();
 
     g_waitingVsolOk = false;
@@ -394,8 +397,10 @@ static void requestStartFrameForNewCommand(uint32_t now)
     // Echter Startframe des neuen Befehls:
     // t = 0, neue Sollwerte, aktuelle Istwerte, aktuelle PWM-Zustaende.
     //
-    // resetPi=true wird im VSOL-Telegramm an hinten mitgesendet.
-    requestRearFrame(now, 0, true);
+    // resetPi=false:
+    // Hinten behaelt bei gleicher Richtung den Integrator.
+    // Bei Stop oder Richtungswechsel reagiert Rad::setSoll() selbst.
+    requestRearFrame(now, 0, false);
 }
 
 static void tryRequestFrame(uint32_t now)
@@ -574,8 +579,9 @@ void loop()
 
         // Neuer CMDT-Befehl wurde gestartet.
         // Jetzt wird sofort ein echter Messframe mit t = 0 angefordert.
-        // Dieses Frame sendet gleichzeitig die neuen hinteren Sollwerte
-        // und resetPi=1 fuer die hinteren PI-Regler.
+        // Dieses Frame sendet gleichzeitig die neuen hinteren Sollwerte.
+        // resetPi bleibt false, damit bei gleicher Richtung der Integrator
+        // nicht hart geloescht wird.
         if (isActive && commandRunner.consumeStartFramePending())
         {
             requestStartFrameForNewCommand(now);
