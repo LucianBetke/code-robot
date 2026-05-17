@@ -14,6 +14,7 @@
 // (vorne/src/Hardware.cpp bzw. hinten/src/Hardware.cpp).
 // Hier nur als extern bekannt machen.
 // ============================================================
+
 extern Enc enc[WHEEL_COUNT];
 extern Motor motor[WHEEL_COUNT];
 
@@ -50,6 +51,7 @@ Rad rad[WHEEL_COUNT] =
 // Konfiguration. Setzt PI-Parameter und DeadPWM in Reglern und
 // Raedern.
 // ============================================================
+
 void control_begin(const ControlConfig& cfg)
 {
     for (uint8_t i = 0; i < WHEEL_COUNT; i++)
@@ -60,33 +62,45 @@ void control_begin(const ControlConfig& cfg)
 }
 
 // ============================================================
-// Bestehende Funktionen (unveraendert)
+// Bestehende Funktionen
 // ============================================================
 
 void speed_reset_all()
 {
-    for (uint8_t i = 0; i < WHEEL_COUNT; i++)
-    {
-        speed[i].reset();
-    }
+    for (uint8_t i = 0; i < WHEEL_COUNT; i++) speed[i].reset();
+}
+
+// ============================================================
+// control_resetPiStates
+//
+// Setzt nur die inneren PI-Zustaende zurueck:
+//  - Integralanteil
+//  - vorherige PWM
+//  - Debugwerte
+//
+// Wichtig:
+//  - Sollwerte bleiben erhalten.
+//  - Motoren werden nicht gestoppt.
+//  - SpeedWeg wird nicht zurueckgesetzt.
+//  - Kein kuenstlicher Null-Sollwert zwischen zwei CMDT-Befehlen.
+// ============================================================
+
+void control_resetPiStates()
+{
+    for (uint8_t i = 0; i < WHEEL_COUNT; i++) regler[i].reset();
 }
 
 void control_update(uint32_t now)
 {
-    for (uint8_t i = 0; i < WHEEL_COUNT; i++)
-    {
-        rad[i].update(now);
-    }
+    for (uint8_t i = 0; i < WHEEL_COUNT; i++) rad[i].update(now);
 }
 
 void control_setSoll(uint8_t w, float v)
 {
-    if (w < WHEEL_COUNT)
-        rad[w].setSoll(v);
+    if (w < WHEEL_COUNT) rad[w].setSoll(v);
 }
 
 void control_stopAll()
 {
-    for (uint8_t i = 0; i < WHEEL_COUNT; i++)
-        rad[i].stop();
+    for (uint8_t i = 0; i < WHEEL_COUNT; i++) rad[i].stop();
 }

@@ -36,6 +36,10 @@ void control_begin(const ControlConfig& cfg);
 // SpeedWeg fuer alle Raeder zuruecksetzen
 void speed_reset_all();
 
+// PI-Zustaende zuruecksetzen, ohne Sollwerte oder Motorzustand zu aendern.
+// Wichtig fuer neue CMDT-Fahrabschnitte.
+void control_resetPiStates();
+
 // Regelschleife pro Loop-Durchlauf aufrufen
 void control_update(uint32_t nowMs);
 

@@ -81,18 +81,12 @@ Printer printer;
 
 static void skipSpaces(const char*& p)
 {
-    while (*p == ' ' || *p == '\t')
-    {
-        p++;
-    }
+    while (*p == ' ' || *p == '\t') p++;
 }
 
 static bool expectChar(const char*& p, char expected)
 {
-    if (*p != expected)
-    {
-        return false;
-    }
+    if (*p != expected) return false;
 
     p++;
     return true;
@@ -102,10 +96,7 @@ static bool expectText(const char*& p, const char* text)
 {
     while (*text != '\0')
     {
-        if (*p != *text)
-        {
-            return false;
-        }
+        if (*p != *text) return false;
 
         p++;
         text++;
@@ -118,10 +109,7 @@ static bool parseUInt16(const char*& p, uint16_t& out)
 {
     skipSpaces(p);
 
-    if (*p < '0' || *p > '9')
-    {
-        return false;
-    }
+    if (*p < '0' || *p > '9') return false;
 
     uint32_t value = 0;
 
@@ -129,10 +117,7 @@ static bool parseUInt16(const char*& p, uint16_t& out)
     {
         value = value * 10UL + (uint32_t)(*p - '0');
 
-        if (value > 65535UL)
-        {
-            return false;
-        }
+        if (value > 65535UL) return false;
 
         p++;
     }
@@ -147,16 +132,9 @@ static bool parseInt16(const char*& p, int16_t& out)
 
     bool negative = false;
 
-    if (*p == '-')
-    {
-        negative = true;
-        p++;
-    }
+    if (*p == '-') { negative = true; p++; }
 
-    if (*p < '0' || *p > '9')
-    {
-        return false;
-    }
+    if (*p < '0' || *p > '9') return false;
 
     int32_t value = 0;
     const int32_t limit = negative ? 32768L : 32767L;
@@ -165,18 +143,12 @@ static bool parseInt16(const char*& p, int16_t& out)
     {
         value = value * 10L + (int32_t)(*p - '0');
 
-        if (value > limit)
-        {
-            return false;
-        }
+        if (value > limit) return false;
 
         p++;
     }
 
-    if (negative)
-    {
-        value = -value;
-    }
+    if (negative) value = -value;
 
     out = (int16_t)value;
     return true;
@@ -184,10 +156,7 @@ static bool parseInt16(const char*& p, int16_t& out)
 
 static bool parseVsolOkLine(const char* line, uint16_t& frameId)
 {
-    if (!line)
-    {
-        return false;
-    }
+    if (!line) return false;
 
     const char* p = line;
     uint16_t frameIdTmp = 0;
@@ -197,13 +166,9 @@ static bool parseVsolOkLine(const char* line, uint16_t& frameId)
 
     skipSpaces(p);
 
-    if (*p != '\0')
-    {
-        return false;
-    }
+    if (*p != '\0') return false;
 
     frameId = frameIdTmp;
-
     return true;
 }
 
@@ -215,10 +180,7 @@ static bool parseVistLine(
     int16_t& pwm2,
     int16_t& pwm3)
 {
-    if (!line)
-    {
-        return false;
-    }
+    if (!line) return false;
 
     const char* p = line;
 
@@ -250,10 +212,7 @@ static bool parseVistLine(
 
     skipSpaces(p);
 
-    if (*p != '\0')
-    {
-        return false;
-    }
+    if (*p != '\0') return false;
 
     frameId = frameIdTmp;
     v2 = v2Tmp;
@@ -283,35 +242,40 @@ static uint16_t nextFrameId()
 {
     uint16_t id = g_nextFrameId++;
 
-    if (g_nextFrameId == 0)
-    {
-        g_nextFrameId = 1;
-    }
+    if (g_nextFrameId == 0) g_nextFrameId = 1;
 
     return id;
 }
 
-static void sendVsolLine(uint16_t frameId, int16_t v2, int16_t v3)
+// Neues VSOL-Format:
+//   VSOL,<frameId>,<resetPi>,<hiLiSoll>,<hiReSoll>
+//
+// resetPi = 1:
+//   Neuer CMDT-Fahrabschnitt. Hinten soll die PI-Zustaende loeschen.
+//
+// resetPi = 0:
+//   Normales VSOL innerhalb eines laufenden CMDT.
+//   Hinten soll den Integrator weiterlaufen lassen.
+static void sendVsolLine(uint16_t frameId, bool resetPi, int16_t v2, int16_t v3)
 {
-    if (!uart.isConnected())
-    {
-        return;
-    }
+    if (!uart.isConnected()) return;
 
     Serial.print(F("VSOL,"));
     Serial.print((unsigned int)frameId);
+    Serial.print(',');
+    Serial.print(resetPi ? 1 : 0);
     Serial.print(',');
     Serial.print((int)v2);
     Serial.print(',');
     Serial.println((int)v3);
 }
 
-static void sendRearSoll(uint32_t now, uint16_t frameId)
+static void sendRearSoll(uint32_t now, uint16_t frameId, bool resetPi)
 {
     int16_t v2_i = floatToInt100(commandRunner.getWheelSoll(HiLi));
     int16_t v3_i = floatToInt100(commandRunner.getWheelSoll(HiRe));
 
-    sendVsolLine(frameId, v2_i, v3_i);
+    sendVsolLine(frameId, resetPi, v2_i, v3_i);
 
     g_lastVsolSendMs = now;
 }
@@ -320,7 +284,10 @@ static void sendRearStop(uint32_t now)
 {
     uint16_t frameId = nextFrameId();
 
-    sendVsolLine(frameId, 0, 0);
+    // resetPi=false reicht hier.
+    // Bei Sollwert 0 fuehrt Rad::setSoll(0) hinten ohnehin einen harten Stop
+    // mit Regler-Reset aus.
+    sendVsolLine(frameId, false, 0, 0);
 
     g_lastVsolSendMs = now;
 }
@@ -374,7 +341,7 @@ static void printCompletedFrame(float hiLi_i, float hiRe_i, int16_t hiLi_pwm, in
 #endif
 }
 
-static void requestRearFrame(uint32_t now, uint32_t frameTime)
+static void requestRearFrame(uint32_t now, uint32_t frameTime, bool resetPi)
 {
     uint16_t frameId = nextFrameId();
 
@@ -398,7 +365,7 @@ static void requestRearFrame(uint32_t now, uint32_t frameTime)
     g_waitingVist = false;
     g_requestMs = now;
 
-    sendRearSoll(now, frameId);
+    sendRearSoll(now, frameId, resetPi);
 
     // VIST wird erst nach VSOL_OK,<frameId> angefordert.
 }
@@ -408,6 +375,10 @@ static void requestStartFrameForNewCommand(uint32_t now)
     if (!uart.isConnected()) return;
     if (g_waitingVsolOk) return;
     if (g_waitingVist) return;
+
+    // Neuer CMDT-Fahrabschnitt:
+    // PI-Zustaende der vorderen Raeder loeschen, ohne Sollwerte auf 0 zu setzen.
+    control_resetPiStates();
 
     // Front-Sollwerte sofort auf den neuen CMDT-Befehl setzen.
     // Dadurch zeigt der Startframe bei t = 0 bereits den neuen Sollwert.
@@ -422,7 +393,9 @@ static void requestStartFrameForNewCommand(uint32_t now)
 
     // Echter Startframe des neuen Befehls:
     // t = 0, neue Sollwerte, aktuelle Istwerte, aktuelle PWM-Zustaende.
-    requestRearFrame(now, 0);
+    //
+    // resetPi=true wird im VSOL-Telegramm an hinten mitgesendet.
+    requestRearFrame(now, 0, true);
 }
 
 static void tryRequestFrame(uint32_t now)
@@ -436,7 +409,9 @@ static void tryRequestFrame(uint32_t now)
     {
         uint32_t frameTime = g_nextFrameMs - g_startMs;
 
-        requestRearFrame(now, frameTime);
+        // Normales Messframe innerhalb desselben CMDT:
+        // resetPi=false, damit hinten den Integrator nicht staendig loescht.
+        requestRearFrame(now, frameTime, false);
 
         g_nextFrameMs += VEHICLE_DT_MS;
     }
@@ -488,10 +463,7 @@ void loop()
     static bool prevConnected = false;
     bool nowConnected = uart.isConnected();
 
-    if (prevConnected && !nowConnected)
-    {
-        resetByWatchdog();
-    }
+    if (prevConnected && !nowConnected) resetByWatchdog();
 
     prevConnected = nowConnected;
 
@@ -570,9 +542,7 @@ void loop()
     // --------------------------------------------------------
 
     if ((g_waitingVsolOk || g_waitingVist) && now - g_requestMs > 2 * VEHICLE_DT_MS)
-    {
         resetByWatchdog();
-    }
 
     // --------------------------------------------------------
     // Vor commandRunner.update() pruefen, ob ein Frame faellig ist.
@@ -582,10 +552,7 @@ void loop()
     // den Befehl beendet.
     // --------------------------------------------------------
 
-    if (uart.isConnected())
-    {
-        tryRequestFrame(now);
-    }
+    if (uart.isConnected()) tryRequestFrame(now);
 
     // --------------------------------------------------------
     // CommandRunner aktualisieren
@@ -607,7 +574,8 @@ void loop()
 
         // Neuer CMDT-Befehl wurde gestartet.
         // Jetzt wird sofort ein echter Messframe mit t = 0 angefordert.
-        // Dieses Frame sendet gleichzeitig die neuen hinteren Sollwerte.
+        // Dieses Frame sendet gleichzeitig die neuen hinteren Sollwerte
+        // und resetPi=1 fuer die hinteren PI-Regler.
         if (isActive && commandRunner.consumeStartFramePending())
         {
             requestStartFrameForNewCommand(now);
@@ -630,10 +598,7 @@ void loop()
     {
         g_timerStarted = false;
 
-        if (!g_waitingVsolOk && !g_waitingVist)
-        {
-            g_frame.hasFrontSnapshot = false;
-        }
+        if (!g_waitingVsolOk && !g_waitingVist) g_frame.hasFrontSnapshot = false;
     }
 
     if (commandRunner.isActive())
@@ -644,10 +609,7 @@ void loop()
         // Normalerweise wird das Raster schon im Startframe gesetzt.
         // Das hier bleibt als Fallback, falls ein aktiver Befehl ohne
         // Startframe laufen sollte.
-        if (!g_timerStarted)
-        {
-            startCommandLogRaster(now);
-        }
+        if (!g_timerStarted) startCommandLogRaster(now);
     }
 
     // --------------------------------------------------------
@@ -695,10 +657,7 @@ void loop()
             }
         }
 
-        if (g_stopSendCount >= STOP_SEND_MAX)
-        {
-            g_stopSequenceArmed = false;
-        }
+        if (g_stopSendCount >= STOP_SEND_MAX) g_stopSequenceArmed = false;
     }
 
     // --------------------------------------------------------
@@ -711,8 +670,5 @@ void loop()
     // commandRunner.update() abgefangen.
     // --------------------------------------------------------
 
-    if (uart.isConnected())
-    {
-        tryRequestFrame(now);
-    }
+    if (uart.isConnected()) tryRequestFrame(now);
 }
