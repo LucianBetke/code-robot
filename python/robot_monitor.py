@@ -52,7 +52,7 @@ import serial
 import serial.tools.list_ports
 
 import matplotlib
-matplotlib.use("TkAgg")          # ggf. auf "Qt5Agg" aendern
+matplotlib.use("TkAgg")
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 
@@ -78,16 +78,15 @@ class Store:
         self.lock = threading.Lock()
 
         self.ready = False
-        self.mode = None              # "WHEELS" oder "CHASSIS"
+        self.mode = None
 
-        self.raw_cols = []            # Spalten vom Arduino-Header
-        self.cols = []                # CSV-/Puffer-Spalten inkl. Zusatzspalten
+        self.raw_cols = []
+        self.cols = []
         self.bufs = {}
 
         self._csv_file = None
         self._csv_writer = None
 
-        # Zusatzinformationen fuer mehrere CMDT-Befehle
         self.cmd_index = 0
         self.current_offset_ms = 0.0
         self.current_duration_ms = 0.0
@@ -100,17 +99,7 @@ class Store:
             self.mode = mode
             self.raw_cols = list(raw_cols)
 
-            # Zusatzspalten:
-            # sample     = laufender Messpunktzaehler innerhalb des aktuellen Laufs
-            # cmd_index  = welcher CMDT-Befehl innerhalb des aktuellen Laufs
-            # t_plot_ms  = fortlaufende Zeit innerhalb des aktuellen Script-Laufs
             self.cols = ["sample", "cmd_index", "t_plot_ms"] + self.raw_cols
-
-            # WICHTIG:
-            # Bei jeder neuen #HDR,WHEELS oder #HDR,CHASSIS-Zeile wird ein neuer
-            # Arduino-/Script-Lauf angenommen.
-            #
-            # #HDR,CNTF wird NICHT hier verarbeitet, weil CNTF nur Diagnose ist.
             self.bufs = {c: deque(maxlen=MAX_POINTS) for c in self.cols}
             self.ready = True
 
@@ -266,12 +255,10 @@ def serial_thread(port: str, baud: int, csv_path: str):
         if not line:
             continue
 
-        # UART-/Nutztelegramme ignorieren, aber im Terminal zeigen.
         if any(line.startswith(p) for p in IGNORE_PREFIXES):
             print(f"[uart]  {line}")
             continue
 
-        # Nur Debug-/Messzeilen beginnen mit '#'
         if not line.startswith("#"):
             print(f"[?] {line}")
             continue
@@ -283,17 +270,6 @@ def serial_thread(port: str, baud: int, csv_path: str):
             continue
 
         tag = parts[0].upper()
-
-        # ----------------------------------------------------
-        # Neuer Header:
-        # #HDR,WHEELS,ms,...
-        # #HDR,CHASSIS,ms,...
-        # #HDR,CNTF,ms,...
-        #
-        # Wichtig:
-        # Nur WHEELS und CHASSIS sind Plot-Modi.
-        # CNTF ist nur Diagnose und darf den Plotmodus nicht ueberschreiben.
-        # ----------------------------------------------------
 
         if tag == "HDR":
             if len(parts) < 3:
@@ -311,11 +287,6 @@ def serial_thread(port: str, baud: int, csv_path: str):
             store.open_csv(csv_path)
             continue
 
-        # ----------------------------------------------------
-        # Rueckwaertskompatibilitaet fuer alte Version:
-        # #ms,...
-        # ----------------------------------------------------
-
         if tag == "MS":
             cols = parts
             mode = "CHASSIS" if "vx_i" in cols else "WHEELS"
@@ -323,11 +294,6 @@ def serial_thread(port: str, baud: int, csv_path: str):
             store.init_cols(mode, cols)
             store.open_csv(csv_path)
             continue
-
-        # ----------------------------------------------------
-        # Events:
-        # #EVENT,startCmd,vx=-20,vy=0,wz=0,duration=3,durationMs=3000
-        # ----------------------------------------------------
 
         if tag == "EVENT":
             print(f"[event] {line}")
@@ -344,22 +310,9 @@ def serial_thread(port: str, baud: int, csv_path: str):
 
             continue
 
-        # ----------------------------------------------------
-        # Info-Zeilen:
-        # #INFO,...
-        # ----------------------------------------------------
-
         if tag == "INFO":
             print(f"[info]  {line}")
             continue
-
-        # ----------------------------------------------------
-        # Sonstige Debug-/Statuszeilen:
-        # #CONNECTED
-        # #DISCONNECTED
-        # #Warte auf Handshake...
-        # #Handshake1 OK
-        # ----------------------------------------------------
 
         if tag in ("CONNECTED", "DISCONNECTED"):
             print(f"[link]  {line}")
@@ -369,22 +322,8 @@ def serial_thread(port: str, baud: int, csv_path: str):
             print(f"[link]  {line}")
             continue
 
-        # ----------------------------------------------------
-        # CNTF-Diagnosezeilen:
-        # #CNTF,ms,VoLi_cnt,VoRe_cnt
-        #
-        # Diese Zeilen werden absichtlich ignoriert.
-        # Sie duerfen nicht in den WHEELS-Plot laufen.
-        # ----------------------------------------------------
-
         if tag == "CNTF":
             continue
-
-        # ----------------------------------------------------
-        # Messdaten:
-        # #WHEELS,0,...
-        # #CHASSIS,0,...
-        # ----------------------------------------------------
 
         if tag in ("WHEELS", "CHASSIS"):
             if not store.ready:
@@ -399,11 +338,6 @@ def serial_thread(port: str, baud: int, csv_path: str):
 
             store.push_values(tag, vals)
             continue
-
-        # ----------------------------------------------------
-        # Alte Datenzeile:
-        # #100,0.30,...
-        # ----------------------------------------------------
 
         if store.ready:
             try:
@@ -444,18 +378,6 @@ COLORS_VEH = {
 # ─────────────────────────────────────────────
 
 def build_command_boundary_series(t_sec, values, cmd_indices, local_ms):
-    """
-    Erzeugt eine durchgehende Linie mit senkrechtem Sprung an CMDT-Grenzen.
-
-    Zweck:
-      - innerhalb eines CMDT-Befehls normale Linien
-      - keine Treppe bei jedem Messpunkt
-      - keine Luecken zwischen Befehlen
-      - keine schraege Verbindung ueber einen CMDT-Wechsel
-
-    Diese Funktion ist nur fuer Sollwerte und PWM gedacht.
-    Istwerte werden bewusst normal geplottet.
-    """
     n = min(len(t_sec), len(values), len(cmd_indices), len(local_ms))
 
     if n == 0:
@@ -468,18 +390,14 @@ def build_command_boundary_series(t_sec, values, cmd_indices, local_ms):
         cmd_changed = cmd_indices[i] != cmd_indices[i - 1]
 
         if cmd_changed:
-            # Die echte CMDT-Grenze liegt bei t_plot_ms - lokaler ms-Zeit
             boundary = t_sec[i] - (local_ms[i] / 1000.0)
 
-            # Schutz gegen Rundungsfehler oder minimal unsaubere Zeitstempel
             if boundary < x[-1]:
                 boundary = x[-1]
 
-            # alten Wert bis zur Grenze halten
             x.append(boundary)
             y.append(y[-1])
 
-            # an derselben x-Position auf den neuen Wert springen
             x.append(boundary)
             y.append(values[i])
 
@@ -494,8 +412,50 @@ def build_command_boundary_series(t_sec, values, cmd_indices, local_ms):
 # ─────────────────────────────────────────────
 
 def start_plot():
-    fig, axes = plt.subplots(2, 1, figsize=(13, 8), sharex=True)
+    fig, axes = plt.subplots(2, 1, figsize=(10, 6), sharex=True)
     fig.suptitle("Robot Monitor", fontsize=13)
+
+    def apply_layout():
+        fig.subplots_adjust(
+            left=0.065,
+            right=0.985,
+            top=0.88,
+            bottom=0.09,
+            hspace=0.18
+        )
+
+    apply_layout()
+
+    def maximize_and_fit_to_window():
+        try:
+            manager = plt.get_current_fig_manager()
+            window = manager.window
+
+            window.state("zoomed")
+            window.update_idletasks()
+
+            widget = fig.canvas.get_tk_widget()
+            width_px = widget.winfo_width()
+            height_px = widget.winfo_height()
+
+            dpi = fig.get_dpi()
+
+            if width_px > 200 and height_px > 200:
+                fig.set_size_inches(width_px / dpi, height_px / dpi, forward=True)
+
+            apply_layout()
+            fig.canvas.draw_idle()
+
+            print("[Plot] Fenster maximiert und Figure an sichtbare Flaeche angepasst")
+
+        except Exception as e:
+            print(f"[Plot] Maximieren nicht moeglich: {e}")
+
+    try:
+        manager = plt.get_current_fig_manager()
+        manager.window.after(300, maximize_and_fit_to_window)
+    except Exception as e:
+        print(f"[Plot] Maximieren nicht vorbereitet: {e}")
 
     def update(_):
         if not store.ready:
@@ -503,7 +463,6 @@ def start_plot():
 
         d, mode = store.snapshot()
 
-        # Fortlaufende Plot-Zeit innerhalb des aktuellen Arduino-/Script-Laufs.
         t_ms = d.get("t_plot_ms", [])
 
         if not t_ms:
@@ -539,7 +498,6 @@ def start_plot():
                 n = min(len(t), len(s), len(ist), len(cmd_indices), len(local_ms))
 
                 if n:
-                    # Sollwerte: normal verbunden, aber an CMDT-Grenzen senkrecht.
                     x_soll, y_soll = build_command_boundary_series(
                         t[:n],
                         s[:n],
@@ -556,8 +514,6 @@ def start_plot():
                         label=f"{name} Soll"
                     )
 
-                    # Istwerte: echte Messwerte, ganz normal durchzeichnen.
-                    # Keine kuenstliche Unterbrechung, keine kuenstliche Treppe.
                     ax_v.plot(
                         t[:n],
                         ist[:n],
@@ -569,7 +525,6 @@ def start_plot():
                 n_p = min(len(t), len(pwm), len(cmd_indices), len(local_ms))
 
                 if n_p:
-                    # PWM: normale Linie, aber an CMDT-Grenzen senkrecht.
                     x_pwm, y_pwm = build_command_boundary_series(
                         t[:n_p],
                         pwm[:n_p],
@@ -630,8 +585,6 @@ def start_plot():
             f"{mode} - {n_pts} Messpunkte - CMDT #{int(last_cmd)} - t = {t[-1]:.1f} s",
             fontsize=10
         )
-
-        fig.tight_layout()
 
     ani = animation.FuncAnimation(
         fig,
