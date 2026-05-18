@@ -423,6 +423,201 @@ static void tryRequestFrame(uint32_t now)
 }
 
 // ============================================================
+// loop()-Teilfunktionen
+// ============================================================
+
+static void updateConnectionSafety(uint32_t now)
+{
+    (void)now;
+
+    static bool prevConnected = false;
+    bool nowConnected = uart.isConnected();
+
+    if (prevConnected && !nowConnected) resetByWatchdog();
+
+    prevConnected = nowConnected;
+}
+
+static void handleIncomingLines(uint32_t now)
+{
+    if (!uart.availableLine()) return;
+
+    const char* line = uart.getLine();
+
+    // --------------------------------------------------------
+    // VSOL_OK auswerten
+    // --------------------------------------------------------
+
+    uint16_t frameIdOk = 0;
+
+    if (parseVsolOkLine(line, frameIdOk))
+    {
+        if (g_waitingVsolOk &&
+            g_frame.hasFrontSnapshot &&
+            frameIdOk == g_frame.frameId)
+        {
+            g_waitingVsolOk = false;
+            g_waitingVist = true;
+            g_requestMs = now;
+
+            hardware_requestVist();
+        }
+    }
+
+    // --------------------------------------------------------
+    // VIST auswerten
+    // --------------------------------------------------------
+
+    uint16_t frameIdVist = 0;
+    int16_t v2_i = 0;
+    int16_t v3_i = 0;
+    int16_t pwm2 = 0;
+    int16_t pwm3 = 0;
+
+    if (parseVistLine(line, frameIdVist, v2_i, v3_i, pwm2, pwm3))
+    {
+        if (g_waitingVist &&
+            g_frame.hasFrontSnapshot &&
+            frameIdVist == g_frame.frameId)
+        {
+            g_v2_ist = int100ToFloat(v2_i);
+            g_v3_ist = int100ToFloat(v3_i);
+            g_pwm2 = pwm2;
+            g_pwm3 = pwm3;
+
+            vehicle.updateIst(
+                speed[Re].mps(),
+                speed[Li].mps(),
+                g_v2_ist,
+                g_v3_ist
+            );
+
+            printCompletedFrame(g_v2_ist, g_v3_ist, g_pwm2, g_pwm3);
+
+            g_waitingVist = false;
+            g_frame.hasFrontSnapshot = false;
+        }
+    }
+}
+
+static void updateFrameTimeout(uint32_t now)
+{
+    if ((g_waitingVsolOk || g_waitingVist) &&
+        now - g_requestMs > 2 * VEHICLE_DT_MS)
+    {
+        resetByWatchdog();
+    }
+}
+
+static void updateCommandRunner(uint32_t now)
+{
+    // Wichtig:
+    // Solange noch VSOL_OK oder VIST offen ist, darf der CommandRunner
+    // NICHT zum naechsten Befehl springen.
+    //
+    // Sonst geht der letzte Frame eines Befehls verloren.
+
+    if (!uart.isConnected()) return;
+    if (g_waitingVsolOk) return;
+    if (g_waitingVist) return;
+
+    bool wasActive = commandRunner.isActive();
+
+    commandRunner.update(now);
+
+    bool isActive = commandRunner.isActive();
+
+    // Neuer CMDT-Befehl wurde gestartet.
+    // Jetzt wird sofort ein echter Messframe mit t = 0 angefordert.
+    // Dieses Frame sendet gleichzeitig die neuen hinteren Sollwerte.
+    // resetPi bleibt false, damit bei gleicher Richtung der Integrator
+    // nicht hart geloescht wird.
+    if (isActive && commandRunner.consumeStartFramePending())
+    {
+        requestStartFrameForNewCommand(now);
+    }
+
+    // Stop-Sequenz nur dann vormerken, wenn das ganze Script fertig ist.
+    // Nicht zwischen zwei direkt aufeinanderfolgenden CMDT-Befehlen.
+    if (wasActive && !isActive && commandRunner.isFinished())
+    {
+        g_stopSequenceArmed = true;
+        g_stopSendCount = 0;
+    }
+}
+
+static void updateLogRaster()
+{
+    if (!commandRunner.isActive())
+    {
+        g_timerStarted = false;
+
+        if (!g_waitingVsolOk && !g_waitingVist)
+        {
+            g_frame.hasFrontSnapshot = false;
+        }
+    }
+
+    if (commandRunner.isActive())
+    {
+        g_stopSequenceArmed = false;
+        g_stopSendCount = 0;
+
+        // Normalerweise wird das Raster schon im Startframe gesetzt.
+        // Das hier bleibt als Fallback, falls ein aktiver Befehl ohne
+        // Startframe laufen sollte.
+        if (!g_timerStarted) startCommandLogRaster(millis());
+    }
+}
+
+static void updateVehicleAndFrontControl(uint32_t now)
+{
+    vehicle.updateIst(
+        speed[Re].mps(),
+        speed[Li].mps(),
+        g_v2_ist,
+        g_v3_ist
+    );
+
+    vehicle.update(now);
+
+    applyFrontWheelSoll();
+
+    control_update(now);
+}
+
+static void updateRearStopSequence(uint32_t now)
+{
+    // Stop-Sequenz fuer hinten:
+    //
+    // Nur wenn das ganze Script fertig ist.
+    // Nicht zwischen zwei Befehlen.
+    // Nicht senden, solange noch VSOL_OK oder VIST offen ist.
+
+    if (uart.isConnected() &&
+        !commandRunner.isActive() &&
+        commandRunner.isFinished() &&
+        !g_waitingVsolOk &&
+        !g_waitingVist &&
+        g_stopSequenceArmed)
+    {
+        if (g_stopSendCount < STOP_SEND_MAX)
+        {
+            if (g_stopSendCount == 0 || now - g_lastVsolSendMs >= VEHICLE_DT_MS)
+            {
+                sendRearStop(now);
+                g_stopSendCount++;
+            }
+        }
+
+        if (g_stopSendCount >= STOP_SEND_MAX)
+        {
+            g_stopSequenceArmed = false;
+        }
+    }
+}
+
+// ============================================================
 // setup()
 // ============================================================
 
@@ -461,212 +656,22 @@ void loop()
     uart.update();
     conn.update();
 
-    // --------------------------------------------------------
-    // DISCONNECT erkennen -> Reset
-    // --------------------------------------------------------
+    updateConnectionSafety(now);
+    handleIncomingLines(now);
+    updateFrameTimeout(now);
 
-    static bool prevConnected = false;
-    bool nowConnected = uart.isConnected();
-
-    if (prevConnected && !nowConnected) resetByWatchdog();
-
-    prevConnected = nowConnected;
-
-    // --------------------------------------------------------
-    // Eingehende Daten auswerten:
-    //
-    // 1. VSOL_OK,<frameId>
-    // 2. VIST,<frameId>,<hiLiIst>,<hiReIst>,<hiLiPwm>,<hiRePwm>
-    // --------------------------------------------------------
-
-    if (uart.availableLine())
-    {
-        const char* line = uart.getLine();
-
-        // ----------------------------------------------------
-        // VSOL_OK auswerten
-        // ----------------------------------------------------
-
-        uint16_t frameIdOk = 0;
-
-        if (parseVsolOkLine(line, frameIdOk))
-        {
-            if (g_waitingVsolOk &&
-                g_frame.hasFrontSnapshot &&
-                frameIdOk == g_frame.frameId)
-            {
-                g_waitingVsolOk = false;
-                g_waitingVist = true;
-                g_requestMs = now;
-
-                hardware_requestVist();
-            }
-        }
-
-        // ----------------------------------------------------
-        // VIST auswerten
-        // ----------------------------------------------------
-
-        uint16_t frameIdVist = 0;
-        int16_t v2_i = 0;
-        int16_t v3_i = 0;
-        int16_t pwm2 = 0;
-        int16_t pwm3 = 0;
-
-        if (parseVistLine(line, frameIdVist, v2_i, v3_i, pwm2, pwm3))
-        {
-            if (g_waitingVist &&
-                g_frame.hasFrontSnapshot &&
-                frameIdVist == g_frame.frameId)
-            {
-                g_v2_ist = int100ToFloat(v2_i);
-                g_v3_ist = int100ToFloat(v3_i);
-                g_pwm2 = pwm2;
-                g_pwm3 = pwm3;
-
-                vehicle.updateIst(
-                    speed[Re].mps(),
-                    speed[Li].mps(),
-                    g_v2_ist,
-                    g_v3_ist
-                );
-
-                printCompletedFrame(g_v2_ist, g_v3_ist, g_pwm2, g_pwm3);
-
-                g_waitingVist = false;
-                g_frame.hasFrontSnapshot = false;
-            }
-        }
-    }
-
-    // --------------------------------------------------------
-    // Timeout:
-    //
-    // Front wartet entweder auf VSOL_OK oder auf VIST.
-    // Wenn beides zu lange ausbleibt, ist die Kopplung gestoert.
-    // --------------------------------------------------------
-
-    if ((g_waitingVsolOk || g_waitingVist) && now - g_requestMs > 2 * VEHICLE_DT_MS)
-        resetByWatchdog();
-
-    // --------------------------------------------------------
     // Vor commandRunner.update() pruefen, ob ein Frame faellig ist.
     //
     // Dadurch wird bei 2000 ms bzw. 3000 ms noch der letzte Frame
     // des aktuellen Befehls angefordert, bevor der CommandRunner
     // den Befehl beendet.
-    // --------------------------------------------------------
-
     if (uart.isConnected()) tryRequestFrame(now);
 
-    // --------------------------------------------------------
-    // CommandRunner aktualisieren
-    //
-    // Wichtig:
-    // Solange noch VSOL_OK oder VIST offen ist, darf der CommandRunner
-    // NICHT zum naechsten Befehl springen.
-    //
-    // Sonst geht der letzte Frame eines Befehls verloren.
-    // --------------------------------------------------------
+    updateCommandRunner(now);
+    updateLogRaster();
+    updateVehicleAndFrontControl(now);
+    updateRearStopSequence(now);
 
-    if (uart.isConnected() && !g_waitingVsolOk && !g_waitingVist)
-    {
-        bool wasActive = commandRunner.isActive();
-
-        commandRunner.update(now);
-
-        bool isActive = commandRunner.isActive();
-
-        // Neuer CMDT-Befehl wurde gestartet.
-        // Jetzt wird sofort ein echter Messframe mit t = 0 angefordert.
-        // Dieses Frame sendet gleichzeitig die neuen hinteren Sollwerte.
-        // resetPi bleibt false, damit bei gleicher Richtung der Integrator
-        // nicht hart geloescht wird.
-        if (isActive && commandRunner.consumeStartFramePending())
-        {
-            requestStartFrameForNewCommand(now);
-        }
-
-        // Stop-Sequenz nur dann vormerken, wenn das ganze Script fertig ist.
-        // Nicht zwischen zwei direkt aufeinanderfolgenden CMDT-Befehlen.
-        if (wasActive && !isActive && commandRunner.isFinished())
-        {
-            g_stopSequenceArmed = true;
-            g_stopSendCount = 0;
-        }
-    }
-
-    // --------------------------------------------------------
-    // Start/Stop des Log-Zeitrasters
-    // --------------------------------------------------------
-
-    if (!commandRunner.isActive())
-    {
-        g_timerStarted = false;
-
-        if (!g_waitingVsolOk && !g_waitingVist) g_frame.hasFrontSnapshot = false;
-    }
-
-    if (commandRunner.isActive())
-    {
-        g_stopSequenceArmed = false;
-        g_stopSendCount = 0;
-
-        // Normalerweise wird das Raster schon im Startframe gesetzt.
-        // Das hier bleibt als Fallback, falls ein aktiver Befehl ohne
-        // Startframe laufen sollte.
-        if (!g_timerStarted) startCommandLogRaster(now);
-    }
-
-    // --------------------------------------------------------
-    // Vehicle-Istwerte aktualisieren
-    // --------------------------------------------------------
-
-    vehicle.updateIst(
-        speed[Re].mps(),
-        speed[Li].mps(),
-        g_v2_ist,
-        g_v3_ist
-    );
-
-    vehicle.update(now);
-
-    // --------------------------------------------------------
-    // Vorderachse lokal regeln
-    // --------------------------------------------------------
-
-    applyFrontWheelSoll();
-
-    control_update(now);
-
-    // --------------------------------------------------------
-    // Stop-Sequenz fuer hinten:
-    //
-    // Nur wenn das ganze Script fertig ist.
-    // Nicht zwischen zwei Befehlen.
-    // Nicht senden, solange noch VSOL_OK oder VIST offen ist.
-    // --------------------------------------------------------
-
-    if (uart.isConnected() &&
-        !commandRunner.isActive() &&
-        commandRunner.isFinished() &&
-        !g_waitingVsolOk &&
-        !g_waitingVist &&
-        g_stopSequenceArmed)
-    {
-        if (g_stopSendCount < STOP_SEND_MAX)
-        {
-            if (g_stopSendCount == 0 || now - g_lastVsolSendMs >= VEHICLE_DT_MS)
-            {
-                sendRearStop(now);
-                g_stopSendCount++;
-            }
-        }
-
-        if (g_stopSendCount >= STOP_SEND_MAX) g_stopSequenceArmed = false;
-    }
-
-    // --------------------------------------------------------
     // Aktiver Messframe nach commandRunner.update():
     //
     // Der Startframe eines neuen Befehls wird jetzt bewusst bei
@@ -674,7 +679,5 @@ void loop()
     // weiter bei 100, 200, 300 ... ms.
     // Die Endmessung bei 2000/3000 ms wird oben vor
     // commandRunner.update() abgefangen.
-    // --------------------------------------------------------
-
     if (uart.isConnected()) tryRequestFrame(now);
 }

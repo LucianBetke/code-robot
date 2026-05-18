@@ -194,6 +194,107 @@ static void sendVist(uint16_t frameId, int16_t vIstLi, int16_t vIstRe, int16_t p
     Serial.println((int)pwm3);
 }
 
+// ============================================================
+// loop()-Teilfunktionen
+// ============================================================
+
+static void updateRearConnectionSafety(uint32_t now)
+{
+    (void)now;
+
+    // Verbindung weg:
+    // Nicht resetten, sondern Motor-Sollwerte sicher auf 0.
+    if (!uart.isConnected())
+    {
+        stopRearWheels();
+    }
+}
+
+static void updateVsolTimeout(uint32_t now)
+{
+    // VSOL-Timeout:
+    //
+    // Fehlendes VSOL ist im Stillstand erlaubt.
+    // Nur wenn vorher ein echter Fahr-Sollwert aktiv war,
+    // wird bei Timeout hinten sicher gestoppt.
+
+    if (g_rearSollActive &&
+        lastVsolMs > 0 &&
+        now - lastVsolMs > 2 * VEHICLE_DT_MS)
+    {
+        stopRearWheels();
+    }
+}
+
+static void handleIncomingVsol(uint32_t now)
+{
+    // Eingehende Sollwerte vom vorderen Nano
+    //
+    // Format:
+    // VSOL,<frameId>,<resetPi>,<hiLiSoll>,<hiReSoll>
+    //
+    // Antwort:
+    // VSOL_OK,<frameId>
+
+    if (!uart.availableLine()) return;
+
+    const char* line = uart.getLine();
+
+    uint16_t frameIdRx = 0;
+    bool resetPi = false;
+    int16_t v2_i = 0;
+    int16_t v3_i = 0;
+
+    if (parseVsolLine(line, frameIdRx, resetPi, v2_i, v3_i))
+    {
+        g_lastVsolFrameId = frameIdRx;
+
+        float vSollLi = int100ToFloat(v2_i);
+        float vSollRe = int100ToFloat(v3_i);
+
+        // Neuer CMDT-Fahrabschnitt:
+        // PI-Zustaende hinten loeschen, aber keinen Stop erzeugen.
+        // Danach werden die neuen Sollwerte gesetzt.
+        if (resetPi)
+        {
+            control_resetPiStates();
+        }
+
+        rad[Li].setSoll(vSollLi);
+        rad[Re].setSoll(vSollRe);
+
+        lastVsolMs = now;
+        g_rearSollActive = (v2_i != 0 || v3_i != 0);
+
+        sendVsolOk(g_lastVsolFrameId);
+    }
+}
+
+static void handleSyncVist()
+{
+    // Sync-Puls vom vorderen Nano:
+    // Hintere Istwerte und PWM-Werte zuruecksenden.
+    //
+    // Format:
+    // VIST,<frameId>,<hiLiIst>,<hiReIst>,<hiLiPwm>,<hiRePwm>
+
+    if (!g_syncFlag) return;
+
+    g_syncFlag = false;
+
+    int16_t vIstLi = floatToInt100(speed[Li].mps());
+    int16_t vIstRe = floatToInt100(speed[Re].mps());
+
+    int16_t pwm2 = rad[Li].lastPwm();
+    int16_t pwm3 = rad[Re].lastPwm();
+
+    sendVist(g_lastVsolFrameId, vIstLi, vIstRe, pwm2, pwm3);
+}
+
+// ============================================================
+// setup()
+// ============================================================
+
 void setup()
 {
     wdt_disable();
@@ -213,6 +314,10 @@ void setup()
     attachInterrupt(digitalPinToInterrupt(3), syncISR, RISING);
 }
 
+// ============================================================
+// loop()
+// ============================================================
+
 void loop()
 {
     uint32_t now = millis();
@@ -220,89 +325,11 @@ void loop()
     uart.update();
     conn.update();
 
-    // --------------------------------------------------------
-    // Verbindung weg:
-    // Nicht resetten, sondern Motor-Sollwerte sicher auf 0.
-    // --------------------------------------------------------
-
-    if (!uart.isConnected()) stopRearWheels();
-
-    // --------------------------------------------------------
-    // VSOL-Timeout:
-    //
-    // Fehlendes VSOL ist im Stillstand erlaubt.
-    // Nur wenn vorher ein echter Fahr-Sollwert aktiv war,
-    // wird bei Timeout hinten sicher gestoppt.
-    // --------------------------------------------------------
-
-    if (g_rearSollActive && lastVsolMs > 0 && now - lastVsolMs > 2 * VEHICLE_DT_MS)
-        stopRearWheels();
-
-    // --------------------------------------------------------
-    // Eingehende Sollwerte vom vorderen Nano
-    //
-    // Format:
-    // VSOL,<frameId>,<resetPi>,<hiLiSoll>,<hiReSoll>
-    //
-    // Antwort:
-    // VSOL_OK,<frameId>
-    // --------------------------------------------------------
-
-    if (uart.availableLine())
-    {
-        const char* line = uart.getLine();
-
-        uint16_t frameIdRx = 0;
-        bool resetPi = false;
-        int16_t v2_i = 0;
-        int16_t v3_i = 0;
-
-        if (parseVsolLine(line, frameIdRx, resetPi, v2_i, v3_i))
-        {
-            g_lastVsolFrameId = frameIdRx;
-
-            float vSollLi = int100ToFloat(v2_i);
-            float vSollRe = int100ToFloat(v3_i);
-
-            // Neuer CMDT-Fahrabschnitt:
-            // PI-Zustaende hinten loeschen, aber keinen Stop erzeugen.
-            // Danach werden die neuen Sollwerte gesetzt.
-            if (resetPi) control_resetPiStates();
-
-            rad[Li].setSoll(vSollLi);
-            rad[Re].setSoll(vSollRe);
-
-            lastVsolMs = now;
-            g_rearSollActive = (v2_i != 0 || v3_i != 0);
-
-            sendVsolOk(g_lastVsolFrameId);
-        }
-    }
-
-    // --------------------------------------------------------
-    // Hinterachse lokal regeln
-    // --------------------------------------------------------
+    updateRearConnectionSafety(now);
+    updateVsolTimeout(now);
+    handleIncomingVsol(now);
 
     control_update(now);
 
-    // --------------------------------------------------------
-    // Sync-Puls vom vorderen Nano:
-    // Hintere Istwerte und PWM-Werte zuruecksenden.
-    //
-    // Format:
-    // VIST,<frameId>,<hiLiIst>,<hiReIst>,<hiLiPwm>,<hiRePwm>
-    // --------------------------------------------------------
-
-    if (g_syncFlag)
-    {
-        g_syncFlag = false;
-
-        int16_t vIstLi = floatToInt100(speed[Li].mps());
-        int16_t vIstRe = floatToInt100(speed[Re].mps());
-
-        int16_t pwm2 = rad[Li].lastPwm();
-        int16_t pwm3 = rad[Re].lastPwm();
-
-        sendVist(g_lastVsolFrameId, vIstLi, vIstRe, pwm2, pwm3);
-    }
+    handleSyncVist();
 }
