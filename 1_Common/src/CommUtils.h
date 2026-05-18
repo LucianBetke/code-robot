@@ -1,4 +1,5 @@
 // CommUtils.h
+// brauche ich die noch?????
 #pragma once
 #include <stdint.h>
 
