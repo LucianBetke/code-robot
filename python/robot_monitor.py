@@ -37,7 +37,7 @@ Grund:
   CNTF ist Diagnose. Es darf den WHEELS-Plot nicht ueberschreiben.
 
 Abhaengigkeiten:
-  pip install pyserial matplotlib
+  pip install pyserial matplotlib pillow pywin32
 """
 
 import sys
@@ -45,6 +45,8 @@ import csv
 import time
 import threading
 import argparse
+import os
+import io
 from datetime import datetime
 from collections import deque
 
@@ -378,6 +380,18 @@ COLORS_VEH = {
 # ─────────────────────────────────────────────
 
 def build_command_boundary_series(t_sec, values, cmd_indices, local_ms):
+    """
+    Erzeugt eine durchgehende Linie mit senkrechtem Sprung an CMDT-Grenzen.
+
+    Zweck:
+      - innerhalb eines CMDT-Befehls normale Linien
+      - keine Treppe bei jedem Messpunkt
+      - keine Luecken zwischen Befehlen
+      - keine schraege Verbindung ueber einen CMDT-Wechsel
+
+    Diese Funktion ist nur fuer Sollwerte und PWM gedacht.
+    Istwerte werden bewusst normal geplottet.
+    """
     n = min(len(t_sec), len(values), len(cmd_indices), len(local_ms))
 
     if n == 0:
@@ -408,6 +422,132 @@ def build_command_boundary_series(t_sec, values, cmd_indices, local_ms):
 
 
 # ─────────────────────────────────────────────
+# Meldungen
+# ─────────────────────────────────────────────
+
+def show_message(title, text):
+    print(f"[{title}] {text}")
+
+    try:
+        import tkinter.messagebox as messagebox
+        messagebox.showinfo(title, text)
+    except Exception:
+        pass
+
+
+# ─────────────────────────────────────────────
+# Plot als Bild erzeugen
+# ─────────────────────────────────────────────
+
+def figure_to_pil_image(fig, dpi=150):
+    """
+    Erzeugt aus der aktuellen Matplotlib-Figure ein PIL-Bild.
+
+    Wichtig:
+      Kein bbox_inches='tight'.
+      Dadurch wird nichts an der rechten Seite abgeschnitten.
+    """
+    from PIL import Image
+
+    fig.canvas.draw()
+
+    buffer = io.BytesIO()
+
+    fig.savefig(
+        buffer,
+        format="png",
+        dpi=dpi,
+        facecolor="white"
+    )
+
+    buffer.seek(0)
+
+    image = Image.open(buffer).convert("RGB")
+    return image
+
+
+# ─────────────────────────────────────────────
+# Bild in Zwischenablage kopieren
+# ─────────────────────────────────────────────
+
+def copy_plot_to_clipboard(fig):
+    """
+    Kopiert die aktuelle Figure als echtes Bild in die Windows-Zwischenablage.
+
+    Danach kann man z. B. in Word, Paint oder LibreOffice mit Strg+V einfuegen.
+    """
+    if os.name != "nt":
+        show_message("Clipboard", "Bild-Zwischenablage ist hier nur fuer Windows eingebaut.")
+        return
+
+    try:
+        import win32clipboard
+        import win32con
+    except ImportError:
+        show_message(
+            "Clipboard",
+            "Fehlende Pakete. Bitte ausfuehren:\n\npy -m pip install --upgrade pillow pywin32"
+        )
+        return
+
+    try:
+        image = figure_to_pil_image(fig, dpi=150)
+
+        bmp_buffer = io.BytesIO()
+        image.save(bmp_buffer, "BMP")
+
+        # Windows CF_DIB erwartet BMP ohne die ersten 14 Byte BMP-Dateikopf.
+        dib_data = bmp_buffer.getvalue()[14:]
+
+        win32clipboard.OpenClipboard()
+        try:
+            win32clipboard.EmptyClipboard()
+            win32clipboard.SetClipboardData(win32con.CF_DIB, dib_data)
+        finally:
+            win32clipboard.CloseClipboard()
+
+        show_message("Clipboard", "Plot wurde als Bild in die Zwischenablage kopiert.")
+
+    except Exception as e:
+        show_message("Clipboard Fehler", f"Kopieren fehlgeschlagen:\n\n{e}")
+
+
+def add_extra_plot_buttons(fig):
+    """
+    Fuegt einen eigenen Button unter der Matplotlib-Oberflaeche hinzu:
+      - Bild kopieren
+
+    Der direkte Druckbutton wurde bewusst entfernt.
+    Grund:
+      Windows-Druckertreiber, Skalierung, Papierformat und Randlogik sind
+      fuer direkte Python-Druckausgabe zu unzuverlaessig.
+    """
+    try:
+        import tkinter as tk
+
+        manager = plt.get_current_fig_manager()
+        window = manager.window
+
+        button_frame = tk.Frame(window, bd=1, relief=tk.GROOVE)
+
+        btn_copy = tk.Button(
+            button_frame,
+            text="Bild kopieren",
+            command=lambda: copy_plot_to_clipboard(fig),
+            width=18
+        )
+
+        btn_copy.pack(side=tk.LEFT, padx=4, pady=3)
+
+        button_frame.pack(side=tk.BOTTOM, fill=tk.X)
+
+        print("[Plot] Zusatzbutton geladen: Bild kopieren")
+
+    except Exception as e:
+        print(f"[Plot] Zusatzbutton konnte nicht geladen werden: {e}")
+
+
+# ─────────────────────────────────────────────
 # Live-Plot
 # ─────────────────────────────────────────────
 
@@ -425,6 +565,8 @@ def start_plot():
         )
 
     apply_layout()
+
+    add_extra_plot_buttons(fig)
 
     def maximize_and_fit_to_window():
         try:
