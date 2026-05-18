@@ -5,6 +5,7 @@
     <ClCompile Include="$(MSBuildThisFileDirectory)src\Parser\CommandParser.cpp" />
     <ClCompile Include="$(MSBuildThisFileDirectory)src\CommandRunner\CommandRunner.cpp" />
     <ClCompile Include="$(MSBuildThisFileDirectory)src\Printer.cpp" />
+    <ClCompile Include="$(MSBuildThisFileDirectory)src\RearFrameClient.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="$(MSBuildThisFileDirectory)src\Connection\ConnectionMonitor.h" />
@@ -12,5 +13,6 @@
     <ClInclude Include="$(MSBuildThisFileDirectory)src\CommandRunner\CommandRunner.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)src\Printer.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)src\PrinterConfig.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)src\RearFrameClient.h" />
   </ItemGroup>
 </Project>

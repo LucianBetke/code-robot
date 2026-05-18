@@ -10,6 +10,7 @@
 #include "src/UartLink.h"
 #include "src/Connection/ConnectionMonitor.h"
 #include "src/CommandRunner/CommandRunner.h"
+#include "src/RearFrameClient.h"
 #include "src/Printer.h"
 
 // ============================================================
@@ -32,33 +33,12 @@ static uint32_t g_lastVsolSendMs = 0;
 static bool g_waitingVsolOk = false;
 static bool g_waitingVist = false;
 
-// Frame-ID 0 bleibt reserviert fuer "ungueltig / keine ID".
-static uint16_t g_nextFrameId = 1;
-
 // Nach Befehlsende werden drei Stop-Telegramme gesendet.
 // Wichtig: erst nach dem letzten fertigen Messframe.
 // Und nur, wenn das ganze Script fertig ist.
 static const uint8_t STOP_SEND_MAX = 3;
 static uint8_t g_stopSendCount = 0;
 static bool g_stopSequenceArmed = false;
-
-// ============================================================
-// Gemeinsamer Log-Datensatz fuer einen Zeitpunkt
-// ============================================================
-
-struct PendingFrame
-{
-    uint16_t frameId;
-    uint32_t t;
-
-    float voLi_s; float voLi_i; int16_t voLi_pwm;
-    float voRe_s; float voRe_i; int16_t voRe_pwm;
-    float hiLi_s; float hiRe_s;
-
-    bool hasFrontSnapshot;
-};
-
-static PendingFrame g_frame = {};
 
 // ============================================================
 // Globale Objekte
@@ -72,6 +52,7 @@ CommandParser parser;
 CommandRunner commandRunner(vehicle, uart, parser,
     CommandScript::get, CommandScript::size);
 
+RearFrameClient rearFrameClient;
 Printer printer;
 
 // ============================================================
@@ -89,27 +70,6 @@ static bool timeReached(uint32_t now, uint32_t target)
     return (int32_t)(now - target) >= 0;
 }
 
-static uint16_t nextFrameId()
-{
-    uint16_t id = g_nextFrameId++;
-
-    if (g_nextFrameId == 0) g_nextFrameId = 1;
-
-    return id;
-}
-
-// VSOL-Format:
-//   VSOL,<frameId>,<resetPi>,<hiLiSoll>,<hiReSoll>
-//
-// resetPi = 1:
-//   Hinten soll die PI-Zustaende hart loeschen.
-//
-// resetPi = 0:
-//   Hinten soll keinen globalen PI-Reset ausfuehren.
-//   Die lokale Logik in Rad::setSoll() entscheidet dann:
-//   Stop -> reset(), Start/Richtungswechsel -> presetOutput(),
-//   gleiche Richtung -> Integrator behalten.
-
 static void sendRearSoll(uint32_t now, uint16_t frameId, bool resetPi)
 {
     if (!uart.isConnected()) return;
@@ -126,7 +86,7 @@ static void sendRearStop(uint32_t now)
 {
     if (!uart.isConnected()) return;
 
-    uint16_t frameId = nextFrameId();
+    uint16_t frameId = rearFrameClient.nextFrameId();
 
     // resetPi=false reicht hier.
     // Bei Sollwert 0 fuehrt Rad::setSoll(0) hinten ohnehin einen harten Stop
@@ -151,12 +111,14 @@ static void startCommandLogRaster(uint32_t now)
 
 static void printCompletedFrame(float hiLi_i, float hiRe_i, int16_t hiLi_pwm, int16_t hiRe_pwm)
 {
+    const RearPendingFrame& frame = rearFrameClient.frame();
+
 #ifdef PRINTER_MODE_CHASSIS
     printer.printFrame(
         vehicle,
-        g_frame.t,
-        g_frame.voLi_i,
-        g_frame.voRe_i,
+        frame.t,
+        frame.voLi_i,
+        frame.voRe_i,
         hiLi_i,
         hiRe_i
     );
@@ -164,21 +126,21 @@ static void printCompletedFrame(float hiLi_i, float hiRe_i, int16_t hiLi_pwm, in
 
 #ifdef PRINTER_MODE_RAEDER
     printer.printFrame(
-        g_frame.t,
+        frame.t,
 
-        g_frame.voLi_s,
-        g_frame.voLi_i,
-        g_frame.voLi_pwm,
+        frame.voLi_s,
+        frame.voLi_i,
+        frame.voLi_pwm,
 
-        g_frame.voRe_s,
-        g_frame.voRe_i,
-        g_frame.voRe_pwm,
+        frame.voRe_s,
+        frame.voRe_i,
+        frame.voRe_pwm,
 
-        g_frame.hiLi_s,
+        frame.hiLi_s,
         hiLi_i,
         hiLi_pwm,
 
-        g_frame.hiRe_s,
+        frame.hiRe_s,
         hiRe_i,
         hiRe_pwm
     );
@@ -187,23 +149,24 @@ static void printCompletedFrame(float hiLi_i, float hiRe_i, int16_t hiLi_pwm, in
 
 static void requestRearFrame(uint32_t now, uint32_t frameTime, bool resetPi)
 {
-    uint16_t frameId = nextFrameId();
+    uint16_t frameId = rearFrameClient.nextFrameId();
+    RearPendingFrame& frame = rearFrameClient.frame();
 
-    g_frame.frameId = frameId;
-    g_frame.t = frameTime;
+    frame.frameId = frameId;
+    frame.t = frameTime;
 
-    g_frame.voLi_s = commandRunner.getWheelSoll(VoLi);
-    g_frame.voLi_i = speed[Li].mps();
-    g_frame.voLi_pwm = rad[Li].lastPwm();
+    frame.voLi_s = commandRunner.getWheelSoll(VoLi);
+    frame.voLi_i = speed[Li].mps();
+    frame.voLi_pwm = rad[Li].lastPwm();
 
-    g_frame.voRe_s = commandRunner.getWheelSoll(VoRe);
-    g_frame.voRe_i = speed[Re].mps();
-    g_frame.voRe_pwm = rad[Re].lastPwm();
+    frame.voRe_s = commandRunner.getWheelSoll(VoRe);
+    frame.voRe_i = speed[Re].mps();
+    frame.voRe_pwm = rad[Re].lastPwm();
 
-    g_frame.hiLi_s = commandRunner.getWheelSoll(HiLi);
-    g_frame.hiRe_s = commandRunner.getWheelSoll(HiRe);
+    frame.hiLi_s = commandRunner.getWheelSoll(HiLi);
+    frame.hiRe_s = commandRunner.getWheelSoll(HiRe);
 
-    g_frame.hasFrontSnapshot = true;
+    frame.hasFrontSnapshot = true;
 
     g_waitingVsolOk = true;
     g_waitingVist = false;
@@ -232,7 +195,7 @@ static void requestStartFrameForNewCommand(uint32_t now)
 
     g_waitingVsolOk = false;
     g_waitingVist = false;
-    g_frame.hasFrontSnapshot = false;
+    rearFrameClient.frame().hasFrontSnapshot = false;
 
     startCommandLogRaster(now);
 
@@ -285,6 +248,7 @@ static void handleIncomingLines(uint32_t now)
     if (!uart.availableLine()) return;
 
     const char* line = uart.getLine();
+    RearPendingFrame& frame = rearFrameClient.frame();
 
     // --------------------------------------------------------
     // VSOL_OK auswerten
@@ -295,8 +259,8 @@ static void handleIncomingLines(uint32_t now)
     if (parseVsolOkLine(line, vsolOk))
     {
         if (g_waitingVsolOk &&
-            g_frame.hasFrontSnapshot &&
-            vsolOk.frameId == g_frame.frameId)
+            frame.hasFrontSnapshot &&
+            vsolOk.frameId == frame.frameId)
         {
             g_waitingVsolOk = false;
             g_waitingVist = true;
@@ -315,8 +279,8 @@ static void handleIncomingLines(uint32_t now)
     if (parseVistLine(line, vist))
     {
         if (g_waitingVist &&
-            g_frame.hasFrontSnapshot &&
-            vist.frameId == g_frame.frameId)
+            frame.hasFrontSnapshot &&
+            vist.frameId == frame.frameId)
         {
             g_v2_ist = int100ToFloat(vist.hiLiIst);
             g_v3_ist = int100ToFloat(vist.hiReIst);
@@ -333,7 +297,7 @@ static void handleIncomingLines(uint32_t now)
             printCompletedFrame(g_v2_ist, g_v3_ist, g_pwm2, g_pwm3);
 
             g_waitingVist = false;
-            g_frame.hasFrontSnapshot = false;
+            frame.hasFrontSnapshot = false;
         }
     }
 }
@@ -386,13 +350,15 @@ static void updateCommandRunner(uint32_t now)
 
 static void updateLogRaster()
 {
+    RearPendingFrame& frame = rearFrameClient.frame();
+
     if (!commandRunner.isActive())
     {
         g_timerStarted = false;
 
         if (!g_waitingVsolOk && !g_waitingVist)
         {
-            g_frame.hasFrontSnapshot = false;
+            frame.hasFrontSnapshot = false;
         }
     }
 
@@ -476,6 +442,7 @@ void setup()
     );
 
     commandRunner.begin();
+    rearFrameClient.begin();
 
     uart.begin();
     conn.begin(true);
