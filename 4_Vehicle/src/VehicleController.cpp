@@ -10,6 +10,8 @@
 #include "VehicleController.h"
 #include <math.h>
 
+static const float VEHICLE_WZ_EPS = 0.0001f;
+
 void VehicleController::begin(float Kp_vx, float Ki_vx,
     float Kp_vy, float Ki_vy,
     float Kp_wz, float Ki_wz)
@@ -17,14 +19,56 @@ void VehicleController::begin(float Kp_vx, float Ki_vx,
     _regler.setParams(Kp_vx, Ki_vx, Kp_vy, Ki_vy, Kp_wz, Ki_wz);
     _regler.reset();
     _lastUpdateMs = 0;
+    _turnOnly = false;
 }
 
 void VehicleController::cmd(float vx, float vy, float wz)
 {
+    applyDriveMode(vx, vy, wz);
+
+    if (!_turnOnly)
+    {
+        limitTranslation(vx, vy);
+    }
+
     _vx = vx;
     _vy = vy;
     _wz = wz;
-    applyMixer(vx, vy, wz);
+
+    applyMixer(_vx, _vy, _wz);
+}
+
+void VehicleController::applyDriveMode(float& vx, float& vy, float wz)
+{
+    _turnOnly = (fabsf(wz) > VEHICLE_WZ_EPS);
+
+    if (_turnOnly)
+    {
+        vx = 0.0f;
+        vy = 0.0f;
+    }
+}
+
+void VehicleController::limitTranslation(float& vx, float& vy)
+{
+    const float sum = fabsf(vx) + fabsf(vy);
+
+    if (sum <= V_WHEEL_MAX)
+    {
+        return;
+    }
+
+    if (sum <= 0.0001f)
+    {
+        vx = 0.0f;
+        vy = 0.0f;
+        return;
+    }
+
+    const float scale = V_WHEEL_MAX / sum;
+
+    vx *= scale;
+    vy *= scale;
 }
 
 void VehicleController::updateIst(float v0, float v1, float v2, float v3)
@@ -52,9 +96,24 @@ void VehicleController::update(uint32_t now)
     uint16_t dt_ms = (uint16_t)(now - _lastUpdateMs);
     _lastUpdateMs = now;
 
-    float vx_korr = _regler.updateVx(_vx, _vx_ist, dt_ms);
-    float vy_korr = _regler.updateVy(_vy, _vy_ist, dt_ms);
-    float wz_korr = _regler.updateWz(_wz, _wz_ist, dt_ms);
+    float vx_korr = 0.0f;
+    float vy_korr = 0.0f;
+    float wz_korr = 0.0f;
+
+    if (_turnOnly)
+    {
+        vx_korr = 0.0f;
+        vy_korr = 0.0f;
+        wz_korr = _regler.updateWz(_wz, _wz_ist, dt_ms);
+    }
+    else
+    {
+        vx_korr = _regler.updateVx(_vx, _vx_ist, dt_ms);
+        vy_korr = _regler.updateVy(_vy, _vy_ist, dt_ms);
+        wz_korr = _regler.updateWz(_wz, _wz_ist, dt_ms);
+
+        limitTranslation(vx_korr, vy_korr);
+    }
 
     applyMixer(vx_korr, vy_korr, wz_korr);
 }
@@ -101,6 +160,8 @@ void VehicleController::stop()
     _vx = 0.0f;
     _vy = 0.0f;
     _wz = 0.0f;
+
+    _turnOnly = false;
 
     _regler.reset();
 

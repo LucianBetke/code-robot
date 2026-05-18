@@ -13,12 +13,14 @@ public:
     void begin(float Kp_vx, float Ki_vx,
         float Kp_vy, float Ki_vy,
         float Kp_wz, float Ki_wz);
+
     void cmd(float vx, float vy, float wz);
     void updateIst(float v0, float v1, float v2, float v3);
     void update(uint32_t now);
     void stop();
 
     float getWheelSoll(WheelVehicle w) const;
+
     float vxIst() const { return _vx_ist; }
     float vyIst() const { return _vy_ist; }
     float wzIst() const { return _wz_ist; }
@@ -35,6 +37,8 @@ public:
     float KiWz() const { return _regler.KiWz(); }
 
 private:
+    void applyDriveMode(float& vx, float& vy, float wz);
+    void limitTranslation(float& vx, float& vy);
     void applyMixer(float vx, float vy, float wz);
 
     float _vx = 0.0f;
@@ -49,6 +53,8 @@ private:
 
     VehicleRegler _regler;
     uint32_t _lastUpdateMs = 0;
+
+    bool _turnOnly = false;
 };
 
 #endif

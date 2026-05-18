@@ -102,22 +102,41 @@ constexpr float METER_PRO_TICK = RAD_UMFANG_M / float(COUNTS_PER_REV);
 // ==== Fahrzeug-Geometrie ====
 // ============================================================
 
-/** Spurweite links ↔ rechts (mm) */
-constexpr float TRACK_WIDTH_MM = 200.0f;
+/**
+ * Lx = halber Radstand:
+ * Abstand vom Fahrzeugmittelpunkt zur Vorder-/Hinterradlinie.
+ */
+constexpr float MECANUM_LX_MM = 45.5f;
 
-/** Radstand vorne ↔ hinten (mm) */
-constexpr float WHEEL_BASE_MM = 100.0f;
+/**
+ * Ly = halbe Spurweite:
+ * Abstand vom Fahrzeugmittelpunkt zur linken/rechten Radlinie.
+ */
+constexpr float MECANUM_LY_MM = 104.5f;
 
-/** Spurweite in Meter */
-constexpr float TRACK_WIDTH_M = TRACK_WIDTH_MM / 1000.0f;
+/** Radstand vorne ↔ hinten (mm), nur als abgeleiteter Kontrollwert */
+constexpr float WHEEL_BASE_MM = MECANUM_LX_MM * 2.0f;
 
-/** Radstand in Meter */
-constexpr float WHEEL_BASE_M = WHEEL_BASE_MM / 1000.0f;
+/** Spurweite links ↔ rechts (mm), nur als abgeleiteter Kontrollwert */
+constexpr float TRACK_WIDTH_MM = MECANUM_LY_MM * 2.0f;
 
-/** Mecanum Faktor k = (L/2 + W/2) */
-constexpr float MECANUM_K =
-(WHEEL_BASE_M * 0.5f) +
-(TRACK_WIDTH_M * 0.5f);
+/** Lx in Meter */
+constexpr float MECANUM_LX_M = MECANUM_LX_MM / 1000.0f;
+
+/** Ly in Meter */
+constexpr float MECANUM_LY_M = MECANUM_LY_MM / 1000.0f;
+
+/**
+ * Mecanum-Faktor:
+ * k = Lx + Ly
+ *
+ * Einheit: Meter
+ *
+ * Wichtig:
+ * vx, vy und Radgeschwindigkeiten sind aktuell intern in m/s.
+ * wz muss hier in rad/s vorliegen.
+ */
+constexpr float MECANUM_K = MECANUM_LX_M + MECANUM_LY_M;
 
 // ============================================================
 // ==== PWM / Limits ====
