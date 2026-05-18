@@ -26,12 +26,7 @@ static uint32_t g_startMs = 0;
 static bool g_timerStarted = false;
 
 static uint32_t g_nextFrameMs = 0;
-static uint32_t g_requestMs = 0;
 static uint32_t g_lastVsolSendMs = 0;
-
-// Front wartet zuerst auf VSOL_OK und danach auf VIST.
-static bool g_waitingVsolOk = false;
-static bool g_waitingVist = false;
 
 // Nach Befehlsende werden drei Stop-Telegramme gesendet.
 // Wichtig: erst nach dem letzten fertigen Messframe.
@@ -168,9 +163,7 @@ static void requestRearFrame(uint32_t now, uint32_t frameTime, bool resetPi)
 
     frame.hasFrontSnapshot = true;
 
-    g_waitingVsolOk = true;
-    g_waitingVist = false;
-    g_requestMs = now;
+    rearFrameClient.startWaitingForVsolOk(now);
 
     sendRearSoll(now, frameId, resetPi);
 
@@ -180,8 +173,7 @@ static void requestRearFrame(uint32_t now, uint32_t frameTime, bool resetPi)
 static void requestStartFrameForNewCommand(uint32_t now)
 {
     if (!uart.isConnected()) return;
-    if (g_waitingVsolOk) return;
-    if (g_waitingVist) return;
+    if (rearFrameClient.isBusy()) return;
 
     // Neuer CMDT-Fahrabschnitt:
     // Kein globaler PI-Hard-Reset mehr.
@@ -193,8 +185,7 @@ static void requestStartFrameForNewCommand(uint32_t now)
     // Dadurch bleibt bei Uebergaengen wie 30 -> 20 der PWM-Arbeitspunkt erhalten.
     applyFrontWheelSoll();
 
-    g_waitingVsolOk = false;
-    g_waitingVist = false;
+    rearFrameClient.clearWaiting();
     rearFrameClient.frame().hasFrontSnapshot = false;
 
     startCommandLogRaster(now);
@@ -211,8 +202,7 @@ static void requestStartFrameForNewCommand(uint32_t now)
 static void tryRequestFrame(uint32_t now)
 {
     if (!commandRunner.isActive()) return;
-    if (g_waitingVsolOk) return;
-    if (g_waitingVist) return;
+    if (rearFrameClient.isBusy()) return;
     if (!g_timerStarted) return;
 
     if (timeReached(now, g_nextFrameMs))
@@ -258,13 +248,11 @@ static void handleIncomingLines(uint32_t now)
 
     if (parseVsolOkLine(line, vsolOk))
     {
-        if (g_waitingVsolOk &&
+        if (rearFrameClient.waitingVsolOk() &&
             frame.hasFrontSnapshot &&
             vsolOk.frameId == frame.frameId)
         {
-            g_waitingVsolOk = false;
-            g_waitingVist = true;
-            g_requestMs = now;
+            rearFrameClient.startWaitingForVist(now);
 
             hardware_requestVist();
         }
@@ -278,7 +266,7 @@ static void handleIncomingLines(uint32_t now)
 
     if (parseVistLine(line, vist))
     {
-        if (g_waitingVist &&
+        if (rearFrameClient.waitingVist() &&
             frame.hasFrontSnapshot &&
             vist.frameId == frame.frameId)
         {
@@ -296,7 +284,7 @@ static void handleIncomingLines(uint32_t now)
 
             printCompletedFrame(g_v2_ist, g_v3_ist, g_pwm2, g_pwm3);
 
-            g_waitingVist = false;
+            rearFrameClient.clearWaiting();
             frame.hasFrontSnapshot = false;
         }
     }
@@ -304,8 +292,8 @@ static void handleIncomingLines(uint32_t now)
 
 static void updateFrameTimeout(uint32_t now)
 {
-    if ((g_waitingVsolOk || g_waitingVist) &&
-        now - g_requestMs > 2 * VEHICLE_DT_MS)
+    if (rearFrameClient.isBusy() &&
+        now - rearFrameClient.requestMs() > 2 * VEHICLE_DT_MS)
     {
         resetByWatchdog();
     }
@@ -320,8 +308,7 @@ static void updateCommandRunner(uint32_t now)
     // Sonst geht der letzte Frame eines Befehls verloren.
 
     if (!uart.isConnected()) return;
-    if (g_waitingVsolOk) return;
-    if (g_waitingVist) return;
+    if (rearFrameClient.isBusy()) return;
 
     bool wasActive = commandRunner.isActive();
 
@@ -356,7 +343,7 @@ static void updateLogRaster()
     {
         g_timerStarted = false;
 
-        if (!g_waitingVsolOk && !g_waitingVist)
+        if (!rearFrameClient.isBusy())
         {
             frame.hasFrontSnapshot = false;
         }
@@ -401,8 +388,7 @@ static void updateRearStopSequence(uint32_t now)
     if (uart.isConnected() &&
         !commandRunner.isActive() &&
         commandRunner.isFinished() &&
-        !g_waitingVsolOk &&
-        !g_waitingVist &&
+        !rearFrameClient.isBusy() &&
         g_stopSequenceArmed)
     {
         if (g_stopSendCount < STOP_SEND_MAX)

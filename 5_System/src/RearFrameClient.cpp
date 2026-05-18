@@ -3,7 +3,10 @@
 
 RearFrameClient::RearFrameClient()
     : _nextFrameId(1),
-    _frame()
+    _frame(),
+    _requestMs(0),
+    _waitingVsolOk(false),
+    _waitingVist(false)
 {
 }
 
@@ -11,6 +14,7 @@ void RearFrameClient::begin()
 {
     _nextFrameId = 1;
     clearFrame();
+    clearWaiting();
 }
 
 uint16_t RearFrameClient::nextFrameId()
@@ -49,4 +53,45 @@ void RearFrameClient::clearFrame()
     _frame.hiRe_s = 0.0f;
 
     _frame.hasFrontSnapshot = false;
+}
+
+bool RearFrameClient::waitingVsolOk() const
+{
+    return _waitingVsolOk;
+}
+
+bool RearFrameClient::waitingVist() const
+{
+    return _waitingVist;
+}
+
+bool RearFrameClient::isBusy() const
+{
+    return _waitingVsolOk || _waitingVist;
+}
+
+uint32_t RearFrameClient::requestMs() const
+{
+    return _requestMs;
+}
+
+void RearFrameClient::startWaitingForVsolOk(uint32_t nowMs)
+{
+    _waitingVsolOk = true;
+    _waitingVist = false;
+    _requestMs = nowMs;
+}
+
+void RearFrameClient::startWaitingForVist(uint32_t nowMs)
+{
+    _waitingVsolOk = false;
+    _waitingVist = true;
+    _requestMs = nowMs;
+}
+
+void RearFrameClient::clearWaiting()
+{
+    _waitingVsolOk = false;
+    _waitingVist = false;
+    _requestMs = 0;
 }

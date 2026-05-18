@@ -1,4 +1,340 @@
 ﻿============================================================
+FILE: C:\Users\Acer\source\repos\robot\1_Common\src\CommProtocol.cpp
+============================================================
+// CommProtocol.cpp
+#include <Arduino.h>
+#include "CommProtocol.h"
+
+// ============================================================
+// Interne Parser-Hilfsfunktionen
+// ============================================================
+
+static void skipSpaces(const char*& p)
+{
+    while (*p == ' ' || *p == '\t') p++;
+}
+
+static bool expectChar(const char*& p, char expected)
+{
+    if (*p != expected) return false;
+
+    p++;
+    return true;
+}
+
+static bool expectText(const char*& p, const char* text)
+{
+    while (*text != '\0')
+    {
+        if (*p != *text) return false;
+
+        p++;
+        text++;
+    }
+
+    return true;
+}
+
+static bool parseUInt16(const char*& p, uint16_t& out)
+{
+    skipSpaces(p);
+
+    if (*p < '0' || *p > '9') return false;
+
+    uint32_t value = 0;
+
+    while (*p >= '0' && *p <= '9')
+    {
+        value = value * 10UL + (uint32_t)(*p - '0');
+
+        if (value > 65535UL) return false;
+
+        p++;
+    }
+
+    out = (uint16_t)value;
+    return true;
+}
+
+static bool parseInt16(const char*& p, int16_t& out)
+{
+    skipSpaces(p);
+
+    bool negative = false;
+
+    if (*p == '-')
+    {
+        negative = true;
+        p++;
+    }
+
+    if (*p < '0' || *p > '9') return false;
+
+    int32_t value = 0;
+    const int32_t limit = negative ? 32768L : 32767L;
+
+    while (*p >= '0' && *p <= '9')
+    {
+        value = value * 10L + (int32_t)(*p - '0');
+
+        if (value > limit) return false;
+
+        p++;
+    }
+
+    if (negative) value = -value;
+
+    out = (int16_t)value;
+    return true;
+}
+
+// ============================================================
+// VSOL Parser
+// Format:
+//   VSOL,<frameId>,<resetPi>,<hiLiSoll>,<hiReSoll>
+// ============================================================
+
+bool parseVsolLine(const char* line, VsolMessage& msg)
+{
+    if (!line) return false;
+
+    const char* p = line;
+
+    uint16_t frameIdTmp = 0;
+    uint16_t resetTmp = 0;
+    int16_t hiLiSollTmp = 0;
+    int16_t hiReSollTmp = 0;
+
+    if (!expectText(p, "VSOL,")) return false;
+    if (!parseUInt16(p, frameIdTmp)) return false;
+
+    skipSpaces(p);
+    if (!expectChar(p, ',')) return false;
+
+    if (!parseUInt16(p, resetTmp)) return false;
+    if (resetTmp > 1) return false;
+
+    skipSpaces(p);
+    if (!expectChar(p, ',')) return false;
+
+    if (!parseInt16(p, hiLiSollTmp)) return false;
+
+    skipSpaces(p);
+    if (!expectChar(p, ',')) return false;
+
+    if (!parseInt16(p, hiReSollTmp)) return false;
+
+    skipSpaces(p);
+    if (*p != '\0') return false;
+
+    msg.frameId = frameIdTmp;
+    msg.resetPi = (resetTmp != 0);
+    msg.hiLiSoll = hiLiSollTmp;
+    msg.hiReSoll = hiReSollTmp;
+
+    return true;
+}
+
+// ============================================================
+// VSOL_OK Parser
+// Format:
+//   VSOL_OK,<frameId>
+// ============================================================
+
+bool parseVsolOkLine(const char* line, VsolOkMessage& msg)
+{
+    if (!line) return false;
+
+    const char* p = line;
+    uint16_t frameIdTmp = 0;
+
+    if (!expectText(p, "VSOL_OK,")) return false;
+    if (!parseUInt16(p, frameIdTmp)) return false;
+
+    skipSpaces(p);
+    if (*p != '\0') return false;
+
+    msg.frameId = frameIdTmp;
+
+    return true;
+}
+
+// ============================================================
+// VIST Parser
+// Format:
+//   VIST,<frameId>,<hiLiIst>,<hiReIst>,<hiLiPwm>,<hiRePwm>
+// ============================================================
+
+bool parseVistLine(const char* line, VistMessage& msg)
+{
+    if (!line) return false;
+
+    const char* p = line;
+
+    uint16_t frameIdTmp = 0;
+    int16_t hiLiIstTmp = 0;
+    int16_t hiReIstTmp = 0;
+    int16_t hiLiPwmTmp = 0;
+    int16_t hiRePwmTmp = 0;
+
+    if (!expectText(p, "VIST,")) return false;
+    if (!parseUInt16(p, frameIdTmp)) return false;
+
+    skipSpaces(p);
+    if (!expectChar(p, ',')) return false;
+
+    if (!parseInt16(p, hiLiIstTmp)) return false;
+
+    skipSpaces(p);
+    if (!expectChar(p, ',')) return false;
+
+    if (!parseInt16(p, hiReIstTmp)) return false;
+
+    skipSpaces(p);
+    if (!expectChar(p, ',')) return false;
+
+    if (!parseInt16(p, hiLiPwmTmp)) return false;
+
+    skipSpaces(p);
+    if (!expectChar(p, ',')) return false;
+
+    if (!parseInt16(p, hiRePwmTmp)) return false;
+
+    skipSpaces(p);
+    if (*p != '\0') return false;
+
+    msg.frameId = frameIdTmp;
+    msg.hiLiIst = hiLiIstTmp;
+    msg.hiReIst = hiReIstTmp;
+    msg.hiLiPwm = hiLiPwmTmp;
+    msg.hiRePwm = hiRePwmTmp;
+
+    return true;
+}
+
+// ============================================================
+// Ausgabe: VSOL
+// Format:
+//   VSOL,<frameId>,<resetPi>,<hiLiSoll>,<hiReSoll>
+// ============================================================
+
+void printVsol(Stream& out, uint16_t frameId, bool resetPi, int16_t hiLiSoll, int16_t hiReSoll)
+{
+    out.print(F("VSOL,"));
+    out.print((unsigned int)frameId);
+    out.print(',');
+    out.print(resetPi ? 1 : 0);
+    out.print(',');
+    out.print((int)hiLiSoll);
+    out.print(',');
+    out.println((int)hiReSoll);
+}
+
+// ============================================================
+// Ausgabe: VSOL_OK
+// Format:
+//   VSOL_OK,<frameId>
+// ============================================================
+
+void printVsolOk(Stream& out, uint16_t frameId)
+{
+    out.print(F("VSOL_OK,"));
+    out.println((unsigned int)frameId);
+}
+
+// ============================================================
+// Ausgabe: VIST
+// Format:
+//   VIST,<frameId>,<hiLiIst>,<hiReIst>,<hiLiPwm>,<hiRePwm>
+// ============================================================
+
+void printVist(Stream& out, uint16_t frameId, int16_t hiLiIst, int16_t hiReIst, int16_t hiLiPwm, int16_t hiRePwm)
+{
+    out.print(F("VIST,"));
+    out.print((unsigned int)frameId);
+    out.print(',');
+    out.print((int)hiLiIst);
+    out.print(',');
+    out.print((int)hiReIst);
+    out.print(',');
+    out.print((int)hiLiPwm);
+    out.print(',');
+    out.println((int)hiRePwm);
+}
+
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\1_Common\src\CommProtocol.h
+============================================================
+// CommProtocol.h
+#pragma once
+
+#include <stdint.h>
+
+class Stream;
+
+// ============================================================
+// UART-Protokolltypen
+// ============================================================
+//
+// VSOL:
+//   Front -> Rear
+//   VSOL,<frameId>,<resetPi>,<hiLiSoll>,<hiReSoll>
+//
+// VSOL_OK:
+//   Rear -> Front
+//   VSOL_OK,<frameId>
+//
+// VIST:
+//   Rear -> Front
+//   VIST,<frameId>,<hiLiIst>,<hiReIst>,<hiLiPwm>,<hiRePwm>
+//
+// Alle Geschwindigkeiten werden als int16_t im Format:
+//   Wert = m/s * 100
+// uebertragen.
+// Beispiel:
+//   0.30 m/s  ->  30
+//  -0.20 m/s  -> -20
+// ============================================================
+
+struct VsolMessage
+{
+    uint16_t frameId;
+    bool resetPi;
+    int16_t hiLiSoll;
+    int16_t hiReSoll;
+};
+
+struct VsolOkMessage
+{
+    uint16_t frameId;
+};
+
+struct VistMessage
+{
+    uint16_t frameId;
+    int16_t hiLiIst;
+    int16_t hiReIst;
+    int16_t hiLiPwm;
+    int16_t hiRePwm;
+};
+
+// ============================================================
+// Parserfunktionen
+// ============================================================
+
+bool parseVsolLine(const char* line, VsolMessage& msg);
+bool parseVsolOkLine(const char* line, VsolOkMessage& msg);
+bool parseVistLine(const char* line, VistMessage& msg);
+
+// ============================================================
+// Ausgabe-Funktionen
+// ============================================================
+
+void printVsol(Stream& out, uint16_t frameId, bool resetPi, int16_t hiLiSoll, int16_t hiReSoll);
+void printVsolOk(Stream& out, uint16_t frameId);
+void printVist(Stream& out, uint16_t frameId, int16_t hiLiIst, int16_t hiReIst, int16_t hiLiPwm, int16_t hiRePwm);
+
+============================================================
 FILE: C:\Users\Acer\source\repos\robot\1_Common\src\CommUtils.h
 ============================================================
 // CommUtils.h
@@ -133,22 +469,41 @@ constexpr float METER_PRO_TICK = RAD_UMFANG_M / float(COUNTS_PER_REV);
 // ==== Fahrzeug-Geometrie ====
 // ============================================================
 
-/** Spurweite links ↔ rechts (mm) */
-constexpr float TRACK_WIDTH_MM = 200.0f;
+/**
+ * Lx = halber Radstand:
+ * Abstand vom Fahrzeugmittelpunkt zur Vorder-/Hinterradlinie.
+ */
+constexpr float MECANUM_LX_MM = 45.5f;
 
-/** Radstand vorne ↔ hinten (mm) */
-constexpr float WHEEL_BASE_MM = 100.0f;
+/**
+ * Ly = halbe Spurweite:
+ * Abstand vom Fahrzeugmittelpunkt zur linken/rechten Radlinie.
+ */
+constexpr float MECANUM_LY_MM = 104.5f;
 
-/** Spurweite in Meter */
-constexpr float TRACK_WIDTH_M = TRACK_WIDTH_MM / 1000.0f;
+/** Radstand vorne ↔ hinten (mm), nur als abgeleiteter Kontrollwert */
+constexpr float WHEEL_BASE_MM = MECANUM_LX_MM * 2.0f;
 
-/** Radstand in Meter */
-constexpr float WHEEL_BASE_M = WHEEL_BASE_MM / 1000.0f;
+/** Spurweite links ↔ rechts (mm), nur als abgeleiteter Kontrollwert */
+constexpr float TRACK_WIDTH_MM = MECANUM_LY_MM * 2.0f;
 
-/** Mecanum Faktor k = (L/2 + W/2) */
-constexpr float MECANUM_K =
-(WHEEL_BASE_M * 0.5f) +
-(TRACK_WIDTH_M * 0.5f);
+/** Lx in Meter */
+constexpr float MECANUM_LX_M = MECANUM_LX_MM / 1000.0f;
+
+/** Ly in Meter */
+constexpr float MECANUM_LY_M = MECANUM_LY_MM / 1000.0f;
+
+/**
+ * Mecanum-Faktor:
+ * k = Lx + Ly
+ *
+ * Einheit: Meter
+ *
+ * Wichtig:
+ * vx, vy und Radgeschwindigkeiten sind aktuell intern in m/s.
+ * wz muss hier in rad/s vorliegen.
+ */
+constexpr float MECANUM_K = MECANUM_LX_M + MECANUM_LY_M;
 
 // ============================================================
 // ==== PWM / Limits ====
@@ -160,6 +515,9 @@ constexpr int16_t SLEW_LIMIT_PWM = 255;
 // ============================================================
 // ==== Fahrzeug / Geschwindigkeit ====
 // ============================================================
+
+/** Minimale sinnvoll regelbare Radgeschwindigkeit (m/s) */
+constexpr float V_WHEEL_MIN = 0.17f;
 
 /** Maximale Radgeschwindigkeit (m/s) */
 constexpr float V_WHEEL_MAX = 0.50f;
@@ -1665,6 +2023,8 @@ FILE: C:\Users\Acer\source\repos\robot\4_Vehicle\src\VehicleController.cpp
 #include "VehicleController.h"
 #include <math.h>
 
+static const float VEHICLE_WZ_EPS = 0.0001f;
+
 void VehicleController::begin(float Kp_vx, float Ki_vx,
     float Kp_vy, float Ki_vy,
     float Kp_wz, float Ki_wz)
@@ -1672,14 +2032,56 @@ void VehicleController::begin(float Kp_vx, float Ki_vx,
     _regler.setParams(Kp_vx, Ki_vx, Kp_vy, Ki_vy, Kp_wz, Ki_wz);
     _regler.reset();
     _lastUpdateMs = 0;
+    _turnOnly = false;
 }
 
 void VehicleController::cmd(float vx, float vy, float wz)
 {
+    applyDriveMode(vx, vy, wz);
+
+    if (!_turnOnly)
+    {
+        limitTranslation(vx, vy);
+    }
+
     _vx = vx;
     _vy = vy;
     _wz = wz;
-    applyMixer(vx, vy, wz);
+
+    applyMixer(_vx, _vy, _wz);
+}
+
+void VehicleController::applyDriveMode(float& vx, float& vy, float wz)
+{
+    _turnOnly = (fabsf(wz) > VEHICLE_WZ_EPS);
+
+    if (_turnOnly)
+    {
+        vx = 0.0f;
+        vy = 0.0f;
+    }
+}
+
+void VehicleController::limitTranslation(float& vx, float& vy)
+{
+    const float sum = fabsf(vx) + fabsf(vy);
+
+    if (sum <= V_WHEEL_MAX)
+    {
+        return;
+    }
+
+    if (sum <= 0.0001f)
+    {
+        vx = 0.0f;
+        vy = 0.0f;
+        return;
+    }
+
+    const float scale = V_WHEEL_MAX / sum;
+
+    vx *= scale;
+    vy *= scale;
 }
 
 void VehicleController::updateIst(float v0, float v1, float v2, float v3)
@@ -1707,9 +2109,24 @@ void VehicleController::update(uint32_t now)
     uint16_t dt_ms = (uint16_t)(now - _lastUpdateMs);
     _lastUpdateMs = now;
 
-    float vx_korr = _regler.updateVx(_vx, _vx_ist, dt_ms);
-    float vy_korr = _regler.updateVy(_vy, _vy_ist, dt_ms);
-    float wz_korr = _regler.updateWz(_wz, _wz_ist, dt_ms);
+    float vx_korr = 0.0f;
+    float vy_korr = 0.0f;
+    float wz_korr = 0.0f;
+
+    if (_turnOnly)
+    {
+        vx_korr = 0.0f;
+        vy_korr = 0.0f;
+        wz_korr = _regler.updateWz(_wz, _wz_ist, dt_ms);
+    }
+    else
+    {
+        vx_korr = _regler.updateVx(_vx, _vx_ist, dt_ms);
+        vy_korr = _regler.updateVy(_vy, _vy_ist, dt_ms);
+        wz_korr = _regler.updateWz(_wz, _wz_ist, dt_ms);
+
+        limitTranslation(vx_korr, vy_korr);
+    }
 
     applyMixer(vx_korr, vy_korr, wz_korr);
 }
@@ -1727,23 +2144,53 @@ void VehicleController::applyMixer(float vx, float vy, float wz)
     v[HiLi] = vx + vy - MECANUM_K * wz;
     v[HiRe] = vx - vy + MECANUM_K * wz;
 
+    // --------------------------------------------------------
+    // 1. Maximalbegrenzung:
+    // Kein Rad darf schneller als V_WHEEL_MAX werden.
+    // Die Skalierung erhält das Verhältnis der Radwerte.
+    // --------------------------------------------------------
+
     float maxVal = 0.0f;
 
     for (int i = 0; i < WHEEL_VEHICLE_COUNT; i++)
     {
-        float a = fabsf(v[i]);
+        const float a = fabsf(v[i]);
         if (a > maxVal) maxVal = a;
     }
 
     if (maxVal > V_WHEEL_MAX && maxVal > 0.0001f)
     {
-        float scale = V_WHEEL_MAX / maxVal;
+        const float scale = V_WHEEL_MAX / maxVal;
 
         for (int i = 0; i < WHEEL_VEHICLE_COUNT; i++)
         {
             v[i] *= scale;
         }
     }
+
+    // --------------------------------------------------------
+    // 2. Mindestgeschwindigkeit / Totzone:
+    // Kleine Rad-Sollwerte im schlechten Bereich werden auf 0 gesetzt.
+    //
+    // Erlaubt:
+    //   vRad = 0.00
+    //   oder abs(vRad) >= V_WHEEL_MIN
+    //
+    // Nicht erlaubt:
+    //   0.00 < abs(vRad) < V_WHEEL_MIN
+    // --------------------------------------------------------
+
+    for (int i = 0; i < WHEEL_VEHICLE_COUNT; i++)
+    {
+        if (fabsf(v[i]) < V_WHEEL_MIN)
+        {
+            v[i] = 0.0f;
+        }
+    }
+
+    // --------------------------------------------------------
+    // 3. Speichern der finalen Rad-Sollwerte
+    // --------------------------------------------------------
 
     for (int i = 0; i < WHEEL_VEHICLE_COUNT; i++)
     {
@@ -1756,6 +2203,8 @@ void VehicleController::stop()
     _vx = 0.0f;
     _vy = 0.0f;
     _wz = 0.0f;
+
+    _turnOnly = false;
 
     _regler.reset();
 
@@ -1788,12 +2237,14 @@ public:
     void begin(float Kp_vx, float Ki_vx,
         float Kp_vy, float Ki_vy,
         float Kp_wz, float Ki_wz);
+
     void cmd(float vx, float vy, float wz);
     void updateIst(float v0, float v1, float v2, float v3);
     void update(uint32_t now);
     void stop();
 
     float getWheelSoll(WheelVehicle w) const;
+
     float vxIst() const { return _vx_ist; }
     float vyIst() const { return _vy_ist; }
     float wzIst() const { return _wz_ist; }
@@ -1810,6 +2261,8 @@ public:
     float KiWz() const { return _regler.KiWz(); }
 
 private:
+    void applyDriveMode(float& vx, float& vy, float wz);
+    void limitTranslation(float& vx, float& vy);
     void applyMixer(float vx, float vy, float wz);
 
     float _vx = 0.0f;
@@ -1824,6 +2277,8 @@ private:
 
     VehicleRegler _regler;
     uint32_t _lastUpdateMs = 0;
+
+    bool _turnOnly = false;
 };
 
 #endif
@@ -2649,6 +3104,127 @@ FILE: C:\Users\Acer\source\repos\robot\5_System\src\PrinterConfig.h
 #endif // PRINTER_CONFIG_H
 
 ============================================================
+FILE: C:\Users\Acer\source\repos\robot\5_System\src\RearFrameClient.cpp
+============================================================
+// RearFrameClient.cpp
+#include "RearFrameClient.h"
+
+RearFrameClient::RearFrameClient()
+    : _nextFrameId(1),
+    _frame(),
+    _requestMs(0),
+    _waitingVsolOk(false),
+    _waitingVist(false)
+{
+}
+
+void RearFrameClient::begin()
+{
+    _nextFrameId = 1;
+    _requestMs = 0;
+    _waitingVsolOk = false;
+    _waitingVist = false;
+
+    clearFrame();
+}
+
+uint16_t RearFrameClient::nextFrameId()
+{
+    uint16_t id = _nextFrameId++;
+
+    if (_nextFrameId == 0) _nextFrameId = 1;
+
+    return id;
+}
+
+RearPendingFrame& RearFrameClient::frame()
+{
+    return _frame;
+}
+
+const RearPendingFrame& RearFrameClient::frame() const
+{
+    return _frame;
+}
+
+void RearFrameClient::clearFrame()
+{
+    _frame.frameId = 0;
+    _frame.t = 0;
+
+    _frame.voLi_s = 0.0f;
+    _frame.voLi_i = 0.0f;
+    _frame.voLi_pwm = 0;
+
+    _frame.voRe_s = 0.0f;
+    _frame.voRe_i = 0.0f;
+    _frame.voRe_pwm = 0;
+
+    _frame.hiLi_s = 0.0f;
+    _frame.hiRe_s = 0.0f;
+
+    _frame.hasFrontSnapshot = false;
+}
+
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\5_System\src\RearFrameClient.h
+============================================================
+// RearFrameClient.h
+#pragma once
+
+#include <stdint.h>
+
+// ============================================================
+// Gemeinsamer Log-Datensatz fuer einen Zeitpunkt
+// ============================================================
+
+struct RearPendingFrame
+{
+    uint16_t frameId;
+    uint32_t t;
+
+    float voLi_s;
+    float voLi_i;
+    int16_t voLi_pwm;
+
+    float voRe_s;
+    float voRe_i;
+    int16_t voRe_pwm;
+
+    float hiLi_s;
+    float hiRe_s;
+
+    bool hasFrontSnapshot;
+};
+
+// ============================================================
+// RearFrameClient
+// Verwaltet den aktuellen Hinterachs-Messframe und die Frame-ID.
+// ============================================================
+
+class RearFrameClient
+{
+public:
+    RearFrameClient();
+
+    void begin();
+
+    uint16_t nextFrameId();
+
+    RearPendingFrame& frame();
+    const RearPendingFrame& frame() const;
+
+    void clearFrame();
+
+private:
+    uint16_t _nextFrameId;
+    RearPendingFrame _frame;
+    uint32_t _requestMs;
+    bool _waitingVsolOk;
+    bool _waitingVist;
+};
+
+============================================================
 FILE: C:\Users\Acer\source\repos\robot\hinten\__vm\.hinten.vsarduino.h
 ============================================================
 /* 
@@ -2679,6 +3255,7 @@ FILE: C:\Users\Acer\source\repos\robot\hinten\src\hinten.ino
 ============================================================
 // hinten.ino
 #include <avr/wdt.h>
+#include "src/CommProtocol.h"
 #include "src/Hardware.h"
 #include "src/hardware_pins.h"
 #include "src/Control.h"
@@ -2708,137 +3285,6 @@ void syncISR()
 }
 
 // ============================================================
-// Fester Integer-Parser fuer UART-Telegramme
-//
-// Neues Format:
-//   VSOL,<frameId>,<resetPi>,<hiLiSoll>,<hiReSoll>
-//
-// resetPi:
-//   0 = normaler Sollwert innerhalb desselben CMDT
-//   1 = neuer CMDT-Fahrabschnitt, PI-Zustaende hinten loeschen
-// ============================================================
-
-static void skipSpaces(const char*& p)
-{
-    while (*p == ' ' || *p == '\t') p++;
-}
-
-static bool expectChar(const char*& p, char expected)
-{
-    if (*p != expected) return false;
-
-    p++;
-    return true;
-}
-
-static bool expectText(const char*& p, const char* text)
-{
-    while (*text != '\0')
-    {
-        if (*p != *text) return false;
-
-        p++;
-        text++;
-    }
-
-    return true;
-}
-
-static bool parseUInt16(const char*& p, uint16_t& out)
-{
-    skipSpaces(p);
-
-    if (*p < '0' || *p > '9') return false;
-
-    uint32_t value = 0;
-
-    while (*p >= '0' && *p <= '9')
-    {
-        value = value * 10UL + (uint32_t)(*p - '0');
-
-        if (value > 65535UL) return false;
-
-        p++;
-    }
-
-    out = (uint16_t)value;
-    return true;
-}
-
-static bool parseInt16(const char*& p, int16_t& out)
-{
-    skipSpaces(p);
-
-    bool negative = false;
-
-    if (*p == '-') { negative = true; p++; }
-
-    if (*p < '0' || *p > '9') return false;
-
-    int32_t value = 0;
-    const int32_t limit = negative ? 32768L : 32767L;
-
-    while (*p >= '0' && *p <= '9')
-    {
-        value = value * 10L + (int32_t)(*p - '0');
-
-        if (value > limit) return false;
-
-        p++;
-    }
-
-    if (negative) value = -value;
-
-    out = (int16_t)value;
-    return true;
-}
-
-static bool parseVsolLine(
-    const char* line,
-    uint16_t& frameId,
-    bool& resetPi,
-    int16_t& v2,
-    int16_t& v3)
-{
-    if (!line) return false;
-
-    const char* p = line;
-
-    uint16_t frameIdTmp = 0;
-    uint16_t resetTmp = 0;
-    int16_t v2Tmp = 0;
-    int16_t v3Tmp = 0;
-
-    if (!expectText(p, "VSOL,")) return false;
-
-    if (!parseUInt16(p, frameIdTmp)) return false;
-    skipSpaces(p);
-    if (!expectChar(p, ',')) return false;
-
-    if (!parseUInt16(p, resetTmp)) return false;
-    if (resetTmp > 1) return false;
-    skipSpaces(p);
-    if (!expectChar(p, ',')) return false;
-
-    if (!parseInt16(p, v2Tmp)) return false;
-    skipSpaces(p);
-    if (!expectChar(p, ',')) return false;
-
-    if (!parseInt16(p, v3Tmp)) return false;
-
-    skipSpaces(p);
-
-    if (*p != '\0') return false;
-
-    frameId = frameIdTmp;
-    resetPi = (resetTmp != 0);
-    v2 = v2Tmp;
-    v3 = v3Tmp;
-
-    return true;
-}
-
-// ============================================================
 // Hilfsfunktionen
 // ============================================================
 
@@ -2849,29 +3295,81 @@ static void stopRearWheels()
     g_rearSollActive = false;
 }
 
-static void sendVsolOk(uint16_t frameId)
-{
-    if (!uart.isConnected()) return;
+// ============================================================
+// loop()-Teilfunktionen
+// ============================================================
 
-    Serial.print(F("VSOL_OK,"));
-    Serial.println((unsigned int)frameId);
+static void updateRearConnectionSafety(uint32_t now)
+{
+    (void)now;
+
+    if (!uart.isConnected())
+    {
+        stopRearWheels();
+    }
 }
 
-static void sendVist(uint16_t frameId, int16_t vIstLi, int16_t vIstRe, int16_t pwm2, int16_t pwm3)
+static void updateVsolTimeout(uint32_t now)
 {
-    if (!uart.isConnected()) return;
-
-    Serial.print(F("VIST,"));
-    Serial.print((unsigned int)frameId);
-    Serial.print(',');
-    Serial.print((int)vIstLi);
-    Serial.print(',');
-    Serial.print((int)vIstRe);
-    Serial.print(',');
-    Serial.print((int)pwm2);
-    Serial.print(',');
-    Serial.println((int)pwm3);
+    if (g_rearSollActive &&
+        lastVsolMs > 0 &&
+        now - lastVsolMs > 2 * VEHICLE_DT_MS)
+    {
+        stopRearWheels();
+    }
 }
+
+static void handleIncomingVsol(uint32_t now)
+{
+    if (!uart.availableLine()) return;
+
+    const char* line = uart.getLine();
+
+    VsolMessage vsol = {};
+
+    if (parseVsolLine(line, vsol))
+    {
+        g_lastVsolFrameId = vsol.frameId;
+
+        float vSollLi = int100ToFloat(vsol.hiLiSoll);
+        float vSollRe = int100ToFloat(vsol.hiReSoll);
+
+        if (vsol.resetPi)
+        {
+            control_resetPiStates();
+        }
+
+        rad[Li].setSoll(vSollLi);
+        rad[Re].setSoll(vSollRe);
+
+        lastVsolMs = now;
+        g_rearSollActive = (vsol.hiLiSoll != 0 || vsol.hiReSoll != 0);
+
+        if (uart.isConnected()) printVsolOk(Serial, g_lastVsolFrameId);
+    }
+}
+
+static void handleSyncVist()
+{
+    if (!g_syncFlag) return;
+
+    g_syncFlag = false;
+
+    int16_t vIstLi = floatToInt100(speed[Li].mps());
+    int16_t vIstRe = floatToInt100(speed[Re].mps());
+
+    int16_t pwm2 = rad[Li].lastPwm();
+    int16_t pwm3 = rad[Re].lastPwm();
+
+    if (uart.isConnected())
+    {
+        printVist(Serial, g_lastVsolFrameId, vIstLi, vIstRe, pwm2, pwm3);
+    }
+}
+
+// ============================================================
+// setup()
+// ============================================================
 
 void setup()
 {
@@ -2892,6 +3390,10 @@ void setup()
     attachInterrupt(digitalPinToInterrupt(3), syncISR, RISING);
 }
 
+// ============================================================
+// loop()
+// ============================================================
+
 void loop()
 {
     uint32_t now = millis();
@@ -2899,91 +3401,13 @@ void loop()
     uart.update();
     conn.update();
 
-    // --------------------------------------------------------
-    // Verbindung weg:
-    // Nicht resetten, sondern Motor-Sollwerte sicher auf 0.
-    // --------------------------------------------------------
-
-    if (!uart.isConnected()) stopRearWheels();
-
-    // --------------------------------------------------------
-    // VSOL-Timeout:
-    //
-    // Fehlendes VSOL ist im Stillstand erlaubt.
-    // Nur wenn vorher ein echter Fahr-Sollwert aktiv war,
-    // wird bei Timeout hinten sicher gestoppt.
-    // --------------------------------------------------------
-
-    if (g_rearSollActive && lastVsolMs > 0 && now - lastVsolMs > 2 * VEHICLE_DT_MS)
-        stopRearWheels();
-
-    // --------------------------------------------------------
-    // Eingehende Sollwerte vom vorderen Nano
-    //
-    // Format:
-    // VSOL,<frameId>,<resetPi>,<hiLiSoll>,<hiReSoll>
-    //
-    // Antwort:
-    // VSOL_OK,<frameId>
-    // --------------------------------------------------------
-
-    if (uart.availableLine())
-    {
-        const char* line = uart.getLine();
-
-        uint16_t frameIdRx = 0;
-        bool resetPi = false;
-        int16_t v2_i = 0;
-        int16_t v3_i = 0;
-
-        if (parseVsolLine(line, frameIdRx, resetPi, v2_i, v3_i))
-        {
-            g_lastVsolFrameId = frameIdRx;
-
-            float vSollLi = int100ToFloat(v2_i);
-            float vSollRe = int100ToFloat(v3_i);
-
-            // Neuer CMDT-Fahrabschnitt:
-            // PI-Zustaende hinten loeschen, aber keinen Stop erzeugen.
-            // Danach werden die neuen Sollwerte gesetzt.
-            if (resetPi) control_resetPiStates();
-
-            rad[Li].setSoll(vSollLi);
-            rad[Re].setSoll(vSollRe);
-
-            lastVsolMs = now;
-            g_rearSollActive = (v2_i != 0 || v3_i != 0);
-
-            sendVsolOk(g_lastVsolFrameId);
-        }
-    }
-
-    // --------------------------------------------------------
-    // Hinterachse lokal regeln
-    // --------------------------------------------------------
+    updateRearConnectionSafety(now);
+    updateVsolTimeout(now);
+    handleIncomingVsol(now);
 
     control_update(now);
 
-    // --------------------------------------------------------
-    // Sync-Puls vom vorderen Nano:
-    // Hintere Istwerte und PWM-Werte zuruecksenden.
-    //
-    // Format:
-    // VIST,<frameId>,<hiLiIst>,<hiReIst>,<hiLiPwm>,<hiRePwm>
-    // --------------------------------------------------------
-
-    if (g_syncFlag)
-    {
-        g_syncFlag = false;
-
-        int16_t vIstLi = floatToInt100(speed[Li].mps());
-        int16_t vIstRe = floatToInt100(speed[Re].mps());
-
-        int16_t pwm2 = rad[Li].lastPwm();
-        int16_t pwm3 = rad[Re].lastPwm();
-
-        sendVist(g_lastVsolFrameId, vIstLi, vIstRe, pwm2, pwm3);
-    }
+    handleSyncVist();
 }
 
 ============================================================
@@ -3019,33 +3443,22 @@ FILE: C:\Users\Acer\source\repos\robot\vorne\src\CommandScript.cpp
 #include "CommandScript.h"
 
 static const char* _script[] = {
-    // reine Vorwärtsfahrt
-    "CMDT(15,0,0) 2;",
+    "CMDT(0,0,90) 1;",
     "CMDT(0,0,0) 2;",
 
-    // reine Rückwärtsfahrt
-    "CMDT(-15,0,0) 2;",
+    "CMDT(0,0,-90) 1;",
     "CMDT(0,0,0) 2;",
 
-    // vorwärts + links
-    "CMDT(15,15,0) 2;",
-    "CMDT(0,0,0) 2;",
-
-    // vorwärts + rechts
-    "CMDT(15,-15,0) 2;",
-    "CMDT(0,0,0) 2;",
-
-    // rückwärts + links
-    "CMDT(-15,15,0) 2;",
-    "CMDT(0,0,0) 2;",
-
-    // rückwärts + rechts
-    "CMDT(-15,-15,0) 2;",
+    "CMDT(0,0,90) 1;",
+    "CMDT(0,0,90) 1;",
+    "CMDT(0,0,90) 1;",
+    "CMDT(0,0,90) 1;",
     "CMDT(0,0,0) 2;"
 };
 
 const char* CommandScript::get(uint8_t index)
 {
+    if (index >= size()) return nullptr;
     return _script[index];
 }
 
@@ -3074,6 +3487,7 @@ FILE: C:\Users\Acer\source\repos\robot\vorne\src\vorne.ino
 // vorne.ino
 #include <avr/wdt.h>
 #include "CommandScript.h"
+#include "src/CommProtocol.h"
 #include "src/Hardware.h"
 #include "src/hardware_pins.h"
 #include "src/Control.h"
@@ -3082,6 +3496,7 @@ FILE: C:\Users\Acer\source\repos\robot\vorne\src\vorne.ino
 #include "src/UartLink.h"
 #include "src/Connection/ConnectionMonitor.h"
 #include "src/CommandRunner/CommandRunner.h"
+#include "src/RearFrameClient.h"
 #include "src/Printer.h"
 
 // ============================================================
@@ -3097,15 +3512,7 @@ static uint32_t g_startMs = 0;
 static bool g_timerStarted = false;
 
 static uint32_t g_nextFrameMs = 0;
-static uint32_t g_requestMs = 0;
 static uint32_t g_lastVsolSendMs = 0;
-
-// Front wartet zuerst auf VSOL_OK und danach auf VIST.
-static bool g_waitingVsolOk = false;
-static bool g_waitingVist = false;
-
-// Frame-ID 0 bleibt reserviert fuer "ungueltig / keine ID".
-static uint16_t g_nextFrameId = 1;
 
 // Nach Befehlsende werden drei Stop-Telegramme gesendet.
 // Wichtig: erst nach dem letzten fertigen Messframe.
@@ -3113,24 +3520,6 @@ static uint16_t g_nextFrameId = 1;
 static const uint8_t STOP_SEND_MAX = 3;
 static uint8_t g_stopSendCount = 0;
 static bool g_stopSequenceArmed = false;
-
-// ============================================================
-// Gemeinsamer Log-Datensatz fuer einen Zeitpunkt
-// ============================================================
-
-struct PendingFrame
-{
-    uint16_t frameId;
-    uint32_t t;
-
-    float voLi_s; float voLi_i; int16_t voLi_pwm;
-    float voRe_s; float voRe_i; int16_t voRe_pwm;
-    float hiLi_s; float hiRe_s;
-
-    bool hasFrontSnapshot;
-};
-
-static PendingFrame g_frame = {};
 
 // ============================================================
 // Globale Objekte
@@ -3144,157 +3533,8 @@ CommandParser parser;
 CommandRunner commandRunner(vehicle, uart, parser,
     CommandScript::get, CommandScript::size);
 
+RearFrameClient rearFrameClient;
 Printer printer;
-
-// ============================================================
-// Fester Integer-Parser fuer UART-Telegramme
-//   VSOL_OK,<frameId>
-//   VIST,<frameId>,<hiLiIst>,<hiReIst>,<hiLiPwm>,<hiRePwm>
-// ============================================================
-
-static void skipSpaces(const char*& p)
-{
-    while (*p == ' ' || *p == '\t') p++;
-}
-
-static bool expectChar(const char*& p, char expected)
-{
-    if (*p != expected) return false;
-
-    p++;
-    return true;
-}
-
-static bool expectText(const char*& p, const char* text)
-{
-    while (*text != '\0')
-    {
-        if (*p != *text) return false;
-
-        p++;
-        text++;
-    }
-
-    return true;
-}
-
-static bool parseUInt16(const char*& p, uint16_t& out)
-{
-    skipSpaces(p);
-
-    if (*p < '0' || *p > '9') return false;
-
-    uint32_t value = 0;
-
-    while (*p >= '0' && *p <= '9')
-    {
-        value = value * 10UL + (uint32_t)(*p - '0');
-
-        if (value > 65535UL) return false;
-
-        p++;
-    }
-
-    out = (uint16_t)value;
-    return true;
-}
-
-static bool parseInt16(const char*& p, int16_t& out)
-{
-    skipSpaces(p);
-
-    bool negative = false;
-
-    if (*p == '-') { negative = true; p++; }
-
-    if (*p < '0' || *p > '9') return false;
-
-    int32_t value = 0;
-    const int32_t limit = negative ? 32768L : 32767L;
-
-    while (*p >= '0' && *p <= '9')
-    {
-        value = value * 10L + (int32_t)(*p - '0');
-
-        if (value > limit) return false;
-
-        p++;
-    }
-
-    if (negative) value = -value;
-
-    out = (int16_t)value;
-    return true;
-}
-
-static bool parseVsolOkLine(const char* line, uint16_t& frameId)
-{
-    if (!line) return false;
-
-    const char* p = line;
-    uint16_t frameIdTmp = 0;
-
-    if (!expectText(p, "VSOL_OK,")) return false;
-    if (!parseUInt16(p, frameIdTmp)) return false;
-
-    skipSpaces(p);
-
-    if (*p != '\0') return false;
-
-    frameId = frameIdTmp;
-    return true;
-}
-
-static bool parseVistLine(
-    const char* line,
-    uint16_t& frameId,
-    int16_t& v2,
-    int16_t& v3,
-    int16_t& pwm2,
-    int16_t& pwm3)
-{
-    if (!line) return false;
-
-    const char* p = line;
-
-    uint16_t frameIdTmp = 0;
-    int16_t v2Tmp = 0;
-    int16_t v3Tmp = 0;
-    int16_t pwm2Tmp = 0;
-    int16_t pwm3Tmp = 0;
-
-    if (!expectText(p, "VIST,")) return false;
-
-    if (!parseUInt16(p, frameIdTmp)) return false;
-    skipSpaces(p);
-    if (!expectChar(p, ',')) return false;
-
-    if (!parseInt16(p, v2Tmp)) return false;
-    skipSpaces(p);
-    if (!expectChar(p, ',')) return false;
-
-    if (!parseInt16(p, v3Tmp)) return false;
-    skipSpaces(p);
-    if (!expectChar(p, ',')) return false;
-
-    if (!parseInt16(p, pwm2Tmp)) return false;
-    skipSpaces(p);
-    if (!expectChar(p, ',')) return false;
-
-    if (!parseInt16(p, pwm3Tmp)) return false;
-
-    skipSpaces(p);
-
-    if (*p != '\0') return false;
-
-    frameId = frameIdTmp;
-    v2 = v2Tmp;
-    v3 = v3Tmp;
-    pwm2 = pwm2Tmp;
-    pwm3 = pwm3Tmp;
-
-    return true;
-}
 
 // ============================================================
 // Hilfsfunktionen
@@ -3311,58 +3551,28 @@ static bool timeReached(uint32_t now, uint32_t target)
     return (int32_t)(now - target) >= 0;
 }
 
-static uint16_t nextFrameId()
-{
-    uint16_t id = g_nextFrameId++;
-
-    if (g_nextFrameId == 0) g_nextFrameId = 1;
-
-    return id;
-}
-
-// VSOL-Format:
-//   VSOL,<frameId>,<resetPi>,<hiLiSoll>,<hiReSoll>
-//
-// resetPi = 1:
-//   Hinten soll die PI-Zustaende hart loeschen.
-//
-// resetPi = 0:
-//   Hinten soll keinen globalen PI-Reset ausfuehren.
-//   Die lokale Logik in Rad::setSoll() entscheidet dann:
-//   Stop -> reset(), Start/Richtungswechsel -> presetOutput(),
-//   gleiche Richtung -> Integrator behalten.
-static void sendVsolLine(uint16_t frameId, bool resetPi, int16_t v2, int16_t v3)
+static void sendRearSoll(uint32_t now, uint16_t frameId, bool resetPi)
 {
     if (!uart.isConnected()) return;
 
-    Serial.print(F("VSOL,"));
-    Serial.print((unsigned int)frameId);
-    Serial.print(',');
-    Serial.print(resetPi ? 1 : 0);
-    Serial.print(',');
-    Serial.print((int)v2);
-    Serial.print(',');
-    Serial.println((int)v3);
-}
-
-static void sendRearSoll(uint32_t now, uint16_t frameId, bool resetPi)
-{
     int16_t v2_i = floatToInt100(commandRunner.getWheelSoll(HiLi));
     int16_t v3_i = floatToInt100(commandRunner.getWheelSoll(HiRe));
 
-    sendVsolLine(frameId, resetPi, v2_i, v3_i);
+    printVsol(Serial, frameId, resetPi, v2_i, v3_i);
 
     g_lastVsolSendMs = now;
 }
 
 static void sendRearStop(uint32_t now)
 {
-    uint16_t frameId = nextFrameId();
+    if (!uart.isConnected()) return;
+
+    uint16_t frameId = rearFrameClient.nextFrameId();
 
     // resetPi=false reicht hier.
     // Bei Sollwert 0 fuehrt Rad::setSoll(0) hinten ohnehin einen harten Stop
     // mit Regler-Reset aus.
-    sendVsolLine(frameId, false, 0, 0);
+    printVsol(Serial, frameId, false, 0, 0);
 
     g_lastVsolSendMs = now;
 }
@@ -3382,12 +3592,14 @@ static void startCommandLogRaster(uint32_t now)
 
 static void printCompletedFrame(float hiLi_i, float hiRe_i, int16_t hiLi_pwm, int16_t hiRe_pwm)
 {
+    const RearPendingFrame& frame = rearFrameClient.frame();
+
 #ifdef PRINTER_MODE_CHASSIS
     printer.printFrame(
         vehicle,
-        g_frame.t,
-        g_frame.voLi_i,
-        g_frame.voRe_i,
+        frame.t,
+        frame.voLi_i,
+        frame.voRe_i,
         hiLi_i,
         hiRe_i
     );
@@ -3395,21 +3607,21 @@ static void printCompletedFrame(float hiLi_i, float hiRe_i, int16_t hiLi_pwm, in
 
 #ifdef PRINTER_MODE_RAEDER
     printer.printFrame(
-        g_frame.t,
+        frame.t,
 
-        g_frame.voLi_s,
-        g_frame.voLi_i,
-        g_frame.voLi_pwm,
+        frame.voLi_s,
+        frame.voLi_i,
+        frame.voLi_pwm,
 
-        g_frame.voRe_s,
-        g_frame.voRe_i,
-        g_frame.voRe_pwm,
+        frame.voRe_s,
+        frame.voRe_i,
+        frame.voRe_pwm,
 
-        g_frame.hiLi_s,
+        frame.hiLi_s,
         hiLi_i,
         hiLi_pwm,
 
-        g_frame.hiRe_s,
+        frame.hiRe_s,
         hiRe_i,
         hiRe_pwm
     );
@@ -3418,27 +3630,26 @@ static void printCompletedFrame(float hiLi_i, float hiRe_i, int16_t hiLi_pwm, in
 
 static void requestRearFrame(uint32_t now, uint32_t frameTime, bool resetPi)
 {
-    uint16_t frameId = nextFrameId();
+    uint16_t frameId = rearFrameClient.nextFrameId();
+    RearPendingFrame& frame = rearFrameClient.frame();
 
-    g_frame.frameId = frameId;
-    g_frame.t = frameTime;
+    frame.frameId = frameId;
+    frame.t = frameTime;
 
-    g_frame.voLi_s = commandRunner.getWheelSoll(VoLi);
-    g_frame.voLi_i = speed[Li].mps();
-    g_frame.voLi_pwm = rad[Li].lastPwm();
+    frame.voLi_s = commandRunner.getWheelSoll(VoLi);
+    frame.voLi_i = speed[Li].mps();
+    frame.voLi_pwm = rad[Li].lastPwm();
 
-    g_frame.voRe_s = commandRunner.getWheelSoll(VoRe);
-    g_frame.voRe_i = speed[Re].mps();
-    g_frame.voRe_pwm = rad[Re].lastPwm();
+    frame.voRe_s = commandRunner.getWheelSoll(VoRe);
+    frame.voRe_i = speed[Re].mps();
+    frame.voRe_pwm = rad[Re].lastPwm();
 
-    g_frame.hiLi_s = commandRunner.getWheelSoll(HiLi);
-    g_frame.hiRe_s = commandRunner.getWheelSoll(HiRe);
+    frame.hiLi_s = commandRunner.getWheelSoll(HiLi);
+    frame.hiRe_s = commandRunner.getWheelSoll(HiRe);
 
-    g_frame.hasFrontSnapshot = true;
+    frame.hasFrontSnapshot = true;
 
-    g_waitingVsolOk = true;
-    g_waitingVist = false;
-    g_requestMs = now;
+    rearFrameClient.startWaitingForVsolOk(now);
 
     sendRearSoll(now, frameId, resetPi);
 
@@ -3448,8 +3659,7 @@ static void requestRearFrame(uint32_t now, uint32_t frameTime, bool resetPi)
 static void requestStartFrameForNewCommand(uint32_t now)
 {
     if (!uart.isConnected()) return;
-    if (g_waitingVsolOk) return;
-    if (g_waitingVist) return;
+    if (rearFrameClient.isBusy()) return;
 
     // Neuer CMDT-Fahrabschnitt:
     // Kein globaler PI-Hard-Reset mehr.
@@ -3461,9 +3671,8 @@ static void requestStartFrameForNewCommand(uint32_t now)
     // Dadurch bleibt bei Uebergaengen wie 30 -> 20 der PWM-Arbeitspunkt erhalten.
     applyFrontWheelSoll();
 
-    g_waitingVsolOk = false;
-    g_waitingVist = false;
-    g_frame.hasFrontSnapshot = false;
+    rearFrameClient.clearWaiting();
+    rearFrameClient.frame().hasFrontSnapshot = false;
 
     startCommandLogRaster(now);
 
@@ -3479,8 +3688,7 @@ static void requestStartFrameForNewCommand(uint32_t now)
 static void tryRequestFrame(uint32_t now)
 {
     if (!commandRunner.isActive()) return;
-    if (g_waitingVsolOk) return;
-    if (g_waitingVist) return;
+    if (rearFrameClient.isBusy()) return;
     if (!g_timerStarted) return;
 
     if (timeReached(now, g_nextFrameMs))
@@ -3492,6 +3700,196 @@ static void tryRequestFrame(uint32_t now)
         requestRearFrame(now, frameTime, false);
 
         g_nextFrameMs += VEHICLE_DT_MS;
+    }
+}
+
+// ============================================================
+// loop()-Teilfunktionen
+// ============================================================
+
+static void updateConnectionSafety(uint32_t now)
+{
+    (void)now;
+
+    static bool prevConnected = false;
+    bool nowConnected = uart.isConnected();
+
+    if (prevConnected && !nowConnected) resetByWatchdog();
+
+    prevConnected = nowConnected;
+}
+
+static void handleIncomingLines(uint32_t now)
+{
+    if (!uart.availableLine()) return;
+
+    const char* line = uart.getLine();
+    RearPendingFrame& frame = rearFrameClient.frame();
+
+    // --------------------------------------------------------
+    // VSOL_OK auswerten
+    // --------------------------------------------------------
+
+    VsolOkMessage vsolOk = {};
+
+    if (parseVsolOkLine(line, vsolOk))
+    {
+        if (rearFrameClient.waitingVsolOk() &&
+            frame.hasFrontSnapshot &&
+            vsolOk.frameId == frame.frameId)
+        {
+            rearFrameClient.startWaitingForVist(now);
+
+            hardware_requestVist();
+        }
+    }
+
+    // --------------------------------------------------------
+    // VIST auswerten
+    // --------------------------------------------------------
+
+    VistMessage vist = {};
+
+    if (parseVistLine(line, vist))
+    {
+        if (rearFrameClient.waitingVist() &&
+            frame.hasFrontSnapshot &&
+            vist.frameId == frame.frameId)
+        {
+            g_v2_ist = int100ToFloat(vist.hiLiIst);
+            g_v3_ist = int100ToFloat(vist.hiReIst);
+            g_pwm2 = vist.hiLiPwm;
+            g_pwm3 = vist.hiRePwm;
+
+            vehicle.updateIst(
+                speed[Re].mps(),
+                speed[Li].mps(),
+                g_v2_ist,
+                g_v3_ist
+            );
+
+            printCompletedFrame(g_v2_ist, g_v3_ist, g_pwm2, g_pwm3);
+
+            rearFrameClient.clearWaiting();
+            frame.hasFrontSnapshot = false;
+        }
+    }
+}
+
+static void updateFrameTimeout(uint32_t now)
+{
+    if (rearFrameClient.isBusy() &&
+        now - rearFrameClient.requestMs() > 2 * VEHICLE_DT_MS)
+    {
+        resetByWatchdog();
+    }
+}
+
+static void updateCommandRunner(uint32_t now)
+{
+    // Wichtig:
+    // Solange noch VSOL_OK oder VIST offen ist, darf der CommandRunner
+    // NICHT zum naechsten Befehl springen.
+    //
+    // Sonst geht der letzte Frame eines Befehls verloren.
+
+    if (!uart.isConnected()) return;
+    if (rearFrameClient.isBusy()) return;
+
+    bool wasActive = commandRunner.isActive();
+
+    commandRunner.update(now);
+
+    bool isActive = commandRunner.isActive();
+
+    // Neuer CMDT-Befehl wurde gestartet.
+    // Jetzt wird sofort ein echter Messframe mit t = 0 angefordert.
+    // Dieses Frame sendet gleichzeitig die neuen hinteren Sollwerte.
+    // resetPi bleibt false, damit bei gleicher Richtung der Integrator
+    // nicht hart geloescht wird.
+    if (isActive && commandRunner.consumeStartFramePending())
+    {
+        requestStartFrameForNewCommand(now);
+    }
+
+    // Stop-Sequenz nur dann vormerken, wenn das ganze Script fertig ist.
+    // Nicht zwischen zwei direkt aufeinanderfolgenden CMDT-Befehlen.
+    if (wasActive && !isActive && commandRunner.isFinished())
+    {
+        g_stopSequenceArmed = true;
+        g_stopSendCount = 0;
+    }
+}
+
+static void updateLogRaster()
+{
+    RearPendingFrame& frame = rearFrameClient.frame();
+
+    if (!commandRunner.isActive())
+    {
+        g_timerStarted = false;
+
+        if (!rearFrameClient.isBusy())
+        {
+            frame.hasFrontSnapshot = false;
+        }
+    }
+
+    if (commandRunner.isActive())
+    {
+        g_stopSequenceArmed = false;
+        g_stopSendCount = 0;
+
+        // Normalerweise wird das Raster schon im Startframe gesetzt.
+        // Das hier bleibt als Fallback, falls ein aktiver Befehl ohne
+        // Startframe laufen sollte.
+        if (!g_timerStarted) startCommandLogRaster(millis());
+    }
+}
+
+static void updateVehicleAndFrontControl(uint32_t now)
+{
+    vehicle.updateIst(
+        speed[Re].mps(),
+        speed[Li].mps(),
+        g_v2_ist,
+        g_v3_ist
+    );
+
+    vehicle.update(now);
+
+    applyFrontWheelSoll();
+
+    control_update(now);
+}
+
+static void updateRearStopSequence(uint32_t now)
+{
+    // Stop-Sequenz fuer hinten:
+    //
+    // Nur wenn das ganze Script fertig ist.
+    // Nicht zwischen zwei Befehlen.
+    // Nicht senden, solange noch VSOL_OK oder VIST offen ist.
+
+    if (uart.isConnected() &&
+        !commandRunner.isActive() &&
+        commandRunner.isFinished() &&
+        !rearFrameClient.isBusy() &&
+        g_stopSequenceArmed)
+    {
+        if (g_stopSendCount < STOP_SEND_MAX)
+        {
+            if (g_stopSendCount == 0 || now - g_lastVsolSendMs >= VEHICLE_DT_MS)
+            {
+                sendRearStop(now);
+                g_stopSendCount++;
+            }
+        }
+
+        if (g_stopSendCount >= STOP_SEND_MAX)
+        {
+            g_stopSequenceArmed = false;
+        }
     }
 }
 
@@ -3516,6 +3914,7 @@ void setup()
     );
 
     commandRunner.begin();
+    rearFrameClient.begin();
 
     uart.begin();
     conn.begin(true);
@@ -3534,212 +3933,22 @@ void loop()
     uart.update();
     conn.update();
 
-    // --------------------------------------------------------
-    // DISCONNECT erkennen -> Reset
-    // --------------------------------------------------------
+    updateConnectionSafety(now);
+    handleIncomingLines(now);
+    updateFrameTimeout(now);
 
-    static bool prevConnected = false;
-    bool nowConnected = uart.isConnected();
-
-    if (prevConnected && !nowConnected) resetByWatchdog();
-
-    prevConnected = nowConnected;
-
-    // --------------------------------------------------------
-    // Eingehende Daten auswerten:
-    //
-    // 1. VSOL_OK,<frameId>
-    // 2. VIST,<frameId>,<hiLiIst>,<hiReIst>,<hiLiPwm>,<hiRePwm>
-    // --------------------------------------------------------
-
-    if (uart.availableLine())
-    {
-        const char* line = uart.getLine();
-
-        // ----------------------------------------------------
-        // VSOL_OK auswerten
-        // ----------------------------------------------------
-
-        uint16_t frameIdOk = 0;
-
-        if (parseVsolOkLine(line, frameIdOk))
-        {
-            if (g_waitingVsolOk &&
-                g_frame.hasFrontSnapshot &&
-                frameIdOk == g_frame.frameId)
-            {
-                g_waitingVsolOk = false;
-                g_waitingVist = true;
-                g_requestMs = now;
-
-                hardware_requestVist();
-            }
-        }
-
-        // ----------------------------------------------------
-        // VIST auswerten
-        // ----------------------------------------------------
-
-        uint16_t frameIdVist = 0;
-        int16_t v2_i = 0;
-        int16_t v3_i = 0;
-        int16_t pwm2 = 0;
-        int16_t pwm3 = 0;
-
-        if (parseVistLine(line, frameIdVist, v2_i, v3_i, pwm2, pwm3))
-        {
-            if (g_waitingVist &&
-                g_frame.hasFrontSnapshot &&
-                frameIdVist == g_frame.frameId)
-            {
-                g_v2_ist = int100ToFloat(v2_i);
-                g_v3_ist = int100ToFloat(v3_i);
-                g_pwm2 = pwm2;
-                g_pwm3 = pwm3;
-
-                vehicle.updateIst(
-                    speed[Re].mps(),
-                    speed[Li].mps(),
-                    g_v2_ist,
-                    g_v3_ist
-                );
-
-                printCompletedFrame(g_v2_ist, g_v3_ist, g_pwm2, g_pwm3);
-
-                g_waitingVist = false;
-                g_frame.hasFrontSnapshot = false;
-            }
-        }
-    }
-
-    // --------------------------------------------------------
-    // Timeout:
-    //
-    // Front wartet entweder auf VSOL_OK oder auf VIST.
-    // Wenn beides zu lange ausbleibt, ist die Kopplung gestoert.
-    // --------------------------------------------------------
-
-    if ((g_waitingVsolOk || g_waitingVist) && now - g_requestMs > 2 * VEHICLE_DT_MS)
-        resetByWatchdog();
-
-    // --------------------------------------------------------
     // Vor commandRunner.update() pruefen, ob ein Frame faellig ist.
     //
     // Dadurch wird bei 2000 ms bzw. 3000 ms noch der letzte Frame
     // des aktuellen Befehls angefordert, bevor der CommandRunner
     // den Befehl beendet.
-    // --------------------------------------------------------
-
     if (uart.isConnected()) tryRequestFrame(now);
 
-    // --------------------------------------------------------
-    // CommandRunner aktualisieren
-    //
-    // Wichtig:
-    // Solange noch VSOL_OK oder VIST offen ist, darf der CommandRunner
-    // NICHT zum naechsten Befehl springen.
-    //
-    // Sonst geht der letzte Frame eines Befehls verloren.
-    // --------------------------------------------------------
+    updateCommandRunner(now);
+    updateLogRaster();
+    updateVehicleAndFrontControl(now);
+    updateRearStopSequence(now);
 
-    if (uart.isConnected() && !g_waitingVsolOk && !g_waitingVist)
-    {
-        bool wasActive = commandRunner.isActive();
-
-        commandRunner.update(now);
-
-        bool isActive = commandRunner.isActive();
-
-        // Neuer CMDT-Befehl wurde gestartet.
-        // Jetzt wird sofort ein echter Messframe mit t = 0 angefordert.
-        // Dieses Frame sendet gleichzeitig die neuen hinteren Sollwerte.
-        // resetPi bleibt false, damit bei gleicher Richtung der Integrator
-        // nicht hart geloescht wird.
-        if (isActive && commandRunner.consumeStartFramePending())
-        {
-            requestStartFrameForNewCommand(now);
-        }
-
-        // Stop-Sequenz nur dann vormerken, wenn das ganze Script fertig ist.
-        // Nicht zwischen zwei direkt aufeinanderfolgenden CMDT-Befehlen.
-        if (wasActive && !isActive && commandRunner.isFinished())
-        {
-            g_stopSequenceArmed = true;
-            g_stopSendCount = 0;
-        }
-    }
-
-    // --------------------------------------------------------
-    // Start/Stop des Log-Zeitrasters
-    // --------------------------------------------------------
-
-    if (!commandRunner.isActive())
-    {
-        g_timerStarted = false;
-
-        if (!g_waitingVsolOk && !g_waitingVist) g_frame.hasFrontSnapshot = false;
-    }
-
-    if (commandRunner.isActive())
-    {
-        g_stopSequenceArmed = false;
-        g_stopSendCount = 0;
-
-        // Normalerweise wird das Raster schon im Startframe gesetzt.
-        // Das hier bleibt als Fallback, falls ein aktiver Befehl ohne
-        // Startframe laufen sollte.
-        if (!g_timerStarted) startCommandLogRaster(now);
-    }
-
-    // --------------------------------------------------------
-    // Vehicle-Istwerte aktualisieren
-    // --------------------------------------------------------
-
-    vehicle.updateIst(
-        speed[Re].mps(),
-        speed[Li].mps(),
-        g_v2_ist,
-        g_v3_ist
-    );
-
-    vehicle.update(now);
-
-    // --------------------------------------------------------
-    // Vorderachse lokal regeln
-    // --------------------------------------------------------
-
-    applyFrontWheelSoll();
-
-    control_update(now);
-
-    // --------------------------------------------------------
-    // Stop-Sequenz fuer hinten:
-    //
-    // Nur wenn das ganze Script fertig ist.
-    // Nicht zwischen zwei Befehlen.
-    // Nicht senden, solange noch VSOL_OK oder VIST offen ist.
-    // --------------------------------------------------------
-
-    if (uart.isConnected() &&
-        !commandRunner.isActive() &&
-        commandRunner.isFinished() &&
-        !g_waitingVsolOk &&
-        !g_waitingVist &&
-        g_stopSequenceArmed)
-    {
-        if (g_stopSendCount < STOP_SEND_MAX)
-        {
-            if (g_stopSendCount == 0 || now - g_lastVsolSendMs >= VEHICLE_DT_MS)
-            {
-                sendRearStop(now);
-                g_stopSendCount++;
-            }
-        }
-
-        if (g_stopSendCount >= STOP_SEND_MAX) g_stopSequenceArmed = false;
-    }
-
-    // --------------------------------------------------------
     // Aktiver Messframe nach commandRunner.update():
     //
     // Der Startframe eines neuen Befehls wird jetzt bewusst bei
@@ -3747,8 +3956,6 @@ void loop()
     // weiter bei 100, 200, 300 ... ms.
     // Die Endmessung bei 2000/3000 ms wird oben vor
     // commandRunner.update() abgefangen.
-    // --------------------------------------------------------
-
     if (uart.isConnected()) tryRequestFrame(now);
 }
 

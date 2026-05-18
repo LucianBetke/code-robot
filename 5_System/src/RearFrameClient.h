@@ -28,7 +28,8 @@ struct RearPendingFrame
 
 // ============================================================
 // RearFrameClient
-// Verwaltet den aktuellen Hinterachs-Messframe und die Frame-ID.
+// Verwaltet den aktuellen Hinterachs-Messframe,
+// die Frame-ID und den Wartezustand auf VSOL_OK / VIST.
 // ============================================================
 
 class RearFrameClient
@@ -45,7 +46,20 @@ public:
 
     void clearFrame();
 
+    bool waitingVsolOk() const;
+    bool waitingVist() const;
+    bool isBusy() const;
+    uint32_t requestMs() const;
+
+    void startWaitingForVsolOk(uint32_t nowMs);
+    void startWaitingForVist(uint32_t nowMs);
+    void clearWaiting();
+
 private:
     uint16_t _nextFrameId;
     RearPendingFrame _frame;
+
+    uint32_t _requestMs;
+    bool _waitingVsolOk;
+    bool _waitingVist;
 };
