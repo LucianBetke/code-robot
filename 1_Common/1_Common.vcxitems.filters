@@ -7,5 +7,9 @@
     <ClInclude Include="$(MSBuildThisFileDirectory)src\ControlTypes.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)src\globals.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)src\CommUtils.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)src\CommProtocol.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="$(MSBuildThisFileDirectory)src\CommProtocol.cpp" />
   </ItemGroup>
 </Project>
