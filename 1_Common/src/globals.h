@@ -149,6 +149,9 @@ constexpr int16_t SLEW_LIMIT_PWM = 255;
 // ==== Fahrzeug / Geschwindigkeit ====
 // ============================================================
 
+/** Minimale sinnvoll regelbare Radgeschwindigkeit (m/s) */
+constexpr float V_WHEEL_MIN = 0.17f;
+
 /** Maximale Radgeschwindigkeit (m/s) */
 constexpr float V_WHEEL_MAX = 0.50f;
 

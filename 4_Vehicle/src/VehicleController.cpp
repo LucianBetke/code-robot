@@ -131,23 +131,53 @@ void VehicleController::applyMixer(float vx, float vy, float wz)
     v[HiLi] = vx + vy - MECANUM_K * wz;
     v[HiRe] = vx - vy + MECANUM_K * wz;
 
+    // --------------------------------------------------------
+    // 1. Maximalbegrenzung:
+    // Kein Rad darf schneller als V_WHEEL_MAX werden.
+    // Die Skalierung erhält das Verhältnis der Radwerte.
+    // --------------------------------------------------------
+
     float maxVal = 0.0f;
 
     for (int i = 0; i < WHEEL_VEHICLE_COUNT; i++)
     {
-        float a = fabsf(v[i]);
+        const float a = fabsf(v[i]);
         if (a > maxVal) maxVal = a;
     }
 
     if (maxVal > V_WHEEL_MAX && maxVal > 0.0001f)
     {
-        float scale = V_WHEEL_MAX / maxVal;
+        const float scale = V_WHEEL_MAX / maxVal;
 
         for (int i = 0; i < WHEEL_VEHICLE_COUNT; i++)
         {
             v[i] *= scale;
         }
     }
+
+    // --------------------------------------------------------
+    // 2. Mindestgeschwindigkeit / Totzone:
+    // Kleine Rad-Sollwerte im schlechten Bereich werden auf 0 gesetzt.
+    //
+    // Erlaubt:
+    //   vRad = 0.00
+    //   oder abs(vRad) >= V_WHEEL_MIN
+    //
+    // Nicht erlaubt:
+    //   0.00 < abs(vRad) < V_WHEEL_MIN
+    // --------------------------------------------------------
+
+    for (int i = 0; i < WHEEL_VEHICLE_COUNT; i++)
+    {
+        if (fabsf(v[i]) < V_WHEEL_MIN)
+        {
+            v[i] = 0.0f;
+        }
+    }
+
+    // --------------------------------------------------------
+    // 3. Speichern der finalen Rad-Sollwerte
+    // --------------------------------------------------------
 
     for (int i = 0; i < WHEEL_VEHICLE_COUNT; i++)
     {
