@@ -3,6 +3,8 @@
 
 #include <stdint.h>
 
+class Stream;
+
 // ============================================================
 // UART-Protokolltypen
 // ============================================================
@@ -21,7 +23,7 @@
 //
 // Alle Geschwindigkeiten werden als int16_t im Format:
 //   Wert = m/s * 100
-// übertragen.
+// uebertragen.
 // Beispiel:
 //   0.30 m/s  ->  30
 //  -0.20 m/s  -> -20
@@ -56,3 +58,11 @@ struct VistMessage
 bool parseVsolLine(const char* line, VsolMessage& msg);
 bool parseVsolOkLine(const char* line, VsolOkMessage& msg);
 bool parseVistLine(const char* line, VistMessage& msg);
+
+// ============================================================
+// Ausgabe-Funktionen
+// ============================================================
+
+void printVsol(Stream& out, uint16_t frameId, bool resetPi, int16_t hiLiSoll, int16_t hiReSoll);
+void printVsolOk(Stream& out, uint16_t frameId);
+void printVist(Stream& out, uint16_t frameId, int16_t hiLiIst, int16_t hiReIst, int16_t hiLiPwm, int16_t hiRePwm);

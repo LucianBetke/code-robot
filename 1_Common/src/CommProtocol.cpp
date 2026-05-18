@@ -1,4 +1,5 @@
 // CommProtocol.cpp
+#include <Arduino.h>
 #include "CommProtocol.h"
 
 // ============================================================
@@ -206,4 +207,54 @@ bool parseVistLine(const char* line, VistMessage& msg)
     msg.hiRePwm = hiRePwmTmp;
 
     return true;
+}
+
+// ============================================================
+// Ausgabe: VSOL
+// Format:
+//   VSOL,<frameId>,<resetPi>,<hiLiSoll>,<hiReSoll>
+// ============================================================
+
+void printVsol(Stream& out, uint16_t frameId, bool resetPi, int16_t hiLiSoll, int16_t hiReSoll)
+{
+    out.print(F("VSOL,"));
+    out.print((unsigned int)frameId);
+    out.print(',');
+    out.print(resetPi ? 1 : 0);
+    out.print(',');
+    out.print((int)hiLiSoll);
+    out.print(',');
+    out.println((int)hiReSoll);
+}
+
+// ============================================================
+// Ausgabe: VSOL_OK
+// Format:
+//   VSOL_OK,<frameId>
+// ============================================================
+
+void printVsolOk(Stream& out, uint16_t frameId)
+{
+    out.print(F("VSOL_OK,"));
+    out.println((unsigned int)frameId);
+}
+
+// ============================================================
+// Ausgabe: VIST
+// Format:
+//   VIST,<frameId>,<hiLiIst>,<hiReIst>,<hiLiPwm>,<hiRePwm>
+// ============================================================
+
+void printVist(Stream& out, uint16_t frameId, int16_t hiLiIst, int16_t hiReIst, int16_t hiLiPwm, int16_t hiRePwm)
+{
+    out.print(F("VIST,"));
+    out.print((unsigned int)frameId);
+    out.print(',');
+    out.print((int)hiLiIst);
+    out.print(',');
+    out.print((int)hiReIst);
+    out.print(',');
+    out.print((int)hiLiPwm);
+    out.print(',');
+    out.println((int)hiRePwm);
 }

@@ -40,30 +40,6 @@ static void stopRearWheels()
     g_rearSollActive = false;
 }
 
-static void sendVsolOk(uint16_t frameId)
-{
-    if (!uart.isConnected()) return;
-
-    Serial.print(F("VSOL_OK,"));
-    Serial.println((unsigned int)frameId);
-}
-
-static void sendVist(uint16_t frameId, int16_t vIstLi, int16_t vIstRe, int16_t pwm2, int16_t pwm3)
-{
-    if (!uart.isConnected()) return;
-
-    Serial.print(F("VIST,"));
-    Serial.print((unsigned int)frameId);
-    Serial.print(',');
-    Serial.print((int)vIstLi);
-    Serial.print(',');
-    Serial.print((int)vIstRe);
-    Serial.print(',');
-    Serial.print((int)pwm2);
-    Serial.print(',');
-    Serial.println((int)pwm3);
-}
-
 // ============================================================
 // loop()-Teilfunktionen
 // ============================================================
@@ -114,7 +90,7 @@ static void handleIncomingVsol(uint32_t now)
         lastVsolMs = now;
         g_rearSollActive = (vsol.hiLiSoll != 0 || vsol.hiReSoll != 0);
 
-        sendVsolOk(g_lastVsolFrameId);
+        if (uart.isConnected()) printVsolOk(Serial, g_lastVsolFrameId);
     }
 }
 
@@ -130,7 +106,10 @@ static void handleSyncVist()
     int16_t pwm2 = rad[Li].lastPwm();
     int16_t pwm3 = rad[Re].lastPwm();
 
-    sendVist(g_lastVsolFrameId, vIstLi, vIstRe, pwm2, pwm3);
+    if (uart.isConnected())
+    {
+        printVist(Serial, g_lastVsolFrameId, vIstLi, vIstRe, pwm2, pwm3);
+    }
 }
 
 // ============================================================

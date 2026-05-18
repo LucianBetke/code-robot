@@ -109,38 +109,29 @@ static uint16_t nextFrameId()
 //   Die lokale Logik in Rad::setSoll() entscheidet dann:
 //   Stop -> reset(), Start/Richtungswechsel -> presetOutput(),
 //   gleiche Richtung -> Integrator behalten.
-static void sendVsolLine(uint16_t frameId, bool resetPi, int16_t v2, int16_t v3)
-{
-    if (!uart.isConnected()) return;
-
-    Serial.print(F("VSOL,"));
-    Serial.print((unsigned int)frameId);
-    Serial.print(',');
-    Serial.print(resetPi ? 1 : 0);
-    Serial.print(',');
-    Serial.print((int)v2);
-    Serial.print(',');
-    Serial.println((int)v3);
-}
 
 static void sendRearSoll(uint32_t now, uint16_t frameId, bool resetPi)
 {
+    if (!uart.isConnected()) return;
+
     int16_t v2_i = floatToInt100(commandRunner.getWheelSoll(HiLi));
     int16_t v3_i = floatToInt100(commandRunner.getWheelSoll(HiRe));
 
-    sendVsolLine(frameId, resetPi, v2_i, v3_i);
+    printVsol(Serial, frameId, resetPi, v2_i, v3_i);
 
     g_lastVsolSendMs = now;
 }
 
 static void sendRearStop(uint32_t now)
 {
+    if (!uart.isConnected()) return;
+
     uint16_t frameId = nextFrameId();
 
     // resetPi=false reicht hier.
     // Bei Sollwert 0 fuehrt Rad::setSoll(0) hinten ohnehin einen harten Stop
     // mit Regler-Reset aus.
-    sendVsolLine(frameId, false, 0, 0);
+    printVsol(Serial, frameId, false, 0, 0);
 
     g_lastVsolSendMs = now;
 }
