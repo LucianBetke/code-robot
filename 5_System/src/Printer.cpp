@@ -27,6 +27,48 @@ void Printer::printHeader(VehicleController& vehicle, const ControlConfig& cfg)
 #endif
 }
 
+void Printer::printCompletedFrame(
+    VehicleController& vehicle,
+    const RearPendingFrame& frame,
+    float hiLi_i,
+    float hiRe_i,
+    int16_t hiLi_pwm,
+    int16_t hiRe_pwm)
+{
+#ifdef PRINTER_MODE_CHASSIS
+    printFrame(
+        vehicle,
+        frame.t,
+        frame.voLi_i,
+        frame.voRe_i,
+        hiLi_i,
+        hiRe_i
+    );
+#endif
+
+#ifdef PRINTER_MODE_RAEDER
+    printFrame(
+        frame.t,
+
+        frame.voLi_s,
+        frame.voLi_i,
+        frame.voLi_pwm,
+
+        frame.voRe_s,
+        frame.voRe_i,
+        frame.voRe_pwm,
+
+        frame.hiLi_s,
+        hiLi_i,
+        hiLi_pwm,
+
+        frame.hiRe_s,
+        hiRe_i,
+        hiRe_pwm
+    );
+#endif
+}
+
 #ifdef PRINTER_MODE_CHASSIS
 
 void Printer::printWheels(VehicleController& vehicle,

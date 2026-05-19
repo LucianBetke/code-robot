@@ -70,44 +70,6 @@ static void startCommandLogRaster(uint32_t now)
     g_timerStarted = true;
 }
 
-static void printCompletedFrame(float hiLi_i, float hiRe_i, int16_t hiLi_pwm, int16_t hiRe_pwm)
-{
-    const RearPendingFrame& frame = rearFrameClient.frame();
-
-#ifdef PRINTER_MODE_CHASSIS
-    printer.printFrame(
-        vehicle,
-        frame.t,
-        frame.voLi_i,
-        frame.voRe_i,
-        hiLi_i,
-        hiRe_i
-    );
-#endif
-
-#ifdef PRINTER_MODE_RAEDER
-    printer.printFrame(
-        frame.t,
-
-        frame.voLi_s,
-        frame.voLi_i,
-        frame.voLi_pwm,
-
-        frame.voRe_s,
-        frame.voRe_i,
-        frame.voRe_pwm,
-
-        frame.hiLi_s,
-        hiLi_i,
-        hiLi_pwm,
-
-        frame.hiRe_s,
-        hiRe_i,
-        hiRe_pwm
-    );
-#endif
-}
-
 static void requestRearFrame(uint32_t now, uint32_t frameTime, bool resetPi)
 {
     rearFrameClient.requestFrame(
@@ -230,7 +192,14 @@ static void handleIncomingLines(uint32_t now)
             g_v3_ist
         );
 
-        printCompletedFrame(g_v2_ist, g_v3_ist, g_pwm2, g_pwm3);
+        printer.printCompletedFrame(
+            vehicle,
+            rearFrameClient.frame(),
+            g_v2_ist,
+            g_v3_ist,
+            g_pwm2,
+            g_pwm3
+        );
     }
 }
 

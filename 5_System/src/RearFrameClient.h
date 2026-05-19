@@ -1,5 +1,6 @@
 // RearFrameClient.h
-#pragma once
+#ifndef REAR_FRAME_CLIENT_H
+#define REAR_FRAME_CLIENT_H
 
 #include <stdint.h>
 
@@ -104,3 +105,5 @@ private:
     uint8_t _stopSendCount;
     bool _stopSequenceArmed;
 };
+
+#endif // REAR_FRAME_CLIENT_H

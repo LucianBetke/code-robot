@@ -6,12 +6,21 @@
 #include "src/VehicleController.h"
 #include "src/Control.h"
 #include "src/ControlConfig.h"
+#include "src/RearFrameClient.h"
 #include "PrinterConfig.h"
 
 class Printer
 {
 public:
     void printHeader(VehicleController& vehicle, const ControlConfig& cfg);
+
+    void printCompletedFrame(
+        VehicleController& vehicle,
+        const RearPendingFrame& frame,
+        float hiLi_i,
+        float hiRe_i,
+        int16_t hiLi_pwm,
+        int16_t hiRe_pwm);
 
 #ifdef PRINTER_MODE_CHASSIS
     void printWheels(VehicleController& vehicle,
