@@ -120,6 +120,9 @@ constexpr float WHEEL_BASE_MM = MECANUM_LX_MM * 2.0f;
 /** Spurweite links ↔ rechts (mm), nur als abgeleiteter Kontrollwert */
 constexpr float TRACK_WIDTH_MM = MECANUM_LY_MM * 2.0f;
 
+/** Mecanum-Faktor in mm */
+constexpr float MECANUM_K_MM = MECANUM_LX_MM + MECANUM_LY_MM;
+
 /** Lx in Meter */
 constexpr float MECANUM_LX_M = MECANUM_LX_MM / 1000.0f;
 

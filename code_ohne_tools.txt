@@ -3704,51 +3704,94 @@ FILE: C:\Users\Acer\source\repos\robot\hinten\src\hinten.ino
 ============================================================
 // hinten.ino
 #include <avr/wdt.h>
-#include "src/CommProtocol.h"
+
+#include "RearApp.h"
+
 #include "src/Hardware.h"
 #include "src/hardware_pins.h"
 #include "src/Control.h"
 #include "src/ControlConfig.h"
-#include "src/CommUtils.h"
-#include "src/UartLink.h"
-#include "src/Connection/ConnectionMonitor.h"
 
-UartLink uart(Serial, false);
-ConnectionMonitor conn(uart, 13);
-
-static uint32_t lastVsolMs = 0;
-
-// Merkt sich die letzte empfangene VSOL-Frame-ID.
-// Diese ID wird bei VIST wieder zurueckgesendet.
-static uint16_t g_lastVsolFrameId = 0;
-
-// Merkt sich, ob hinten zuletzt einen echten Fahr-Sollwert bekommen hat.
-// VSOL,<id>,<resetPi>,0,0 bedeutet: kein aktiver Fahrbefehl mehr.
-static bool g_rearSollActive = false;
-
-volatile bool g_syncFlag = false;
+RearApp app;
 
 void syncISR()
 {
-    g_syncFlag = true;
+    app.onSyncPulseFromIsr();
 }
 
-// ============================================================
-// Hilfsfunktionen
-// ============================================================
+void setup()
+{
+    wdt_disable();
 
-static void stopRearWheels()
+    Serial.begin(115200);
+
+    hardware_begin(PinsRear::PINS);
+    control_begin(ConfigRear::CONFIG);
+    speed_reset_all();
+
+    app.begin();
+
+    hardware_enableMotors();
+
+    pinMode(3, INPUT);
+    attachInterrupt(digitalPinToInterrupt(3), syncISR, RISING);
+}
+
+void loop()
+{
+    uint32_t now = millis();
+
+    app.updateCommunication();
+    app.updateConnectionSafety(now);
+    app.updateVsolTimeout(now);
+    app.handleIncomingVsol(now);
+
+    control_update(now);
+
+    app.handleSyncVist();
+}
+
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\hinten\src\RearApp.cpp
+============================================================
+// RearApp.cpp
+#include "RearApp.h"
+
+#include "src/CommProtocol.h"
+#include "src/CommUtils.h"
+#include "src/Control.h"
+#include "src/ControlConfig.h"
+
+RearApp::RearApp()
+    : uart(Serial, false),
+    conn(uart, 13),
+    lastVsolMs(0),
+    lastVsolFrameId(0),
+    rearSollActive(false),
+    syncFlag(false)
+{
+}
+
+void RearApp::begin()
+{
+    uart.begin();
+    conn.begin(false);
+}
+
+void RearApp::updateCommunication()
+{
+    uart.update();
+    conn.update();
+}
+
+void RearApp::stopRearWheels()
 {
     rad[Li].setSoll(0.0f);
     rad[Re].setSoll(0.0f);
-    g_rearSollActive = false;
+    rearSollActive = false;
 }
 
-// ============================================================
-// loop()-Teilfunktionen
-// ============================================================
-
-static void updateRearConnectionSafety(uint32_t now)
+void RearApp::updateConnectionSafety(uint32_t now)
 {
     (void)now;
 
@@ -3758,9 +3801,9 @@ static void updateRearConnectionSafety(uint32_t now)
     }
 }
 
-static void updateVsolTimeout(uint32_t now)
+void RearApp::updateVsolTimeout(uint32_t now)
 {
-    if (g_rearSollActive &&
+    if (rearSollActive &&
         lastVsolMs > 0 &&
         now - lastVsolMs > 2 * VEHICLE_DT_MS)
     {
@@ -3768,7 +3811,7 @@ static void updateVsolTimeout(uint32_t now)
     }
 }
 
-static void handleIncomingVsol(uint32_t now)
+void RearApp::handleIncomingVsol(uint32_t now)
 {
     if (!uart.availableLine()) return;
 
@@ -3778,7 +3821,7 @@ static void handleIncomingVsol(uint32_t now)
 
     if (parseVsolLine(line, vsol))
     {
-        g_lastVsolFrameId = vsol.frameId;
+        lastVsolFrameId = vsol.frameId;
 
         float vSollLi = int100ToFloat(vsol.hiLiSoll);
         float vSollRe = int100ToFloat(vsol.hiReSoll);
@@ -3792,17 +3835,25 @@ static void handleIncomingVsol(uint32_t now)
         rad[Re].setSoll(vSollRe);
 
         lastVsolMs = now;
-        g_rearSollActive = (vsol.hiLiSoll != 0 || vsol.hiReSoll != 0);
+        rearSollActive = (vsol.hiLiSoll != 0 || vsol.hiReSoll != 0);
 
-        if (uart.isConnected()) printVsolOk(Serial, g_lastVsolFrameId);
+        if (uart.isConnected())
+        {
+            printVsolOk(Serial, lastVsolFrameId);
+        }
     }
 }
 
-static void handleSyncVist()
+void RearApp::onSyncPulseFromIsr()
 {
-    if (!g_syncFlag) return;
+    syncFlag = true;
+}
 
-    g_syncFlag = false;
+void RearApp::handleSyncVist()
+{
+    if (!syncFlag) return;
+
+    syncFlag = false;
 
     int16_t vIstLi = floatToInt100(speed[Li].mps());
     int16_t vIstRe = floatToInt100(speed[Re].mps());
@@ -3812,52 +3863,47 @@ static void handleSyncVist()
 
     if (uart.isConnected())
     {
-        printVist(Serial, g_lastVsolFrameId, vIstLi, vIstRe, pwm2, pwm3);
+        printVist(Serial, lastVsolFrameId, vIstLi, vIstRe, pwm2, pwm3);
     }
 }
 
-// ============================================================
-// setup()
-// ============================================================
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\hinten\src\RearApp.h
+============================================================
+// RearApp.h
+#pragma once
 
-void setup()
-{
-    wdt_disable();
+#include <Arduino.h>
 
-    Serial.begin(115200);
+#include "src/UartLink.h"
+#include "src/Connection/ConnectionMonitor.h"
 
-    hardware_begin(PinsRear::PINS);
-    control_begin(ConfigRear::CONFIG);
-    speed_reset_all();
+class RearApp {
+public:
+    RearApp();
 
-    uart.begin();
-    conn.begin(false);
+    void begin();
 
-    hardware_enableMotors();
+    void updateCommunication();
+    void updateConnectionSafety(uint32_t now);
+    void updateVsolTimeout(uint32_t now);
+    void handleIncomingVsol(uint32_t now);
+    void handleSyncVist();
 
-    pinMode(3, INPUT);
-    attachInterrupt(digitalPinToInterrupt(3), syncISR, RISING);
-}
+    void onSyncPulseFromIsr();
 
-// ============================================================
-// loop()
-// ============================================================
+private:
+    UartLink uart;
+    ConnectionMonitor conn;
 
-void loop()
-{
-    uint32_t now = millis();
+    uint32_t lastVsolMs;
+    uint16_t lastVsolFrameId;
+    bool rearSollActive;
 
-    uart.update();
-    conn.update();
+    volatile bool syncFlag;
 
-    updateRearConnectionSafety(now);
-    updateVsolTimeout(now);
-    handleIncomingVsol(now);
-
-    control_update(now);
-
-    handleSyncVist();
-}
+    void stopRearWheels();
+};
 
 ============================================================
 FILE: C:\Users\Acer\source\repos\robot\vorne\__vm\.vorne.vsarduino.h
