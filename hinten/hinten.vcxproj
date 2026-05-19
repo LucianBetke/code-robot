@@ -86,6 +86,7 @@
     <TargetOSAndVersion>Arduino</TargetOSAndVersion>
   </PropertyGroup>
   <ItemGroup>
+    <ClCompile Include="src\RearApp.cpp" />
     <None Include="src\arduino folders read me.txt">
     </None>
     <ClCompile Include="src\hinten.ino">
@@ -97,6 +98,7 @@
     <ProjectCapability Include="VisualMicro" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\RearApp.h" />
     <ClInclude Include="__vm\.hinten.vsarduino.h" />
   </ItemGroup>
   <PropertyGroup>
