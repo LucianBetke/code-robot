@@ -31,10 +31,34 @@ struct RearPendingFrame
 };
 
 // ============================================================
+// Anfrage-Datensatz fuer einen neuen RearFrame
+// ============================================================
+
+struct RearFrameRequest
+{
+    uint32_t frameTimeMs;
+    bool resetPi;
+
+    float voLi_s;
+    float voLi_i;
+    int16_t voLi_pwm;
+
+    float voRe_s;
+    float voRe_i;
+    int16_t voRe_pwm;
+
+    float hiLi_s;
+    float hiRe_s;
+};
+
+// ============================================================
 // RearFrameClient
-// Verwaltet den aktuellen Hinterachs-Messframe,
-// die Frame-ID, den Wartezustand auf VSOL_OK / VIST
-// und die Stop-Sequenz fuer hinten.
+// Verwaltet:
+//  - aktuellen Hinterachs-Messframe
+//  - Frame-ID
+//  - Wartezustand auf VSOL_OK / VIST
+//  - Stop-Sequenz fuer hinten
+//  - letzte gueltige Rear-Istwerte
 // ============================================================
 
 class RearFrameClient
@@ -57,23 +81,25 @@ public:
     uint32_t requestMs() const;
     uint32_t lastSendMs() const;
 
+    float hiLiIst() const;
+    float hiReIst() const;
+    int16_t hiLiPwm() const;
+    int16_t hiRePwm() const;
+
     bool requestFrame(
         Stream& out,
         uint32_t nowMs,
-        uint32_t frameTimeMs,
-        bool resetPi,
-        float voLi_s,
-        float voLi_i,
-        int16_t voLi_pwm,
-        float voRe_s,
-        float voRe_i,
-        int16_t voRe_pwm,
-        float hiLi_s,
-        float hiRe_s);
+        const RearFrameRequest& request);
 
     void sendStop(Stream& out, uint32_t nowMs);
 
     bool handleVsolOkLine(const char* line, uint32_t nowMs);
+
+    // Variante fuer vorne.ino:
+    // VIST wird intern verarbeitet und die Rear-Istwerte werden gespeichert.
+    bool handleVistLine(const char* line);
+
+    // Variante bleibt erhalten, falls spaeter ein Aufrufer die Rohdaten braucht.
     bool handleVistLine(const char* line, VistMessage& msg);
 
     void armStopSequence();
@@ -93,6 +119,8 @@ public:
 private:
     static const uint8_t STOP_SEND_MAX = 3;
 
+    void clearRearIst();
+
     uint16_t _nextFrameId;
     RearPendingFrame _frame;
 
@@ -104,6 +132,11 @@ private:
 
     uint8_t _stopSendCount;
     bool _stopSequenceArmed;
+
+    float _hiLiIst;
+    float _hiReIst;
+    int16_t _hiLiPwm;
+    int16_t _hiRePwm;
 };
 
 #endif // REAR_FRAME_CLIENT_H

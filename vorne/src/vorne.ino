@@ -1,12 +1,10 @@
 ﻿// vorne.ino
 #include <avr/wdt.h>
 #include "CommandScript.h"
-#include "src/CommProtocol.h"
 #include "src/Hardware.h"
 #include "src/hardware_pins.h"
 #include "src/Control.h"
 #include "src/ControlConfig.h"
-#include "src/CommUtils.h"
 #include "src/UartLink.h"
 #include "src/Connection/ConnectionMonitor.h"
 #include "src/CommandRunner/CommandRunner.h"
@@ -16,11 +14,6 @@
 // ============================================================
 // Globale Variablen
 // ============================================================
-
-static float g_v2_ist = 0.0f;
-static float g_v3_ist = 0.0f;
-static int16_t g_pwm2 = 0;
-static int16_t g_pwm3 = 0;
 
 static uint32_t g_startMs = 0;
 static bool g_timerStarted = false;
@@ -70,24 +63,35 @@ static void startCommandLogRaster(uint32_t now)
     g_timerStarted = true;
 }
 
+static RearFrameRequest makeRearFrameRequest(uint32_t frameTime, bool resetPi)
+{
+    RearFrameRequest request = {};
+
+    request.frameTimeMs = frameTime;
+    request.resetPi = resetPi;
+
+    request.voLi_s = commandRunner.getWheelSoll(VoLi);
+    request.voLi_i = speed[Li].mps();
+    request.voLi_pwm = rad[Li].lastPwm();
+
+    request.voRe_s = commandRunner.getWheelSoll(VoRe);
+    request.voRe_i = speed[Re].mps();
+    request.voRe_pwm = rad[Re].lastPwm();
+
+    request.hiLi_s = commandRunner.getWheelSoll(HiLi);
+    request.hiRe_s = commandRunner.getWheelSoll(HiRe);
+
+    return request;
+}
+
 static void requestRearFrame(uint32_t now, uint32_t frameTime, bool resetPi)
 {
+    const RearFrameRequest request = makeRearFrameRequest(frameTime, resetPi);
+
     rearFrameClient.requestFrame(
         Serial,
         now,
-        frameTime,
-        resetPi,
-
-        commandRunner.getWheelSoll(VoLi),
-        speed[Li].mps(),
-        rad[Li].lastPwm(),
-
-        commandRunner.getWheelSoll(VoRe),
-        speed[Re].mps(),
-        rad[Re].lastPwm(),
-
-        commandRunner.getWheelSoll(HiLi),
-        commandRunner.getWheelSoll(HiRe)
+        request
     );
 
     // VIST wird erst nach VSOL_OK,<frameId> angefordert.
@@ -156,6 +160,16 @@ static void updateConnectionSafety(uint32_t now)
     prevConnected = nowConnected;
 }
 
+static void updateVehicleIst()
+{
+    vehicle.updateIst(
+        speed[Re].mps(),
+        speed[Li].mps(),
+        rearFrameClient.hiLiIst(),
+        rearFrameClient.hiReIst()
+    );
+}
+
 static void handleIncomingLines(uint32_t now)
 {
     if (!uart.availableLine()) return;
@@ -176,29 +190,17 @@ static void handleIncomingLines(uint32_t now)
     // VIST auswerten
     // --------------------------------------------------------
 
-    VistMessage vist = {};
-
-    if (rearFrameClient.handleVistLine(line, vist))
+    if (rearFrameClient.handleVistLine(line))
     {
-        g_v2_ist = int100ToFloat(vist.hiLiIst);
-        g_v3_ist = int100ToFloat(vist.hiReIst);
-        g_pwm2 = vist.hiLiPwm;
-        g_pwm3 = vist.hiRePwm;
-
-        vehicle.updateIst(
-            speed[Re].mps(),
-            speed[Li].mps(),
-            g_v2_ist,
-            g_v3_ist
-        );
+        updateVehicleIst();
 
         printer.printCompletedFrame(
             vehicle,
             rearFrameClient.frame(),
-            g_v2_ist,
-            g_v3_ist,
-            g_pwm2,
-            g_pwm3
+            rearFrameClient.hiLiIst(),
+            rearFrameClient.hiReIst(),
+            rearFrameClient.hiLiPwm(),
+            rearFrameClient.hiRePwm()
         );
     }
 }
@@ -274,12 +276,7 @@ static void updateLogRaster()
 
 static void updateVehicleAndFrontControl(uint32_t now)
 {
-    vehicle.updateIst(
-        speed[Re].mps(),
-        speed[Li].mps(),
-        g_v2_ist,
-        g_v3_ist
-    );
+    updateVehicleIst();
 
     vehicle.update(now);
 

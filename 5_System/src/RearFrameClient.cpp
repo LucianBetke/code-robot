@@ -13,7 +13,11 @@ RearFrameClient::RearFrameClient()
     _waitingVsolOk(false),
     _waitingVist(false),
     _stopSendCount(0),
-    _stopSequenceArmed(false)
+    _stopSequenceArmed(false),
+    _hiLiIst(0.0f),
+    _hiReIst(0.0f),
+    _hiLiPwm(0),
+    _hiRePwm(0)
 {
 }
 
@@ -25,6 +29,7 @@ void RearFrameClient::begin()
     _stopSendCount = 0;
     _stopSequenceArmed = false;
 
+    clearRearIst();
     clearFrame();
     clearWaiting();
 }
@@ -67,6 +72,14 @@ void RearFrameClient::clearFrame()
     _frame.hasFrontSnapshot = false;
 }
 
+void RearFrameClient::clearRearIst()
+{
+    _hiLiIst = 0.0f;
+    _hiReIst = 0.0f;
+    _hiLiPwm = 0;
+    _hiRePwm = 0;
+}
+
 bool RearFrameClient::waitingVsolOk() const
 {
     return _waitingVsolOk;
@@ -92,19 +105,30 @@ uint32_t RearFrameClient::lastSendMs() const
     return _lastSendMs;
 }
 
+float RearFrameClient::hiLiIst() const
+{
+    return _hiLiIst;
+}
+
+float RearFrameClient::hiReIst() const
+{
+    return _hiReIst;
+}
+
+int16_t RearFrameClient::hiLiPwm() const
+{
+    return _hiLiPwm;
+}
+
+int16_t RearFrameClient::hiRePwm() const
+{
+    return _hiRePwm;
+}
+
 bool RearFrameClient::requestFrame(
     Stream& out,
     uint32_t nowMs,
-    uint32_t frameTimeMs,
-    bool resetPi,
-    float voLi_s,
-    float voLi_i,
-    int16_t voLi_pwm,
-    float voRe_s,
-    float voRe_i,
-    int16_t voRe_pwm,
-    float hiLi_s,
-    float hiRe_s)
+    const RearFrameRequest& request)
 {
     if (isBusy())
     {
@@ -114,27 +138,27 @@ bool RearFrameClient::requestFrame(
     const uint16_t frameId = nextFrameId();
 
     _frame.frameId = frameId;
-    _frame.t = frameTimeMs;
+    _frame.t = request.frameTimeMs;
 
-    _frame.voLi_s = voLi_s;
-    _frame.voLi_i = voLi_i;
-    _frame.voLi_pwm = voLi_pwm;
+    _frame.voLi_s = request.voLi_s;
+    _frame.voLi_i = request.voLi_i;
+    _frame.voLi_pwm = request.voLi_pwm;
 
-    _frame.voRe_s = voRe_s;
-    _frame.voRe_i = voRe_i;
-    _frame.voRe_pwm = voRe_pwm;
+    _frame.voRe_s = request.voRe_s;
+    _frame.voRe_i = request.voRe_i;
+    _frame.voRe_pwm = request.voRe_pwm;
 
-    _frame.hiLi_s = hiLi_s;
-    _frame.hiRe_s = hiRe_s;
+    _frame.hiLi_s = request.hiLi_s;
+    _frame.hiRe_s = request.hiRe_s;
 
     _frame.hasFrontSnapshot = true;
 
     startWaitingForVsolOk(nowMs);
 
-    const int16_t hiLi_i100 = floatToInt100(hiLi_s);
-    const int16_t hiRe_i100 = floatToInt100(hiRe_s);
+    const int16_t hiLi_i100 = floatToInt100(request.hiLi_s);
+    const int16_t hiRe_i100 = floatToInt100(request.hiRe_s);
 
-    printVsol(out, frameId, resetPi, hiLi_i100, hiRe_i100);
+    printVsol(out, frameId, request.resetPi, hiLi_i100, hiRe_i100);
 
     _lastSendMs = nowMs;
 
@@ -181,6 +205,12 @@ bool RearFrameClient::handleVsolOkLine(const char* line, uint32_t nowMs)
     return true;
 }
 
+bool RearFrameClient::handleVistLine(const char* line)
+{
+    VistMessage vist = {};
+    return handleVistLine(line, vist);
+}
+
 bool RearFrameClient::handleVistLine(const char* line, VistMessage& msg)
 {
     VistMessage vist = {};
@@ -206,6 +236,11 @@ bool RearFrameClient::handleVistLine(const char* line, VistMessage& msg)
     }
 
     msg = vist;
+
+    _hiLiIst = int100ToFloat(vist.hiLiIst);
+    _hiReIst = int100ToFloat(vist.hiReIst);
+    _hiLiPwm = vist.hiLiPwm;
+    _hiRePwm = vist.hiRePwm;
 
     clearWaiting();
     _frame.hasFrontSnapshot = false;
