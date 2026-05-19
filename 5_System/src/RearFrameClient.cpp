@@ -25,7 +25,6 @@ void RearFrameClient::begin()
 {
     _nextFrameId = 1;
     _lastSendMs = 0;
-
     _stopSendCount = 0;
     _stopSequenceArmed = false;
 
@@ -36,22 +35,16 @@ void RearFrameClient::begin()
 
 uint16_t RearFrameClient::nextFrameId()
 {
-    uint16_t id = _nextFrameId++;
+    const uint16_t id = _nextFrameId++;
 
     if (_nextFrameId == 0) _nextFrameId = 1;
 
     return id;
 }
 
-RearPendingFrame& RearFrameClient::frame()
-{
-    return _frame;
-}
+RearPendingFrame& RearFrameClient::frame() { return _frame; }
 
-const RearPendingFrame& RearFrameClient::frame() const
-{
-    return _frame;
-}
+const RearPendingFrame& RearFrameClient::frame() const { return _frame; }
 
 void RearFrameClient::clearFrame()
 {
@@ -80,60 +73,30 @@ void RearFrameClient::clearRearIst()
     _hiRePwm = 0;
 }
 
-bool RearFrameClient::waitingVsolOk() const
-{
-    return _waitingVsolOk;
-}
+bool RearFrameClient::waitingVsolOk() const { return _waitingVsolOk; }
 
-bool RearFrameClient::waitingVist() const
-{
-    return _waitingVist;
-}
+bool RearFrameClient::waitingVist() const { return _waitingVist; }
 
-bool RearFrameClient::isBusy() const
-{
-    return _waitingVsolOk || _waitingVist;
-}
+bool RearFrameClient::isBusy() const { return _waitingVsolOk || _waitingVist; }
 
-uint32_t RearFrameClient::requestMs() const
-{
-    return _requestMs;
-}
+uint32_t RearFrameClient::requestMs() const { return _requestMs; }
 
-uint32_t RearFrameClient::lastSendMs() const
-{
-    return _lastSendMs;
-}
+uint32_t RearFrameClient::lastSendMs() const { return _lastSendMs; }
 
-float RearFrameClient::hiLiIst() const
-{
-    return _hiLiIst;
-}
+float RearFrameClient::hiLiIst() const { return _hiLiIst; }
 
-float RearFrameClient::hiReIst() const
-{
-    return _hiReIst;
-}
+float RearFrameClient::hiReIst() const { return _hiReIst; }
 
-int16_t RearFrameClient::hiLiPwm() const
-{
-    return _hiLiPwm;
-}
+int16_t RearFrameClient::hiLiPwm() const { return _hiLiPwm; }
 
-int16_t RearFrameClient::hiRePwm() const
-{
-    return _hiRePwm;
-}
+int16_t RearFrameClient::hiRePwm() const { return _hiRePwm; }
 
 bool RearFrameClient::requestFrame(
     Stream& out,
     uint32_t nowMs,
     const RearFrameRequest& request)
 {
-    if (isBusy())
-    {
-        return false;
-    }
+    if (isBusy()) return false;
 
     const uint16_t frameId = nextFrameId();
 
@@ -161,7 +124,6 @@ bool RearFrameClient::requestFrame(
     printVsol(out, frameId, request.resetPi, hiLi_i100, hiRe_i100);
 
     _lastSendMs = nowMs;
-
     return true;
 }
 
@@ -181,25 +143,14 @@ bool RearFrameClient::handleVsolOkLine(const char* line, uint32_t nowMs)
 {
     VsolOkMessage vsolOk = {};
 
-    if (!parseVsolOkLine(line, vsolOk))
-    {
-        return false;
-    }
+    if (!parseVsolOkLine(line, vsolOk)) return false;
 
-    if (!_waitingVsolOk)
-    {
-        return false;
-    }
+    const bool valid =
+        _waitingVsolOk &&
+        _frame.hasFrontSnapshot &&
+        vsolOk.frameId == _frame.frameId;
 
-    if (!_frame.hasFrontSnapshot)
-    {
-        return false;
-    }
-
-    if (vsolOk.frameId != _frame.frameId)
-    {
-        return false;
-    }
+    if (!valid) return false;
 
     startWaitingForVist(nowMs);
     return true;
@@ -215,25 +166,14 @@ bool RearFrameClient::handleVistLine(const char* line, VistMessage& msg)
 {
     VistMessage vist = {};
 
-    if (!parseVistLine(line, vist))
-    {
-        return false;
-    }
+    if (!parseVistLine(line, vist)) return false;
 
-    if (!_waitingVist)
-    {
-        return false;
-    }
+    const bool valid =
+        _waitingVist &&
+        _frame.hasFrontSnapshot &&
+        vist.frameId == _frame.frameId;
 
-    if (!_frame.hasFrontSnapshot)
-    {
-        return false;
-    }
-
-    if (vist.frameId != _frame.frameId)
-    {
-        return false;
-    }
+    if (!valid) return false;
 
     msg = vist;
 
@@ -260,10 +200,7 @@ void RearFrameClient::cancelStopSequence()
     _stopSendCount = 0;
 }
 
-bool RearFrameClient::stopSequenceArmed() const
-{
-    return _stopSequenceArmed;
-}
+bool RearFrameClient::stopSequenceArmed() const { return _stopSequenceArmed; }
 
 bool RearFrameClient::updateStopSequence(
     Stream& out,
@@ -271,20 +208,7 @@ bool RearFrameClient::updateStopSequence(
     bool externalReady,
     uint32_t intervalMs)
 {
-    if (!_stopSequenceArmed)
-    {
-        return false;
-    }
-
-    if (!externalReady)
-    {
-        return false;
-    }
-
-    if (isBusy())
-    {
-        return false;
-    }
+    if (!_stopSequenceArmed || !externalReady || isBusy()) return false;
 
     if (_stopSendCount >= STOP_SEND_MAX)
     {
@@ -292,21 +216,18 @@ bool RearFrameClient::updateStopSequence(
         return false;
     }
 
-    if (_stopSendCount == 0 ||
-        (uint32_t)(nowMs - _lastSendMs) >= intervalMs)
-    {
-        sendStop(out, nowMs);
-        _stopSendCount++;
+    const bool sendDue =
+        _stopSendCount == 0 ||
+        (uint32_t)(nowMs - _lastSendMs) >= intervalMs;
 
-        if (_stopSendCount >= STOP_SEND_MAX)
-        {
-            _stopSequenceArmed = false;
-        }
+    if (!sendDue) return false;
 
-        return true;
-    }
+    sendStop(out, nowMs);
+    _stopSendCount++;
 
-    return false;
+    if (_stopSendCount >= STOP_SEND_MAX) _stopSequenceArmed = false;
+
+    return true;
 }
 
 void RearFrameClient::startWaitingForVsolOk(uint32_t nowMs)
