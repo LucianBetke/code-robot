@@ -1,10 +1,15 @@
 // RearFrameClient.cpp
 #include "RearFrameClient.h"
 
+#include <Arduino.h>
+#include "src/CommProtocol.h"
+#include "src/CommUtils.h"
+
 RearFrameClient::RearFrameClient()
     : _nextFrameId(1),
     _frame(),
     _requestMs(0),
+    _lastSendMs(0),
     _waitingVsolOk(false),
     _waitingVist(false)
 {
@@ -13,6 +18,7 @@ RearFrameClient::RearFrameClient()
 void RearFrameClient::begin()
 {
     _nextFrameId = 1;
+    _lastSendMs = 0;
     clearFrame();
     clearWaiting();
 }
@@ -73,6 +79,72 @@ bool RearFrameClient::isBusy() const
 uint32_t RearFrameClient::requestMs() const
 {
     return _requestMs;
+}
+
+uint32_t RearFrameClient::lastSendMs() const
+{
+    return _lastSendMs;
+}
+
+bool RearFrameClient::requestFrame(
+    Stream& out,
+    uint32_t nowMs,
+    uint32_t frameTimeMs,
+    bool resetPi,
+    float voLi_s,
+    float voLi_i,
+    int16_t voLi_pwm,
+    float voRe_s,
+    float voRe_i,
+    int16_t voRe_pwm,
+    float hiLi_s,
+    float hiRe_s)
+{
+    if (isBusy())
+    {
+        return false;
+    }
+
+    const uint16_t frameId = nextFrameId();
+
+    _frame.frameId = frameId;
+    _frame.t = frameTimeMs;
+
+    _frame.voLi_s = voLi_s;
+    _frame.voLi_i = voLi_i;
+    _frame.voLi_pwm = voLi_pwm;
+
+    _frame.voRe_s = voRe_s;
+    _frame.voRe_i = voRe_i;
+    _frame.voRe_pwm = voRe_pwm;
+
+    _frame.hiLi_s = hiLi_s;
+    _frame.hiRe_s = hiRe_s;
+
+    _frame.hasFrontSnapshot = true;
+
+    startWaitingForVsolOk(nowMs);
+
+    const int16_t hiLi_i100 = floatToInt100(hiLi_s);
+    const int16_t hiRe_i100 = floatToInt100(hiRe_s);
+
+    printVsol(out, frameId, resetPi, hiLi_i100, hiRe_i100);
+
+    _lastSendMs = nowMs;
+
+    return true;
+}
+
+void RearFrameClient::sendStop(Stream& out, uint32_t nowMs)
+{
+    const uint16_t frameId = nextFrameId();
+
+    // resetPi=false reicht hier.
+    // Bei Sollwert 0 fuehrt Rad::setSoll(0) hinten ohnehin einen harten Stop
+    // mit Regler-Reset aus.
+    printVsol(out, frameId, false, 0, 0);
+
+    _lastSendMs = nowMs;
 }
 
 void RearFrameClient::startWaitingForVsolOk(uint32_t nowMs)

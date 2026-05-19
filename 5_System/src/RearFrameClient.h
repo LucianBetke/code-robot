@@ -3,6 +3,8 @@
 
 #include <stdint.h>
 
+class Stream;
+
 // ============================================================
 // Gemeinsamer Log-Datensatz fuer einen Zeitpunkt
 // ============================================================
@@ -50,6 +52,23 @@ public:
     bool waitingVist() const;
     bool isBusy() const;
     uint32_t requestMs() const;
+    uint32_t lastSendMs() const;
+
+    bool requestFrame(
+        Stream& out,
+        uint32_t nowMs,
+        uint32_t frameTimeMs,
+        bool resetPi,
+        float voLi_s,
+        float voLi_i,
+        int16_t voLi_pwm,
+        float voRe_s,
+        float voRe_i,
+        int16_t voRe_pwm,
+        float hiLi_s,
+        float hiRe_s);
+
+    void sendStop(Stream& out, uint32_t nowMs);
 
     void startWaitingForVsolOk(uint32_t nowMs);
     void startWaitingForVist(uint32_t nowMs);
@@ -60,6 +79,7 @@ private:
     RearPendingFrame _frame;
 
     uint32_t _requestMs;
+    uint32_t _lastSendMs;
     bool _waitingVsolOk;
     bool _waitingVist;
 };

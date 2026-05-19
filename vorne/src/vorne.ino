@@ -26,7 +26,6 @@ static uint32_t g_startMs = 0;
 static bool g_timerStarted = false;
 
 static uint32_t g_nextFrameMs = 0;
-static uint32_t g_lastVsolSendMs = 0;
 
 // Nach Befehlsende werden drei Stop-Telegramme gesendet.
 // Wichtig: erst nach dem letzten fertigen Messframe.
@@ -63,32 +62,6 @@ static void resetByWatchdog()
 static bool timeReached(uint32_t now, uint32_t target)
 {
     return (int32_t)(now - target) >= 0;
-}
-
-static void sendRearSoll(uint32_t now, uint16_t frameId, bool resetPi)
-{
-    if (!uart.isConnected()) return;
-
-    int16_t v2_i = floatToInt100(commandRunner.getWheelSoll(HiLi));
-    int16_t v3_i = floatToInt100(commandRunner.getWheelSoll(HiRe));
-
-    printVsol(Serial, frameId, resetPi, v2_i, v3_i);
-
-    g_lastVsolSendMs = now;
-}
-
-static void sendRearStop(uint32_t now)
-{
-    if (!uart.isConnected()) return;
-
-    uint16_t frameId = rearFrameClient.nextFrameId();
-
-    // resetPi=false reicht hier.
-    // Bei Sollwert 0 fuehrt Rad::setSoll(0) hinten ohnehin einen harten Stop
-    // mit Regler-Reset aus.
-    printVsol(Serial, frameId, false, 0, 0);
-
-    g_lastVsolSendMs = now;
 }
 
 static void applyFrontWheelSoll()
@@ -144,28 +117,23 @@ static void printCompletedFrame(float hiLi_i, float hiRe_i, int16_t hiLi_pwm, in
 
 static void requestRearFrame(uint32_t now, uint32_t frameTime, bool resetPi)
 {
-    uint16_t frameId = rearFrameClient.nextFrameId();
-    RearPendingFrame& frame = rearFrameClient.frame();
+    rearFrameClient.requestFrame(
+        Serial,
+        now,
+        frameTime,
+        resetPi,
 
-    frame.frameId = frameId;
-    frame.t = frameTime;
+        commandRunner.getWheelSoll(VoLi),
+        speed[Li].mps(),
+        rad[Li].lastPwm(),
 
-    frame.voLi_s = commandRunner.getWheelSoll(VoLi);
-    frame.voLi_i = speed[Li].mps();
-    frame.voLi_pwm = rad[Li].lastPwm();
+        commandRunner.getWheelSoll(VoRe),
+        speed[Re].mps(),
+        rad[Re].lastPwm(),
 
-    frame.voRe_s = commandRunner.getWheelSoll(VoRe);
-    frame.voRe_i = speed[Re].mps();
-    frame.voRe_pwm = rad[Re].lastPwm();
-
-    frame.hiLi_s = commandRunner.getWheelSoll(HiLi);
-    frame.hiRe_s = commandRunner.getWheelSoll(HiRe);
-
-    frame.hasFrontSnapshot = true;
-
-    rearFrameClient.startWaitingForVsolOk(now);
-
-    sendRearSoll(now, frameId, resetPi);
+        commandRunner.getWheelSoll(HiLi),
+        commandRunner.getWheelSoll(HiRe)
+    );
 
     // VIST wird erst nach VSOL_OK,<frameId> angefordert.
 }
@@ -186,7 +154,7 @@ static void requestStartFrameForNewCommand(uint32_t now)
     applyFrontWheelSoll();
 
     rearFrameClient.clearWaiting();
-    rearFrameClient.frame().hasFrontSnapshot = false;
+    rearFrameClient.clearFrame();
 
     startCommandLogRaster(now);
 
@@ -393,9 +361,9 @@ static void updateRearStopSequence(uint32_t now)
     {
         if (g_stopSendCount < STOP_SEND_MAX)
         {
-            if (g_stopSendCount == 0 || now - g_lastVsolSendMs >= VEHICLE_DT_MS)
+            if (g_stopSendCount == 0 || now - rearFrameClient.lastSendMs() >= VEHICLE_DT_MS)
             {
-                sendRearStop(now);
+                rearFrameClient.sendStop(Serial, now);
                 g_stopSendCount++;
             }
         }

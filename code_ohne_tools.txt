@@ -3121,11 +3121,8 @@ RearFrameClient::RearFrameClient()
 void RearFrameClient::begin()
 {
     _nextFrameId = 1;
-    _requestMs = 0;
-    _waitingVsolOk = false;
-    _waitingVist = false;
-
     clearFrame();
+    clearWaiting();
 }
 
 uint16_t RearFrameClient::nextFrameId()
@@ -3166,6 +3163,47 @@ void RearFrameClient::clearFrame()
     _frame.hasFrontSnapshot = false;
 }
 
+bool RearFrameClient::waitingVsolOk() const
+{
+    return _waitingVsolOk;
+}
+
+bool RearFrameClient::waitingVist() const
+{
+    return _waitingVist;
+}
+
+bool RearFrameClient::isBusy() const
+{
+    return _waitingVsolOk || _waitingVist;
+}
+
+uint32_t RearFrameClient::requestMs() const
+{
+    return _requestMs;
+}
+
+void RearFrameClient::startWaitingForVsolOk(uint32_t nowMs)
+{
+    _waitingVsolOk = true;
+    _waitingVist = false;
+    _requestMs = nowMs;
+}
+
+void RearFrameClient::startWaitingForVist(uint32_t nowMs)
+{
+    _waitingVsolOk = false;
+    _waitingVist = true;
+    _requestMs = nowMs;
+}
+
+void RearFrameClient::clearWaiting()
+{
+    _waitingVsolOk = false;
+    _waitingVist = false;
+    _requestMs = 0;
+}
+
 ============================================================
 FILE: C:\Users\Acer\source\repos\robot\5_System\src\RearFrameClient.h
 ============================================================
@@ -3199,7 +3237,8 @@ struct RearPendingFrame
 
 // ============================================================
 // RearFrameClient
-// Verwaltet den aktuellen Hinterachs-Messframe und die Frame-ID.
+// Verwaltet den aktuellen Hinterachs-Messframe,
+// die Frame-ID und den Wartezustand auf VSOL_OK / VIST.
 // ============================================================
 
 class RearFrameClient
@@ -3216,9 +3255,19 @@ public:
 
     void clearFrame();
 
+    bool waitingVsolOk() const;
+    bool waitingVist() const;
+    bool isBusy() const;
+    uint32_t requestMs() const;
+
+    void startWaitingForVsolOk(uint32_t nowMs);
+    void startWaitingForVist(uint32_t nowMs);
+    void clearWaiting();
+
 private:
     uint16_t _nextFrameId;
     RearPendingFrame _frame;
+
     uint32_t _requestMs;
     bool _waitingVsolOk;
     bool _waitingVist;
