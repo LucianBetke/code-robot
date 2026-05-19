@@ -3109,10 +3109,15 @@ FILE: C:\Users\Acer\source\repos\robot\5_System\src\RearFrameClient.cpp
 // RearFrameClient.cpp
 #include "RearFrameClient.h"
 
+#include <Arduino.h>
+#include "src/CommProtocol.h"
+#include "src/CommUtils.h"
+
 RearFrameClient::RearFrameClient()
     : _nextFrameId(1),
     _frame(),
     _requestMs(0),
+    _lastSendMs(0),
     _waitingVsolOk(false),
     _waitingVist(false)
 {
@@ -3121,6 +3126,7 @@ RearFrameClient::RearFrameClient()
 void RearFrameClient::begin()
 {
     _nextFrameId = 1;
+    _lastSendMs = 0;
     clearFrame();
     clearWaiting();
 }
@@ -3183,6 +3189,72 @@ uint32_t RearFrameClient::requestMs() const
     return _requestMs;
 }
 
+uint32_t RearFrameClient::lastSendMs() const
+{
+    return _lastSendMs;
+}
+
+bool RearFrameClient::requestFrame(
+    Stream& out,
+    uint32_t nowMs,
+    uint32_t frameTimeMs,
+    bool resetPi,
+    float voLi_s,
+    float voLi_i,
+    int16_t voLi_pwm,
+    float voRe_s,
+    float voRe_i,
+    int16_t voRe_pwm,
+    float hiLi_s,
+    float hiRe_s)
+{
+    if (isBusy())
+    {
+        return false;
+    }
+
+    const uint16_t frameId = nextFrameId();
+
+    _frame.frameId = frameId;
+    _frame.t = frameTimeMs;
+
+    _frame.voLi_s = voLi_s;
+    _frame.voLi_i = voLi_i;
+    _frame.voLi_pwm = voLi_pwm;
+
+    _frame.voRe_s = voRe_s;
+    _frame.voRe_i = voRe_i;
+    _frame.voRe_pwm = voRe_pwm;
+
+    _frame.hiLi_s = hiLi_s;
+    _frame.hiRe_s = hiRe_s;
+
+    _frame.hasFrontSnapshot = true;
+
+    startWaitingForVsolOk(nowMs);
+
+    const int16_t hiLi_i100 = floatToInt100(hiLi_s);
+    const int16_t hiRe_i100 = floatToInt100(hiRe_s);
+
+    printVsol(out, frameId, resetPi, hiLi_i100, hiRe_i100);
+
+    _lastSendMs = nowMs;
+
+    return true;
+}
+
+void RearFrameClient::sendStop(Stream& out, uint32_t nowMs)
+{
+    const uint16_t frameId = nextFrameId();
+
+    // resetPi=false reicht hier.
+    // Bei Sollwert 0 fuehrt Rad::setSoll(0) hinten ohnehin einen harten Stop
+    // mit Regler-Reset aus.
+    printVsol(out, frameId, false, 0, 0);
+
+    _lastSendMs = nowMs;
+}
+
 void RearFrameClient::startWaitingForVsolOk(uint32_t nowMs)
 {
     _waitingVsolOk = true;
@@ -3211,6 +3283,8 @@ FILE: C:\Users\Acer\source\repos\robot\5_System\src\RearFrameClient.h
 #pragma once
 
 #include <stdint.h>
+
+class Stream;
 
 // ============================================================
 // Gemeinsamer Log-Datensatz fuer einen Zeitpunkt
@@ -3259,6 +3333,23 @@ public:
     bool waitingVist() const;
     bool isBusy() const;
     uint32_t requestMs() const;
+    uint32_t lastSendMs() const;
+
+    bool requestFrame(
+        Stream& out,
+        uint32_t nowMs,
+        uint32_t frameTimeMs,
+        bool resetPi,
+        float voLi_s,
+        float voLi_i,
+        int16_t voLi_pwm,
+        float voRe_s,
+        float voRe_i,
+        int16_t voRe_pwm,
+        float hiLi_s,
+        float hiRe_s);
+
+    void sendStop(Stream& out, uint32_t nowMs);
 
     void startWaitingForVsolOk(uint32_t nowMs);
     void startWaitingForVist(uint32_t nowMs);
@@ -3269,6 +3360,7 @@ private:
     RearPendingFrame _frame;
 
     uint32_t _requestMs;
+    uint32_t _lastSendMs;
     bool _waitingVsolOk;
     bool _waitingVist;
 };
@@ -3561,7 +3653,6 @@ static uint32_t g_startMs = 0;
 static bool g_timerStarted = false;
 
 static uint32_t g_nextFrameMs = 0;
-static uint32_t g_lastVsolSendMs = 0;
 
 // Nach Befehlsende werden drei Stop-Telegramme gesendet.
 // Wichtig: erst nach dem letzten fertigen Messframe.
@@ -3598,32 +3689,6 @@ static void resetByWatchdog()
 static bool timeReached(uint32_t now, uint32_t target)
 {
     return (int32_t)(now - target) >= 0;
-}
-
-static void sendRearSoll(uint32_t now, uint16_t frameId, bool resetPi)
-{
-    if (!uart.isConnected()) return;
-
-    int16_t v2_i = floatToInt100(commandRunner.getWheelSoll(HiLi));
-    int16_t v3_i = floatToInt100(commandRunner.getWheelSoll(HiRe));
-
-    printVsol(Serial, frameId, resetPi, v2_i, v3_i);
-
-    g_lastVsolSendMs = now;
-}
-
-static void sendRearStop(uint32_t now)
-{
-    if (!uart.isConnected()) return;
-
-    uint16_t frameId = rearFrameClient.nextFrameId();
-
-    // resetPi=false reicht hier.
-    // Bei Sollwert 0 fuehrt Rad::setSoll(0) hinten ohnehin einen harten Stop
-    // mit Regler-Reset aus.
-    printVsol(Serial, frameId, false, 0, 0);
-
-    g_lastVsolSendMs = now;
 }
 
 static void applyFrontWheelSoll()
@@ -3679,28 +3744,23 @@ static void printCompletedFrame(float hiLi_i, float hiRe_i, int16_t hiLi_pwm, in
 
 static void requestRearFrame(uint32_t now, uint32_t frameTime, bool resetPi)
 {
-    uint16_t frameId = rearFrameClient.nextFrameId();
-    RearPendingFrame& frame = rearFrameClient.frame();
+    rearFrameClient.requestFrame(
+        Serial,
+        now,
+        frameTime,
+        resetPi,
 
-    frame.frameId = frameId;
-    frame.t = frameTime;
+        commandRunner.getWheelSoll(VoLi),
+        speed[Li].mps(),
+        rad[Li].lastPwm(),
 
-    frame.voLi_s = commandRunner.getWheelSoll(VoLi);
-    frame.voLi_i = speed[Li].mps();
-    frame.voLi_pwm = rad[Li].lastPwm();
+        commandRunner.getWheelSoll(VoRe),
+        speed[Re].mps(),
+        rad[Re].lastPwm(),
 
-    frame.voRe_s = commandRunner.getWheelSoll(VoRe);
-    frame.voRe_i = speed[Re].mps();
-    frame.voRe_pwm = rad[Re].lastPwm();
-
-    frame.hiLi_s = commandRunner.getWheelSoll(HiLi);
-    frame.hiRe_s = commandRunner.getWheelSoll(HiRe);
-
-    frame.hasFrontSnapshot = true;
-
-    rearFrameClient.startWaitingForVsolOk(now);
-
-    sendRearSoll(now, frameId, resetPi);
+        commandRunner.getWheelSoll(HiLi),
+        commandRunner.getWheelSoll(HiRe)
+    );
 
     // VIST wird erst nach VSOL_OK,<frameId> angefordert.
 }
@@ -3721,7 +3781,7 @@ static void requestStartFrameForNewCommand(uint32_t now)
     applyFrontWheelSoll();
 
     rearFrameClient.clearWaiting();
-    rearFrameClient.frame().hasFrontSnapshot = false;
+    rearFrameClient.clearFrame();
 
     startCommandLogRaster(now);
 
@@ -3928,9 +3988,9 @@ static void updateRearStopSequence(uint32_t now)
     {
         if (g_stopSendCount < STOP_SEND_MAX)
         {
-            if (g_stopSendCount == 0 || now - g_lastVsolSendMs >= VEHICLE_DT_MS)
+            if (g_stopSendCount == 0 || now - rearFrameClient.lastSendMs() >= VEHICLE_DT_MS)
             {
-                sendRearStop(now);
+                rearFrameClient.sendStop(Serial, now);
                 g_stopSendCount++;
             }
         }

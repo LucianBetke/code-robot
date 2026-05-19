@@ -206,24 +206,15 @@ static void handleIncomingLines(uint32_t now)
     if (!uart.availableLine()) return;
 
     const char* line = uart.getLine();
-    RearPendingFrame& frame = rearFrameClient.frame();
 
     // --------------------------------------------------------
     // VSOL_OK auswerten
     // --------------------------------------------------------
 
-    VsolOkMessage vsolOk = {};
-
-    if (parseVsolOkLine(line, vsolOk))
+    if (rearFrameClient.handleVsolOkLine(line, now))
     {
-        if (rearFrameClient.waitingVsolOk() &&
-            frame.hasFrontSnapshot &&
-            vsolOk.frameId == frame.frameId)
-        {
-            rearFrameClient.startWaitingForVist(now);
-
-            hardware_requestVist();
-        }
+        hardware_requestVist();
+        return;
     }
 
     // --------------------------------------------------------
@@ -232,29 +223,21 @@ static void handleIncomingLines(uint32_t now)
 
     VistMessage vist = {};
 
-    if (parseVistLine(line, vist))
+    if (rearFrameClient.handleVistLine(line, vist))
     {
-        if (rearFrameClient.waitingVist() &&
-            frame.hasFrontSnapshot &&
-            vist.frameId == frame.frameId)
-        {
-            g_v2_ist = int100ToFloat(vist.hiLiIst);
-            g_v3_ist = int100ToFloat(vist.hiReIst);
-            g_pwm2 = vist.hiLiPwm;
-            g_pwm3 = vist.hiRePwm;
+        g_v2_ist = int100ToFloat(vist.hiLiIst);
+        g_v3_ist = int100ToFloat(vist.hiReIst);
+        g_pwm2 = vist.hiLiPwm;
+        g_pwm3 = vist.hiRePwm;
 
-            vehicle.updateIst(
-                speed[Re].mps(),
-                speed[Li].mps(),
-                g_v2_ist,
-                g_v3_ist
-            );
+        vehicle.updateIst(
+            speed[Re].mps(),
+            speed[Li].mps(),
+            g_v2_ist,
+            g_v3_ist
+        );
 
-            printCompletedFrame(g_v2_ist, g_v3_ist, g_pwm2, g_pwm3);
-
-            rearFrameClient.clearWaiting();
-            frame.hasFrontSnapshot = false;
-        }
+        printCompletedFrame(g_v2_ist, g_v3_ist, g_pwm2, g_pwm3);
     }
 }
 

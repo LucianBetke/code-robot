@@ -147,6 +147,66 @@ void RearFrameClient::sendStop(Stream& out, uint32_t nowMs)
     _lastSendMs = nowMs;
 }
 
+bool RearFrameClient::handleVsolOkLine(const char* line, uint32_t nowMs)
+{
+    VsolOkMessage vsolOk = {};
+
+    if (!parseVsolOkLine(line, vsolOk))
+    {
+        return false;
+    }
+
+    if (!_waitingVsolOk)
+    {
+        return false;
+    }
+
+    if (!_frame.hasFrontSnapshot)
+    {
+        return false;
+    }
+
+    if (vsolOk.frameId != _frame.frameId)
+    {
+        return false;
+    }
+
+    startWaitingForVist(nowMs);
+    return true;
+}
+
+bool RearFrameClient::handleVistLine(const char* line, VistMessage& msg)
+{
+    VistMessage vist = {};
+
+    if (!parseVistLine(line, vist))
+    {
+        return false;
+    }
+
+    if (!_waitingVist)
+    {
+        return false;
+    }
+
+    if (!_frame.hasFrontSnapshot)
+    {
+        return false;
+    }
+
+    if (vist.frameId != _frame.frameId)
+    {
+        return false;
+    }
+
+    msg = vist;
+
+    clearWaiting();
+    _frame.hasFrontSnapshot = false;
+
+    return true;
+}
+
 void RearFrameClient::startWaitingForVsolOk(uint32_t nowMs)
 {
     _waitingVsolOk = true;

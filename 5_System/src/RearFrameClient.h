@@ -4,6 +4,7 @@
 #include <stdint.h>
 
 class Stream;
+struct VistMessage;
 
 // ============================================================
 // Gemeinsamer Log-Datensatz fuer einen Zeitpunkt
@@ -69,6 +70,9 @@ public:
         float hiRe_s);
 
     void sendStop(Stream& out, uint32_t nowMs);
+
+    bool handleVsolOkLine(const char* line, uint32_t nowMs);
+    bool handleVistLine(const char* line, VistMessage& msg);
 
     void startWaitingForVsolOk(uint32_t nowMs);
     void startWaitingForVist(uint32_t nowMs);
