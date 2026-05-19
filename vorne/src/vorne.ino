@@ -27,13 +27,6 @@ static bool g_timerStarted = false;
 
 static uint32_t g_nextFrameMs = 0;
 
-// Nach Befehlsende werden drei Stop-Telegramme gesendet.
-// Wichtig: erst nach dem letzten fertigen Messframe.
-// Und nur, wenn das ganze Script fertig ist.
-static const uint8_t STOP_SEND_MAX = 3;
-static uint8_t g_stopSendCount = 0;
-static bool g_stopSequenceArmed = false;
-
 // ============================================================
 // Globale Objekte
 // ============================================================
@@ -281,8 +274,7 @@ static void updateCommandRunner(uint32_t now)
     // Nicht zwischen zwei direkt aufeinanderfolgenden CMDT-Befehlen.
     if (wasActive && !isActive && commandRunner.isFinished())
     {
-        g_stopSequenceArmed = true;
-        g_stopSendCount = 0;
+        rearFrameClient.armStopSequence();
     }
 }
 
@@ -302,8 +294,7 @@ static void updateLogRaster()
 
     if (commandRunner.isActive())
     {
-        g_stopSequenceArmed = false;
-        g_stopSendCount = 0;
+        rearFrameClient.cancelStopSequence();
 
         // Normalerweise wird das Raster schon im Startframe gesetzt.
         // Das hier bleibt als Fallback, falls ein aktiver Befehl ohne
@@ -336,26 +327,17 @@ static void updateRearStopSequence(uint32_t now)
     // Nicht zwischen zwei Befehlen.
     // Nicht senden, solange noch VSOL_OK oder VIST offen ist.
 
-    if (uart.isConnected() &&
+    const bool ready =
+        uart.isConnected() &&
         !commandRunner.isActive() &&
-        commandRunner.isFinished() &&
-        !rearFrameClient.isBusy() &&
-        g_stopSequenceArmed)
-    {
-        if (g_stopSendCount < STOP_SEND_MAX)
-        {
-            if (g_stopSendCount == 0 || now - rearFrameClient.lastSendMs() >= VEHICLE_DT_MS)
-            {
-                rearFrameClient.sendStop(Serial, now);
-                g_stopSendCount++;
-            }
-        }
+        commandRunner.isFinished();
 
-        if (g_stopSendCount >= STOP_SEND_MAX)
-        {
-            g_stopSequenceArmed = false;
-        }
-    }
+    rearFrameClient.updateStopSequence(
+        Serial,
+        now,
+        ready,
+        VEHICLE_DT_MS
+    );
 }
 
 // ============================================================

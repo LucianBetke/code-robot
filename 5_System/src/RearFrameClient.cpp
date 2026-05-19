@@ -11,7 +11,9 @@ RearFrameClient::RearFrameClient()
     _requestMs(0),
     _lastSendMs(0),
     _waitingVsolOk(false),
-    _waitingVist(false)
+    _waitingVist(false),
+    _stopSendCount(0),
+    _stopSequenceArmed(false)
 {
 }
 
@@ -19,6 +21,10 @@ void RearFrameClient::begin()
 {
     _nextFrameId = 1;
     _lastSendMs = 0;
+
+    _stopSendCount = 0;
+    _stopSequenceArmed = false;
+
     clearFrame();
     clearWaiting();
 }
@@ -205,6 +211,67 @@ bool RearFrameClient::handleVistLine(const char* line, VistMessage& msg)
     _frame.hasFrontSnapshot = false;
 
     return true;
+}
+
+void RearFrameClient::armStopSequence()
+{
+    _stopSequenceArmed = true;
+    _stopSendCount = 0;
+}
+
+void RearFrameClient::cancelStopSequence()
+{
+    _stopSequenceArmed = false;
+    _stopSendCount = 0;
+}
+
+bool RearFrameClient::stopSequenceArmed() const
+{
+    return _stopSequenceArmed;
+}
+
+bool RearFrameClient::updateStopSequence(
+    Stream& out,
+    uint32_t nowMs,
+    bool externalReady,
+    uint32_t intervalMs)
+{
+    if (!_stopSequenceArmed)
+    {
+        return false;
+    }
+
+    if (!externalReady)
+    {
+        return false;
+    }
+
+    if (isBusy())
+    {
+        return false;
+    }
+
+    if (_stopSendCount >= STOP_SEND_MAX)
+    {
+        cancelStopSequence();
+        return false;
+    }
+
+    if (_stopSendCount == 0 ||
+        (uint32_t)(nowMs - _lastSendMs) >= intervalMs)
+    {
+        sendStop(out, nowMs);
+        _stopSendCount++;
+
+        if (_stopSendCount >= STOP_SEND_MAX)
+        {
+            _stopSequenceArmed = false;
+        }
+
+        return true;
+    }
+
+    return false;
 }
 
 void RearFrameClient::startWaitingForVsolOk(uint32_t nowMs)

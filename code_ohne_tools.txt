@@ -3255,6 +3255,66 @@ void RearFrameClient::sendStop(Stream& out, uint32_t nowMs)
     _lastSendMs = nowMs;
 }
 
+bool RearFrameClient::handleVsolOkLine(const char* line, uint32_t nowMs)
+{
+    VsolOkMessage vsolOk = {};
+
+    if (!parseVsolOkLine(line, vsolOk))
+    {
+        return false;
+    }
+
+    if (!_waitingVsolOk)
+    {
+        return false;
+    }
+
+    if (!_frame.hasFrontSnapshot)
+    {
+        return false;
+    }
+
+    if (vsolOk.frameId != _frame.frameId)
+    {
+        return false;
+    }
+
+    startWaitingForVist(nowMs);
+    return true;
+}
+
+bool RearFrameClient::handleVistLine(const char* line, VistMessage& msg)
+{
+    VistMessage vist = {};
+
+    if (!parseVistLine(line, vist))
+    {
+        return false;
+    }
+
+    if (!_waitingVist)
+    {
+        return false;
+    }
+
+    if (!_frame.hasFrontSnapshot)
+    {
+        return false;
+    }
+
+    if (vist.frameId != _frame.frameId)
+    {
+        return false;
+    }
+
+    msg = vist;
+
+    clearWaiting();
+    _frame.hasFrontSnapshot = false;
+
+    return true;
+}
+
 void RearFrameClient::startWaitingForVsolOk(uint32_t nowMs)
 {
     _waitingVsolOk = true;
@@ -3285,6 +3345,7 @@ FILE: C:\Users\Acer\source\repos\robot\5_System\src\RearFrameClient.h
 #include <stdint.h>
 
 class Stream;
+struct VistMessage;
 
 // ============================================================
 // Gemeinsamer Log-Datensatz fuer einen Zeitpunkt
@@ -3350,6 +3411,9 @@ public:
         float hiRe_s);
 
     void sendStop(Stream& out, uint32_t nowMs);
+
+    bool handleVsolOkLine(const char* line, uint32_t nowMs);
+    bool handleVistLine(const char* line, VistMessage& msg);
 
     void startWaitingForVsolOk(uint32_t nowMs);
     void startWaitingForVist(uint32_t nowMs);
@@ -3833,24 +3897,15 @@ static void handleIncomingLines(uint32_t now)
     if (!uart.availableLine()) return;
 
     const char* line = uart.getLine();
-    RearPendingFrame& frame = rearFrameClient.frame();
 
     // --------------------------------------------------------
     // VSOL_OK auswerten
     // --------------------------------------------------------
 
-    VsolOkMessage vsolOk = {};
-
-    if (parseVsolOkLine(line, vsolOk))
+    if (rearFrameClient.handleVsolOkLine(line, now))
     {
-        if (rearFrameClient.waitingVsolOk() &&
-            frame.hasFrontSnapshot &&
-            vsolOk.frameId == frame.frameId)
-        {
-            rearFrameClient.startWaitingForVist(now);
-
-            hardware_requestVist();
-        }
+        hardware_requestVist();
+        return;
     }
 
     // --------------------------------------------------------
@@ -3859,29 +3914,21 @@ static void handleIncomingLines(uint32_t now)
 
     VistMessage vist = {};
 
-    if (parseVistLine(line, vist))
+    if (rearFrameClient.handleVistLine(line, vist))
     {
-        if (rearFrameClient.waitingVist() &&
-            frame.hasFrontSnapshot &&
-            vist.frameId == frame.frameId)
-        {
-            g_v2_ist = int100ToFloat(vist.hiLiIst);
-            g_v3_ist = int100ToFloat(vist.hiReIst);
-            g_pwm2 = vist.hiLiPwm;
-            g_pwm3 = vist.hiRePwm;
+        g_v2_ist = int100ToFloat(vist.hiLiIst);
+        g_v3_ist = int100ToFloat(vist.hiReIst);
+        g_pwm2 = vist.hiLiPwm;
+        g_pwm3 = vist.hiRePwm;
 
-            vehicle.updateIst(
-                speed[Re].mps(),
-                speed[Li].mps(),
-                g_v2_ist,
-                g_v3_ist
-            );
+        vehicle.updateIst(
+            speed[Re].mps(),
+            speed[Li].mps(),
+            g_v2_ist,
+            g_v3_ist
+        );
 
-            printCompletedFrame(g_v2_ist, g_v3_ist, g_pwm2, g_pwm3);
-
-            rearFrameClient.clearWaiting();
-            frame.hasFrontSnapshot = false;
-        }
+        printCompletedFrame(g_v2_ist, g_v3_ist, g_pwm2, g_pwm3);
     }
 }
 
