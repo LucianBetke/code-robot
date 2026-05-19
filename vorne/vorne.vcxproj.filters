@@ -26,10 +26,16 @@
     <ClInclude Include="src\CommandScript.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\FrontApp.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\vorne.ino" />
     <ClCompile Include="src\CommandScript.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\FrontApp.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
