@@ -9,16 +9,8 @@
 #include "src/Connection/ConnectionMonitor.h"
 #include "src/CommandRunner/CommandRunner.h"
 #include "src/RearFrameClient.h"
+#include "src/FrameScheduler.h"
 #include "src/Printer.h"
-
-// ============================================================
-// Globale Variablen
-// ============================================================
-
-static uint32_t g_startMs = 0;
-static bool g_timerStarted = false;
-
-static uint32_t g_nextFrameMs = 0;
 
 // ============================================================
 // Globale Objekte
@@ -33,6 +25,7 @@ CommandRunner commandRunner(vehicle, uart, parser,
     CommandScript::get, CommandScript::size);
 
 RearFrameClient rearFrameClient;
+FrameScheduler frameScheduler;
 Printer printer;
 
 // ============================================================
@@ -45,22 +38,10 @@ static void resetByWatchdog()
     while (1) {}
 }
 
-static bool timeReached(uint32_t now, uint32_t target)
-{
-    return (int32_t)(now - target) >= 0;
-}
-
 static void applyFrontWheelSoll()
 {
     rad[Li].setSoll(commandRunner.getWheelSoll(VoLi));
     rad[Re].setSoll(commandRunner.getWheelSoll(VoRe));
-}
-
-static void startCommandLogRaster(uint32_t now)
-{
-    g_startMs = now;
-    g_nextFrameMs = now + VEHICLE_DT_MS;
-    g_timerStarted = true;
 }
 
 static RearFrameRequest makeRearFrameRequest(uint32_t frameTime, bool resetPi)
@@ -115,7 +96,7 @@ static void requestStartFrameForNewCommand(uint32_t now)
     rearFrameClient.clearWaiting();
     rearFrameClient.clearFrame();
 
-    startCommandLogRaster(now);
+    frameScheduler.start(now);
 
     // Echter Startframe des neuen Befehls:
     // t = 0, neue Sollwerte, aktuelle Istwerte, aktuelle PWM-Zustaende.
@@ -130,17 +111,14 @@ static void tryRequestFrame(uint32_t now)
 {
     if (!commandRunner.isActive()) return;
     if (rearFrameClient.isBusy()) return;
-    if (!g_timerStarted) return;
 
-    if (timeReached(now, g_nextFrameMs))
+    uint32_t frameTime = 0;
+
+    if (frameScheduler.due(now, frameTime))
     {
-        uint32_t frameTime = g_nextFrameMs - g_startMs;
-
         // Normales Messframe innerhalb desselben CMDT:
         // resetPi=false, damit hinten den Integrator nicht staendig loescht.
         requestRearFrame(now, frameTime, false);
-
-        g_nextFrameMs += VEHICLE_DT_MS;
     }
 }
 
@@ -255,7 +233,7 @@ static void updateLogRaster()
 
     if (!commandRunner.isActive())
     {
-        g_timerStarted = false;
+        frameScheduler.stop();
 
         if (!rearFrameClient.isBusy())
         {
@@ -270,7 +248,10 @@ static void updateLogRaster()
         // Normalerweise wird das Raster schon im Startframe gesetzt.
         // Das hier bleibt als Fallback, falls ein aktiver Befehl ohne
         // Startframe laufen sollte.
-        if (!g_timerStarted) startCommandLogRaster(millis());
+        if (!frameScheduler.isRunning())
+        {
+            frameScheduler.start(millis());
+        }
     }
 }
 
@@ -328,6 +309,7 @@ void setup()
 
     commandRunner.begin();
     rearFrameClient.begin();
+    frameScheduler.begin(VEHICLE_DT_MS);
 
     uart.begin();
     conn.begin(true);

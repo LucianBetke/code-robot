@@ -16,6 +16,7 @@
   <ItemGroup>
     <ClCompile Include="$(MSBuildThisFileDirectory)src\CommandRunner\CommandRunner.cpp" />
     <ClCompile Include="$(MSBuildThisFileDirectory)src\Connection\ConnectionMonitor.cpp" />
+    <ClCompile Include="$(MSBuildThisFileDirectory)src\FrameScheduler.cpp" />
     <ClCompile Include="$(MSBuildThisFileDirectory)src\Parser\CommandParser.cpp" />
     <ClCompile Include="$(MSBuildThisFileDirectory)src\Printer.cpp" />
     <ClCompile Include="$(MSBuildThisFileDirectory)src\RearFrameClient.cpp" />
@@ -23,6 +24,7 @@
   <ItemGroup>
     <ClInclude Include="$(MSBuildThisFileDirectory)src\CommandRunner\CommandRunner.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)src\Connection\ConnectionMonitor.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)src\FrameScheduler.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)src\Parser\CommandParser.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)src\Printer.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)src\PrinterConfig.h" />
