@@ -19,7 +19,9 @@ FrontApp::FrontApp()
     commandRunner(vehicle, uart, parser, CommandScript::get, CommandScript::size),
     rearFrameClient(),
     frameScheduler(),
-    printer()
+    odometer(),
+    printer(),
+    _odomResetPending(true)
 {
 }
 
@@ -60,6 +62,7 @@ void FrontApp::handleIncomingLines(uint32_t now)
     if (rearFrameClient.handleVistLine(line))
     {
         updateVehicleIst();
+        updateOdometerFromCompletedFrame();
 
         printer.printCompletedFrame(
             vehicle,
@@ -68,6 +71,11 @@ void FrontApp::handleIncomingLines(uint32_t now)
             rearFrameClient.hiReIst(),
             rearFrameClient.hiLiPwm(),
             rearFrameClient.hiRePwm()
+        );
+
+        printer.printOdom(
+            rearFrameClient.frame().t,
+            odometer
         );
     }
 }
@@ -203,6 +211,31 @@ void FrontApp::updateVehicleIst()
     );
 }
 
+void FrontApp::updateOdometerFromCompletedFrame()
+{
+    const RearPendingFrame& frame = rearFrameClient.frame();
+
+    if (_odomResetPending || !odometer.isPrimed())
+    {
+        odometer.reset(
+            frame.voReCnt,
+            frame.voLiCnt,
+            frame.hiLiCnt,
+            frame.hiReCnt
+        );
+
+        _odomResetPending = false;
+        return;
+    }
+
+    odometer.update(
+        frame.voReCnt,
+        frame.voLiCnt,
+        frame.hiLiCnt,
+        frame.hiReCnt
+    );
+}
+
 RearFrameRequest FrontApp::makeRearFrameRequest(uint32_t frameTime, bool resetPi)
 {
     RearFrameRequest request = {};
@@ -213,10 +246,12 @@ RearFrameRequest FrontApp::makeRearFrameRequest(uint32_t frameTime, bool resetPi
     request.voLi_s = commandRunner.getWheelSoll(VoLi);
     request.voLi_i = speed[Li].mps();
     request.voLi_pwm = rad[Li].lastPwm();
+    request.voLiCnt = (int32_t)speed[Li].counts_total();
 
     request.voRe_s = commandRunner.getWheelSoll(VoRe);
     request.voRe_i = speed[Re].mps();
     request.voRe_pwm = rad[Re].lastPwm();
+    request.voReCnt = (int32_t)speed[Re].counts_total();
 
     request.hiLi_s = commandRunner.getWheelSoll(HiLi);
     request.hiRe_s = commandRunner.getWheelSoll(HiRe);
@@ -243,11 +278,10 @@ void FrontApp::requestStartFrameForNewCommand(uint32_t now)
     if (rearFrameClient.isBusy()) return;
 
     // Neuer CMDT-Fahrabschnitt:
-    // Kein globaler PI-Hard-Reset mehr.
-    // Rad::setSoll() entscheidet lokal:
-    // - gleicher Vortrieb: Integrator behalten
-    // - Stop: reset() + Bremse
-    // - Start/Richtungswechsel: presetOutput()
+    // Odometrie wird beim ersten vollstaendigen Frame dieses Befehls
+    // auf die dann vorhandenen vier Encoderstaende genullt.
+    _odomResetPending = true;
+
     applyFrontWheelSoll();
 
     rearFrameClient.clearWaiting();
@@ -256,6 +290,7 @@ void FrontApp::requestStartFrameForNewCommand(uint32_t now)
     frameScheduler.start(now);
 
     // Echter Startframe des neuen Befehls:
-    // t = 0, neue Sollwerte, aktuelle Istwerte, aktuelle PWM-Zustaende.
+    // t = 0, neue Sollwerte, aktuelle Istwerte, aktuelle PWM-Zustaende,
+    // aktuelle Front-Counts. Rear-Counts kommen danach ueber VIST.
     requestRearFrame(now, 0, false);
 }

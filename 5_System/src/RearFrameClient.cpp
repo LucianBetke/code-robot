@@ -17,7 +17,9 @@ RearFrameClient::RearFrameClient()
     _hiLiIst(0.0f),
     _hiReIst(0.0f),
     _hiLiPwm(0),
-    _hiRePwm(0)
+    _hiRePwm(0),
+    _hiLiCnt(0),
+    _hiReCnt(0)
 {
 }
 
@@ -54,13 +56,18 @@ void RearFrameClient::clearFrame()
     _frame.voLi_s = 0.0f;
     _frame.voLi_i = 0.0f;
     _frame.voLi_pwm = 0;
+    _frame.voLiCnt = 0;
 
     _frame.voRe_s = 0.0f;
     _frame.voRe_i = 0.0f;
     _frame.voRe_pwm = 0;
+    _frame.voReCnt = 0;
 
     _frame.hiLi_s = 0.0f;
     _frame.hiRe_s = 0.0f;
+
+    _frame.hiLiCnt = 0;
+    _frame.hiReCnt = 0;
 
     _frame.hasFrontSnapshot = false;
 }
@@ -71,6 +78,8 @@ void RearFrameClient::clearRearIst()
     _hiReIst = 0.0f;
     _hiLiPwm = 0;
     _hiRePwm = 0;
+    _hiLiCnt = 0;
+    _hiReCnt = 0;
 }
 
 bool RearFrameClient::waitingVsolOk() const { return _waitingVsolOk; }
@@ -91,6 +100,10 @@ int16_t RearFrameClient::hiLiPwm() const { return _hiLiPwm; }
 
 int16_t RearFrameClient::hiRePwm() const { return _hiRePwm; }
 
+int32_t RearFrameClient::hiLiCnt() const { return _hiLiCnt; }
+
+int32_t RearFrameClient::hiReCnt() const { return _hiReCnt; }
+
 bool RearFrameClient::requestFrame(
     Stream& out,
     uint32_t nowMs,
@@ -106,13 +119,18 @@ bool RearFrameClient::requestFrame(
     _frame.voLi_s = request.voLi_s;
     _frame.voLi_i = request.voLi_i;
     _frame.voLi_pwm = request.voLi_pwm;
+    _frame.voLiCnt = request.voLiCnt;
 
     _frame.voRe_s = request.voRe_s;
     _frame.voRe_i = request.voRe_i;
     _frame.voRe_pwm = request.voRe_pwm;
+    _frame.voReCnt = request.voReCnt;
 
     _frame.hiLi_s = request.hiLi_s;
     _frame.hiRe_s = request.hiRe_s;
+
+    _frame.hiLiCnt = 0;
+    _frame.hiReCnt = 0;
 
     _frame.hasFrontSnapshot = true;
 
@@ -131,9 +149,6 @@ void RearFrameClient::sendStop(Stream& out, uint32_t nowMs)
 {
     const uint16_t frameId = nextFrameId();
 
-    // resetPi=false reicht hier.
-    // Bei Sollwert 0 fuehrt Rad::setSoll(0) hinten ohnehin einen harten Stop
-    // mit Regler-Reset aus.
     printVsol(out, frameId, false, 0, 0);
 
     _lastSendMs = nowMs;
@@ -181,6 +196,11 @@ bool RearFrameClient::handleVistLine(const char* line, VistMessage& msg)
     _hiReIst = int100ToFloat(vist.hiReIst);
     _hiLiPwm = vist.hiLiPwm;
     _hiRePwm = vist.hiRePwm;
+    _hiLiCnt = vist.hiLiCnt;
+    _hiReCnt = vist.hiReCnt;
+
+    _frame.hiLiCnt = vist.hiLiCnt;
+    _frame.hiReCnt = vist.hiReCnt;
 
     clearWaiting();
     _frame.hasFrontSnapshot = false;

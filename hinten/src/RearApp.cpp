@@ -99,14 +99,26 @@ void RearApp::handleSyncVist()
 
     syncFlag = false;
 
-    int16_t vIstLi = floatToInt100(speed[Li].mps());
-    int16_t vIstRe = floatToInt100(speed[Re].mps());
+    const int16_t vIstLi = floatToInt100(speed[Li].mps());
+    const int16_t vIstRe = floatToInt100(speed[Re].mps());
 
-    int16_t pwm2 = rad[Li].lastPwm();
-    int16_t pwm3 = rad[Re].lastPwm();
+    const int16_t pwmLi = rad[Li].lastPwm();
+    const int16_t pwmRe = rad[Re].lastPwm();
+
+    const int32_t cntLi = (int32_t)speed[Li].counts_total();
+    const int32_t cntRe = (int32_t)speed[Re].counts_total();
 
     if (uart.isConnected())
     {
-        printVist(Serial, lastVsolFrameId, vIstLi, vIstRe, pwm2, pwm3);
+        printVist(
+            Serial,
+            lastVsolFrameId,
+            vIstLi,
+            vIstRe,
+            pwmLi,
+            pwmRe,
+            cntLi,
+            cntRe
+        );
     }
 }

@@ -19,14 +19,16 @@ class Stream;
 //
 // VIST:
 //   Rear -> Front
-//   VIST,<frameId>,<hiLiIst>,<hiReIst>,<hiLiPwm>,<hiRePwm>
+//   VIST,<frameId>,<hiLiIst>,<hiReIst>,<hiLiPwm>,<hiRePwm>,<hiLiCnt>,<hiReCnt>
 //
-// Alle Geschwindigkeiten werden als int16_t im Format:
+// Geschwindigkeiten werden als int16_t im Format:
 //   Wert = m/s * 100
 // uebertragen.
 // Beispiel:
 //   0.30 m/s  ->  30
 //  -0.20 m/s  -> -20
+//
+// Encoder-Counts werden als int32_t Rohwerte uebertragen.
 // ============================================================
 
 struct VsolMessage
@@ -49,6 +51,8 @@ struct VistMessage
     int16_t hiReIst;
     int16_t hiLiPwm;
     int16_t hiRePwm;
+    int32_t hiLiCnt;
+    int32_t hiReCnt;
 };
 
 // ============================================================
@@ -65,4 +69,13 @@ bool parseVistLine(const char* line, VistMessage& msg);
 
 void printVsol(Stream& out, uint16_t frameId, bool resetPi, int16_t hiLiSoll, int16_t hiReSoll);
 void printVsolOk(Stream& out, uint16_t frameId);
-void printVist(Stream& out, uint16_t frameId, int16_t hiLiIst, int16_t hiReIst, int16_t hiLiPwm, int16_t hiRePwm);
+
+void printVist(
+    Stream& out,
+    uint16_t frameId,
+    int16_t hiLiIst,
+    int16_t hiReIst,
+    int16_t hiLiPwm,
+    int16_t hiRePwm,
+    int32_t hiLiCnt,
+    int32_t hiReCnt);

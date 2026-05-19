@@ -138,7 +138,7 @@
       <CLanguageStandard>gnu11</CLanguageStandard>
       <CAdditionalWarning />
       <CppAdditionalWarning />
-      <ForcedIncludeFiles>$(ProjectDir)..\..\..\..\..\..\program files\microsoft visual studio\2022\community\common7\ide\extensions\1k0ittsa.sce\Micro Platforms\default\vm-intelli-pre.h;$(ProjectDir)..\..\..\..\AppData\Local\Temp\VMBuilds\hinten\nano_atmega328old\Release\.vmintelli\fe923858276385cf214b4e61a7b84f53\vm-intelli-gcc-defines.h;$(ProjectDir)..\..\..\..\..\..\program files\microsoft visual studio\2022\community\common7\ide\extensions\1k0ittsa.sce\Micro Platforms\default\vm-intelli-post.h;$(ProjectDir)__vm\.hinten.vsarduino.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ForcedIncludeFiles>$(ProjectDir)..\..\..\..\..\..\program files\microsoft visual studio\2022\community\common7\ide\extensions\hti01q5k.0wk\Micro Platforms\default\vm-intelli-pre.h;$(ProjectDir)..\..\..\..\AppData\Local\Temp\VMBuilds\hinten\nano_atmega328old\Release\.vmintelli\6daa557ab86cc194a90eecdffb098b19\vm-intelli-gcc-defines.h;$(ProjectDir)..\..\..\..\..\..\program files\microsoft visual studio\2022\community\common7\ide\extensions\hti01q5k.0wk\Micro Platforms\default\vm-intelli-post.h;$(ProjectDir)__vm\.hinten.vsarduino.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
       <UndefineAllPreprocessorDefinitions>true</UndefineAllPreprocessorDefinitions>
       <IgnoreStandardIncludePath>true</IgnoreStandardIncludePath>
       <PreprocessorDefinitions>_VMICRO_INTELLISENSE;__AVR_atmega328p__;__AVR_ATmega328P__;__AVR_ATmega328p__;F_CPU=16000000L;ARDUINO=108010;ARDUINO_AVR_NANO;ARDUINO_ARCH_AVR;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -148,7 +148,7 @@
   <ImportGroup Label="ExtensionTargets" />
   <ProjectExtensions>
     <VisualStudio>
-      <UserProperties arduino.upload.port="COM5" config.Debug.arduino.upload.port="COM5" config.Debug.customdebug_nano_atmega328old_debugger_type="universal" config.Release.arduino.upload.port="COM7" />
+      <UserProperties arduino.build.auto_discover_includes="1" arduino.upload.port="COM5" config.Debug.arduino.upload.port="COM5" config.Debug.customdebug_nano_atmega328old_debugger_type="universal" config.Release.arduino.upload.port="COM7" />
     </VisualStudio>
   </ProjectExtensions>
 </Project>

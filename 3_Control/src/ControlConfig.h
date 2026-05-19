@@ -12,7 +12,6 @@
 #ifndef CONTROLCONFIG_H
 #define CONTROLCONFIG_H
 
-#pragma once
 
 #include <Arduino.h>
 #include "src/globals.h"

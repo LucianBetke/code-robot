@@ -1,6 +1,8 @@
 // Printer.cpp
 #include "Printer.h"
 
+#include "src/MecanumOdometer.h"
+
 void Printer::printHeader(VehicleController& vehicle, const ControlConfig& cfg)
 {
     Serial.print(F("#INFO,Raeder,Li,Kp=")); Serial.print(cfg.pi[Li].Kp, 2);
@@ -67,6 +69,16 @@ void Printer::printCompletedFrame(
         hiRe_pwm
     );
 #endif
+}
+
+void Printer::printOdom(uint32_t t_ms, const MecanumOdometer& odom)
+{
+    Serial.print(F("#ODOM,"));
+    Serial.print(t_ms);              Serial.print(',');
+    Serial.print(odom.xCm(), 2);     Serial.print(',');
+    Serial.print(odom.yCm(), 2);     Serial.print(',');
+    Serial.print(odom.absCm(), 2);   Serial.print(',');
+    Serial.println(odom.phiDeg(), 2);
 }
 
 #ifdef PRINTER_MODE_CHASSIS

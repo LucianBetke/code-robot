@@ -10,7 +10,6 @@
 #ifndef MOTOR_H
 #define MOTOR_H
 
-#pragma once
 #include <Arduino.h>
 
 class Enc;

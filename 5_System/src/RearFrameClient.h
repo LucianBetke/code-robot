@@ -19,13 +19,18 @@ struct RearPendingFrame
     float voLi_s;
     float voLi_i;
     int16_t voLi_pwm;
+    int32_t voLiCnt;
 
     float voRe_s;
     float voRe_i;
     int16_t voRe_pwm;
+    int32_t voReCnt;
 
     float hiLi_s;
     float hiRe_s;
+
+    int32_t hiLiCnt;
+    int32_t hiReCnt;
 
     bool hasFrontSnapshot;
 };
@@ -42,10 +47,12 @@ struct RearFrameRequest
     float voLi_s;
     float voLi_i;
     int16_t voLi_pwm;
+    int32_t voLiCnt;
 
     float voRe_s;
     float voRe_i;
     int16_t voRe_pwm;
+    int32_t voReCnt;
 
     float hiLi_s;
     float hiRe_s;
@@ -59,6 +66,7 @@ struct RearFrameRequest
 //  - Wartezustand auf VSOL_OK / VIST
 //  - Stop-Sequenz fuer hinten
 //  - letzte gueltige Rear-Istwerte
+//  - hintere Encoder-Counts fuer Odometrie
 // ============================================================
 
 class RearFrameClient
@@ -85,6 +93,8 @@ public:
     float hiReIst() const;
     int16_t hiLiPwm() const;
     int16_t hiRePwm() const;
+    int32_t hiLiCnt() const;
+    int32_t hiReCnt() const;
 
     bool requestFrame(
         Stream& out,
@@ -95,11 +105,7 @@ public:
 
     bool handleVsolOkLine(const char* line, uint32_t nowMs);
 
-    // Variante fuer vorne.ino:
-    // VIST wird intern verarbeitet und die Rear-Istwerte werden gespeichert.
     bool handleVistLine(const char* line);
-
-    // Variante bleibt erhalten, falls spaeter ein Aufrufer die Rohdaten braucht.
     bool handleVistLine(const char* line, VistMessage& msg);
 
     void armStopSequence();
@@ -137,6 +143,8 @@ private:
     float _hiReIst;
     int16_t _hiLiPwm;
     int16_t _hiRePwm;
+    int32_t _hiLiCnt;
+    int32_t _hiReCnt;
 };
 
 #endif // REAR_FRAME_CLIENT_H

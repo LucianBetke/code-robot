@@ -2,7 +2,6 @@
 #ifndef UARTLINK_H
 #define UARTLINK_H
 
-#pragma once
 #include <Arduino.h>
 
 class UartLink

@@ -7,6 +7,7 @@
 #include "CommandScript.h"
 
 #include "src/VehicleController.h"
+#include "src/MecanumOdometer.h"
 #include "src/UartLink.h"
 #include "src/Connection/ConnectionMonitor.h"
 #include "src/Parser/CommandParser.h"
@@ -46,6 +47,7 @@ public:
 
     RearFrameClient rearFrameClient;
     FrameScheduler frameScheduler;
+    MecanumOdometer odometer;
     Printer printer;
 
     // --------------------------------------------------------
@@ -65,10 +67,13 @@ public:
     bool isConnected() const;
 
 private:
+    bool _odomResetPending;
+
     void resetByWatchdog();
 
     void applyFrontWheelSoll();
     void updateVehicleIst();
+    void updateOdometerFromCompletedFrame();
 
     RearFrameRequest makeRearFrameRequest(uint32_t frameTime, bool resetPi);
     void requestRearFrame(uint32_t now, uint32_t frameTime, bool resetPi);

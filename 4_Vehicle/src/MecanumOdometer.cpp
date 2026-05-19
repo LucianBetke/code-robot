@@ -73,10 +73,18 @@ bool MecanumOdometer::update(
     const float dHiLi = countsToMm(dHiLiCnt);
     const float dHiRe = countsToMm(dHiReCnt);
 
-    // Vorwaertskinematik fuer Mecanum:
-    // +x  = vorwaerts
-    // +y  = links
-    // +phi = Drehung gegen Uhrzeigersinn
+    // Vorwaertskinematik passend zu VehicleController::applyMixer():
+    //
+    // vVoRe = vx + vy + k*wz
+    // vVoLi = vx - vy - k*wz
+    // vHiLi = vx + vy - k*wz
+    // vHiRe = vx - vy + k*wz
+    //
+    // Daraus:
+    // dx   = (VoRe + VoLi + HiLi + HiRe) / 4
+    // dy   = (VoRe - VoLi + HiLi - HiRe) / 4
+    // dphi = (VoRe - VoLi - HiLi + HiRe) / (4*k)
+
     const float dx_body_mm =
         (dVoRe + dVoLi + dHiLi + dHiRe) * 0.25f;
 
@@ -90,9 +98,9 @@ bool MecanumOdometer::update(
     _last_dy_body_mm = dy_body_mm;
     _last_dphi_rad = dphi_rad;
 
-    // Koerperkoordinaten in Weltkoordinaten drehen.
-    // Bei CMDP Version 1 ist wz = 0, trotzdem ist das hier schon korrekt
-    // fuer spaetere Drehbewegungen vorbereitet.
+    // Körperkoordinaten in Weltkoordinaten drehen.
+    // Bei CMDP Version 1 ist wz = 0, aber so bleibt die Klasse
+    // schon fuer spaetere Drehbewegungen richtig vorbereitet.
     const float phi_mid = _phi_rad + 0.5f * dphi_rad;
     const float c = cosf(phi_mid);
     const float s = sinf(phi_mid);

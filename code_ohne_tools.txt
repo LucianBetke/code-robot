@@ -88,6 +88,51 @@ static bool parseInt16(const char*& p, int16_t& out)
     return true;
 }
 
+static bool parseInt32(const char*& p, int32_t& out)
+{
+    skipSpaces(p);
+
+    bool negative = false;
+
+    if (*p == '-')
+    {
+        negative = true;
+        p++;
+    }
+
+    if (*p < '0' || *p > '9') return false;
+
+    uint32_t value = 0;
+    const uint32_t limit = negative ? 2147483648UL : 2147483647UL;
+
+    while (*p >= '0' && *p <= '9')
+    {
+        value = value * 10UL + (uint32_t)(*p - '0');
+
+        if (value > limit) return false;
+
+        p++;
+    }
+
+    if (negative)
+    {
+        if (value == 2147483648UL)
+        {
+            out = (int32_t)(-2147483647L - 1L);
+        }
+        else
+        {
+            out = -(int32_t)value;
+        }
+    }
+    else
+    {
+        out = (int32_t)value;
+    }
+
+    return true;
+}
+
 // ============================================================
 // VSOL Parser
 // Format:
@@ -162,7 +207,7 @@ bool parseVsolOkLine(const char* line, VsolOkMessage& msg)
 // ============================================================
 // VIST Parser
 // Format:
-//   VIST,<frameId>,<hiLiIst>,<hiReIst>,<hiLiPwm>,<hiRePwm>
+//   VIST,<frameId>,<hiLiIst>,<hiReIst>,<hiLiPwm>,<hiRePwm>,<hiLiCnt>,<hiReCnt>
 // ============================================================
 
 bool parseVistLine(const char* line, VistMessage& msg)
@@ -176,6 +221,8 @@ bool parseVistLine(const char* line, VistMessage& msg)
     int16_t hiReIstTmp = 0;
     int16_t hiLiPwmTmp = 0;
     int16_t hiRePwmTmp = 0;
+    int32_t hiLiCntTmp = 0;
+    int32_t hiReCntTmp = 0;
 
     if (!expectText(p, "VIST,")) return false;
     if (!parseUInt16(p, frameIdTmp)) return false;
@@ -201,6 +248,16 @@ bool parseVistLine(const char* line, VistMessage& msg)
     if (!parseInt16(p, hiRePwmTmp)) return false;
 
     skipSpaces(p);
+    if (!expectChar(p, ',')) return false;
+
+    if (!parseInt32(p, hiLiCntTmp)) return false;
+
+    skipSpaces(p);
+    if (!expectChar(p, ',')) return false;
+
+    if (!parseInt32(p, hiReCntTmp)) return false;
+
+    skipSpaces(p);
     if (*p != '\0') return false;
 
     msg.frameId = frameIdTmp;
@@ -208,6 +265,8 @@ bool parseVistLine(const char* line, VistMessage& msg)
     msg.hiReIst = hiReIstTmp;
     msg.hiLiPwm = hiLiPwmTmp;
     msg.hiRePwm = hiRePwmTmp;
+    msg.hiLiCnt = hiLiCntTmp;
+    msg.hiReCnt = hiReCntTmp;
 
     return true;
 }
@@ -245,10 +304,18 @@ void printVsolOk(Stream& out, uint16_t frameId)
 // ============================================================
 // Ausgabe: VIST
 // Format:
-//   VIST,<frameId>,<hiLiIst>,<hiReIst>,<hiLiPwm>,<hiRePwm>
+//   VIST,<frameId>,<hiLiIst>,<hiReIst>,<hiLiPwm>,<hiRePwm>,<hiLiCnt>,<hiReCnt>
 // ============================================================
 
-void printVist(Stream& out, uint16_t frameId, int16_t hiLiIst, int16_t hiReIst, int16_t hiLiPwm, int16_t hiRePwm)
+void printVist(
+    Stream& out,
+    uint16_t frameId,
+    int16_t hiLiIst,
+    int16_t hiReIst,
+    int16_t hiLiPwm,
+    int16_t hiRePwm,
+    int32_t hiLiCnt,
+    int32_t hiReCnt)
 {
     out.print(F("VIST,"));
     out.print((unsigned int)frameId);
@@ -259,7 +326,11 @@ void printVist(Stream& out, uint16_t frameId, int16_t hiLiIst, int16_t hiReIst, 
     out.print(',');
     out.print((int)hiLiPwm);
     out.print(',');
-    out.println((int)hiRePwm);
+    out.print((int)hiRePwm);
+    out.print(',');
+    out.print((long)hiLiCnt);
+    out.print(',');
+    out.println((long)hiReCnt);
 }
 
 ============================================================
@@ -286,14 +357,16 @@ class Stream;
 //
 // VIST:
 //   Rear -> Front
-//   VIST,<frameId>,<hiLiIst>,<hiReIst>,<hiLiPwm>,<hiRePwm>
+//   VIST,<frameId>,<hiLiIst>,<hiReIst>,<hiLiPwm>,<hiRePwm>,<hiLiCnt>,<hiReCnt>
 //
-// Alle Geschwindigkeiten werden als int16_t im Format:
+// Geschwindigkeiten werden als int16_t im Format:
 //   Wert = m/s * 100
 // uebertragen.
 // Beispiel:
 //   0.30 m/s  ->  30
 //  -0.20 m/s  -> -20
+//
+// Encoder-Counts werden als int32_t Rohwerte uebertragen.
 // ============================================================
 
 struct VsolMessage
@@ -316,6 +389,8 @@ struct VistMessage
     int16_t hiReIst;
     int16_t hiLiPwm;
     int16_t hiRePwm;
+    int32_t hiLiCnt;
+    int32_t hiReCnt;
 };
 
 // ============================================================
@@ -332,7 +407,16 @@ bool parseVistLine(const char* line, VistMessage& msg);
 
 void printVsol(Stream& out, uint16_t frameId, bool resetPi, int16_t hiLiSoll, int16_t hiReSoll);
 void printVsolOk(Stream& out, uint16_t frameId);
-void printVist(Stream& out, uint16_t frameId, int16_t hiLiIst, int16_t hiReIst, int16_t hiLiPwm, int16_t hiRePwm);
+
+void printVist(
+    Stream& out,
+    uint16_t frameId,
+    int16_t hiLiIst,
+    int16_t hiReIst,
+    int16_t hiLiPwm,
+    int16_t hiRePwm,
+    int32_t hiLiCnt,
+    int32_t hiReCnt);
 
 ============================================================
 FILE: C:\Users\Acer\source\repos\robot\1_Common\src\CommUtils.h
@@ -486,6 +570,9 @@ constexpr float WHEEL_BASE_MM = MECANUM_LX_MM * 2.0f;
 
 /** Spurweite links ↔ rechts (mm), nur als abgeleiteter Kontrollwert */
 constexpr float TRACK_WIDTH_MM = MECANUM_LY_MM * 2.0f;
+
+/** Mecanum-Faktor in mm */
+constexpr float MECANUM_K_MM = MECANUM_LX_MM + MECANUM_LY_MM;
 
 /** Lx in Meter */
 constexpr float MECANUM_LX_M = MECANUM_LX_MM / 1000.0f;
@@ -2009,6 +2096,210 @@ private:
 };
 
 ============================================================
+FILE: C:\Users\Acer\source\repos\robot\4_Vehicle\src\MecanumOdometer.cpp
+============================================================
+// ============================================================
+// File: MecanumOdometer.cpp
+// ============================================================
+
+#include "MecanumOdometer.h"
+
+#include <math.h>
+#include "src/globals.h"
+
+MecanumOdometer::MecanumOdometer()
+    : _primed(false),
+    _lastVoReCnt(0),
+    _lastVoLiCnt(0),
+    _lastHiLiCnt(0),
+    _lastHiReCnt(0),
+    _x_mm(0.0f),
+    _y_mm(0.0f),
+    _abs_mm(0.0f),
+    _phi_rad(0.0f),
+    _last_dx_body_mm(0.0f),
+    _last_dy_body_mm(0.0f),
+    _last_dphi_rad(0.0f)
+{
+}
+
+void MecanumOdometer::reset(
+    int32_t voReCnt,
+    int32_t voLiCnt,
+    int32_t hiLiCnt,
+    int32_t hiReCnt)
+{
+    _primed = true;
+
+    _lastVoReCnt = voReCnt;
+    _lastVoLiCnt = voLiCnt;
+    _lastHiLiCnt = hiLiCnt;
+    _lastHiReCnt = hiReCnt;
+
+    _x_mm = 0.0f;
+    _y_mm = 0.0f;
+    _abs_mm = 0.0f;
+    _phi_rad = 0.0f;
+
+    _last_dx_body_mm = 0.0f;
+    _last_dy_body_mm = 0.0f;
+    _last_dphi_rad = 0.0f;
+}
+
+bool MecanumOdometer::update(
+    int32_t voReCnt,
+    int32_t voLiCnt,
+    int32_t hiLiCnt,
+    int32_t hiReCnt)
+{
+    if (!_primed)
+    {
+        reset(voReCnt, voLiCnt, hiLiCnt, hiReCnt);
+        return false;
+    }
+
+    const int32_t dVoReCnt = voReCnt - _lastVoReCnt;
+    const int32_t dVoLiCnt = voLiCnt - _lastVoLiCnt;
+    const int32_t dHiLiCnt = hiLiCnt - _lastHiLiCnt;
+    const int32_t dHiReCnt = hiReCnt - _lastHiReCnt;
+
+    _lastVoReCnt = voReCnt;
+    _lastVoLiCnt = voLiCnt;
+    _lastHiLiCnt = hiLiCnt;
+    _lastHiReCnt = hiReCnt;
+
+    const float dVoRe = countsToMm(dVoReCnt);
+    const float dVoLi = countsToMm(dVoLiCnt);
+    const float dHiLi = countsToMm(dHiLiCnt);
+    const float dHiRe = countsToMm(dHiReCnt);
+
+    // Vorwaertskinematik passend zu VehicleController::applyMixer():
+    //
+    // vVoRe = vx + vy + k*wz
+    // vVoLi = vx - vy - k*wz
+    // vHiLi = vx + vy - k*wz
+    // vHiRe = vx - vy + k*wz
+    //
+    // Daraus:
+    // dx   = (VoRe + VoLi + HiLi + HiRe) / 4
+    // dy   = (VoRe - VoLi + HiLi - HiRe) / 4
+    // dphi = (VoRe - VoLi - HiLi + HiRe) / (4*k)
+
+    const float dx_body_mm =
+        (dVoRe + dVoLi + dHiLi + dHiRe) * 0.25f;
+
+    const float dy_body_mm =
+        (dVoRe - dVoLi + dHiLi - dHiRe) * 0.25f;
+
+    const float dphi_rad =
+        (dVoRe - dVoLi - dHiLi + dHiRe) / (4.0f * MECANUM_K_MM);
+
+    _last_dx_body_mm = dx_body_mm;
+    _last_dy_body_mm = dy_body_mm;
+    _last_dphi_rad = dphi_rad;
+
+    // Körperkoordinaten in Weltkoordinaten drehen.
+    // Bei CMDP Version 1 ist wz = 0, aber so bleibt die Klasse
+    // schon fuer spaetere Drehbewegungen richtig vorbereitet.
+    const float phi_mid = _phi_rad + 0.5f * dphi_rad;
+    const float c = cosf(phi_mid);
+    const float s = sinf(phi_mid);
+
+    const float dx_world_mm = dx_body_mm * c - dy_body_mm * s;
+    const float dy_world_mm = dx_body_mm * s + dy_body_mm * c;
+
+    _x_mm += dx_world_mm;
+    _y_mm += dy_world_mm;
+    _phi_rad += dphi_rad;
+
+    _abs_mm = sqrtf(_x_mm * _x_mm + _y_mm * _y_mm);
+
+    return true;
+}
+
+float MecanumOdometer::countsToMm(int32_t dCounts) const
+{
+    return ((float)dCounts / (float)COUNTS_PER_REV) * RAD_UMFANG_MM;
+}
+
+float MecanumOdometer::phiDeg() const
+{
+    return _phi_rad * 57.2957795f;
+}
+
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\4_Vehicle\src\MecanumOdometer.h
+============================================================
+// ============================================================
+// File: MecanumOdometer.h
+// Zweck:
+//  - Mecanum-Odometrie aus vier Rad-Encoderständen
+//  - Berechnet x/y/phi aus Radwegen
+//  - Grundlage fuer CMDP(vx, vy, wz) p
+// ============================================================
+
+#ifndef MECANUM_ODOMETER_H
+#define MECANUM_ODOMETER_H
+
+#include <stdint.h>
+
+class MecanumOdometer
+{
+public:
+    MecanumOdometer();
+
+    void reset(
+        int32_t voReCnt,
+        int32_t voLiCnt,
+        int32_t hiLiCnt,
+        int32_t hiReCnt);
+
+    bool update(
+        int32_t voReCnt,
+        int32_t voLiCnt,
+        int32_t hiLiCnt,
+        int32_t hiReCnt);
+
+    bool isPrimed() const { return _primed; }
+
+    float xMm() const { return _x_mm; }
+    float yMm() const { return _y_mm; }
+    float absMm() const { return _abs_mm; }
+
+    float xCm() const { return _x_mm * 0.1f; }
+    float yCm() const { return _y_mm * 0.1f; }
+    float absCm() const { return _abs_mm * 0.1f; }
+
+    float phiRad() const { return _phi_rad; }
+    float phiDeg() const;
+
+    float lastDxBodyMm() const { return _last_dx_body_mm; }
+    float lastDyBodyMm() const { return _last_dy_body_mm; }
+    float lastDphiRad() const { return _last_dphi_rad; }
+
+private:
+    float countsToMm(int32_t dCounts) const;
+
+    bool _primed;
+
+    int32_t _lastVoReCnt;
+    int32_t _lastVoLiCnt;
+    int32_t _lastHiLiCnt;
+    int32_t _lastHiReCnt;
+
+    float _x_mm;
+    float _y_mm;
+    float _abs_mm;
+    float _phi_rad;
+
+    float _last_dx_body_mm;
+    float _last_dy_body_mm;
+    float _last_dphi_rad;
+};
+
+#endif // MECANUM_ODOMETER_H
+
+============================================================
 FILE: C:\Users\Acer\source\repos\robot\4_Vehicle\src\VehicleController.cpp
 ============================================================
 // ============================================================
@@ -3015,6 +3306,8 @@ FILE: C:\Users\Acer\source\repos\robot\5_System\src\Printer.cpp
 // Printer.cpp
 #include "Printer.h"
 
+#include "src/MecanumOdometer.h"
+
 void Printer::printHeader(VehicleController& vehicle, const ControlConfig& cfg)
 {
     Serial.print(F("#INFO,Raeder,Li,Kp=")); Serial.print(cfg.pi[Li].Kp, 2);
@@ -3081,6 +3374,16 @@ void Printer::printCompletedFrame(
         hiRe_pwm
     );
 #endif
+}
+
+void Printer::printOdom(uint32_t t_ms, const MecanumOdometer& odom)
+{
+    Serial.print(F("#ODOM,"));
+    Serial.print(t_ms);              Serial.print(',');
+    Serial.print(odom.xCm(), 2);     Serial.print(',');
+    Serial.print(odom.yCm(), 2);     Serial.print(',');
+    Serial.print(odom.absCm(), 2);   Serial.print(',');
+    Serial.println(odom.phiDeg(), 2);
 }
 
 #ifdef PRINTER_MODE_CHASSIS
@@ -3208,6 +3511,8 @@ FILE: C:\Users\Acer\source\repos\robot\5_System\src\Printer.h
 #include "src/RearFrameClient.h"
 #include "PrinterConfig.h"
 
+class MecanumOdometer;
+
 class Printer
 {
 public:
@@ -3220,6 +3525,8 @@ public:
         float hiRe_i,
         int16_t hiLi_pwm,
         int16_t hiRe_pwm);
+
+    void printOdom(uint32_t t_ms, const MecanumOdometer& odom);
 
 #ifdef PRINTER_MODE_CHASSIS
     void printWheels(VehicleController& vehicle,
@@ -3293,7 +3600,9 @@ RearFrameClient::RearFrameClient()
     _hiLiIst(0.0f),
     _hiReIst(0.0f),
     _hiLiPwm(0),
-    _hiRePwm(0)
+    _hiRePwm(0),
+    _hiLiCnt(0),
+    _hiReCnt(0)
 {
 }
 
@@ -3330,13 +3639,18 @@ void RearFrameClient::clearFrame()
     _frame.voLi_s = 0.0f;
     _frame.voLi_i = 0.0f;
     _frame.voLi_pwm = 0;
+    _frame.voLiCnt = 0;
 
     _frame.voRe_s = 0.0f;
     _frame.voRe_i = 0.0f;
     _frame.voRe_pwm = 0;
+    _frame.voReCnt = 0;
 
     _frame.hiLi_s = 0.0f;
     _frame.hiRe_s = 0.0f;
+
+    _frame.hiLiCnt = 0;
+    _frame.hiReCnt = 0;
 
     _frame.hasFrontSnapshot = false;
 }
@@ -3347,6 +3661,8 @@ void RearFrameClient::clearRearIst()
     _hiReIst = 0.0f;
     _hiLiPwm = 0;
     _hiRePwm = 0;
+    _hiLiCnt = 0;
+    _hiReCnt = 0;
 }
 
 bool RearFrameClient::waitingVsolOk() const { return _waitingVsolOk; }
@@ -3367,6 +3683,10 @@ int16_t RearFrameClient::hiLiPwm() const { return _hiLiPwm; }
 
 int16_t RearFrameClient::hiRePwm() const { return _hiRePwm; }
 
+int32_t RearFrameClient::hiLiCnt() const { return _hiLiCnt; }
+
+int32_t RearFrameClient::hiReCnt() const { return _hiReCnt; }
+
 bool RearFrameClient::requestFrame(
     Stream& out,
     uint32_t nowMs,
@@ -3382,13 +3702,18 @@ bool RearFrameClient::requestFrame(
     _frame.voLi_s = request.voLi_s;
     _frame.voLi_i = request.voLi_i;
     _frame.voLi_pwm = request.voLi_pwm;
+    _frame.voLiCnt = request.voLiCnt;
 
     _frame.voRe_s = request.voRe_s;
     _frame.voRe_i = request.voRe_i;
     _frame.voRe_pwm = request.voRe_pwm;
+    _frame.voReCnt = request.voReCnt;
 
     _frame.hiLi_s = request.hiLi_s;
     _frame.hiRe_s = request.hiRe_s;
+
+    _frame.hiLiCnt = 0;
+    _frame.hiReCnt = 0;
 
     _frame.hasFrontSnapshot = true;
 
@@ -3407,9 +3732,6 @@ void RearFrameClient::sendStop(Stream& out, uint32_t nowMs)
 {
     const uint16_t frameId = nextFrameId();
 
-    // resetPi=false reicht hier.
-    // Bei Sollwert 0 fuehrt Rad::setSoll(0) hinten ohnehin einen harten Stop
-    // mit Regler-Reset aus.
     printVsol(out, frameId, false, 0, 0);
 
     _lastSendMs = nowMs;
@@ -3457,6 +3779,11 @@ bool RearFrameClient::handleVistLine(const char* line, VistMessage& msg)
     _hiReIst = int100ToFloat(vist.hiReIst);
     _hiLiPwm = vist.hiLiPwm;
     _hiRePwm = vist.hiRePwm;
+    _hiLiCnt = vist.hiLiCnt;
+    _hiReCnt = vist.hiReCnt;
+
+    _frame.hiLiCnt = vist.hiLiCnt;
+    _frame.hiReCnt = vist.hiReCnt;
 
     clearWaiting();
     _frame.hasFrontSnapshot = false;
@@ -3551,13 +3878,18 @@ struct RearPendingFrame
     float voLi_s;
     float voLi_i;
     int16_t voLi_pwm;
+    int32_t voLiCnt;
 
     float voRe_s;
     float voRe_i;
     int16_t voRe_pwm;
+    int32_t voReCnt;
 
     float hiLi_s;
     float hiRe_s;
+
+    int32_t hiLiCnt;
+    int32_t hiReCnt;
 
     bool hasFrontSnapshot;
 };
@@ -3574,10 +3906,12 @@ struct RearFrameRequest
     float voLi_s;
     float voLi_i;
     int16_t voLi_pwm;
+    int32_t voLiCnt;
 
     float voRe_s;
     float voRe_i;
     int16_t voRe_pwm;
+    int32_t voReCnt;
 
     float hiLi_s;
     float hiRe_s;
@@ -3591,6 +3925,7 @@ struct RearFrameRequest
 //  - Wartezustand auf VSOL_OK / VIST
 //  - Stop-Sequenz fuer hinten
 //  - letzte gueltige Rear-Istwerte
+//  - hintere Encoder-Counts fuer Odometrie
 // ============================================================
 
 class RearFrameClient
@@ -3617,6 +3952,8 @@ public:
     float hiReIst() const;
     int16_t hiLiPwm() const;
     int16_t hiRePwm() const;
+    int32_t hiLiCnt() const;
+    int32_t hiReCnt() const;
 
     bool requestFrame(
         Stream& out,
@@ -3627,11 +3964,7 @@ public:
 
     bool handleVsolOkLine(const char* line, uint32_t nowMs);
 
-    // Variante fuer vorne.ino:
-    // VIST wird intern verarbeitet und die Rear-Istwerte werden gespeichert.
     bool handleVistLine(const char* line);
-
-    // Variante bleibt erhalten, falls spaeter ein Aufrufer die Rohdaten braucht.
     bool handleVistLine(const char* line, VistMessage& msg);
 
     void armStopSequence();
@@ -3669,6 +4002,8 @@ private:
     float _hiReIst;
     int16_t _hiLiPwm;
     int16_t _hiRePwm;
+    int32_t _hiLiCnt;
+    int32_t _hiReCnt;
 };
 
 #endif // REAR_FRAME_CLIENT_H
@@ -3871,26 +4206,30 @@ void RearApp::handleSyncVist()
 FILE: C:\Users\Acer\source\repos\robot\hinten\src\RearApp.h
 ============================================================
 // RearApp.h
-#pragma once
+#ifndef REAR_APP_H
+#define REAR_APP_H
 
 #include <Arduino.h>
 
 #include "src/UartLink.h"
 #include "src/Connection/ConnectionMonitor.h"
 
-class RearApp {
+class RearApp
+{
 public:
     RearApp();
 
     void begin();
-
     void updateCommunication();
+
+    void stopRearWheels();
     void updateConnectionSafety(uint32_t now);
     void updateVsolTimeout(uint32_t now);
+
     void handleIncomingVsol(uint32_t now);
-    void handleSyncVist();
 
     void onSyncPulseFromIsr();
+    void handleSyncVist();
 
 private:
     UartLink uart;
@@ -3898,12 +4237,12 @@ private:
 
     uint32_t lastVsolMs;
     uint16_t lastVsolFrameId;
+
     bool rearSollActive;
-
     volatile bool syncFlag;
-
-    void stopRearWheels();
 };
+
+#endif
 
 ============================================================
 FILE: C:\Users\Acer\source\repos\robot\vorne\__vm\.vorne.vsarduino.h
@@ -4000,7 +4339,9 @@ FrontApp::FrontApp()
     commandRunner(vehicle, uart, parser, CommandScript::get, CommandScript::size),
     rearFrameClient(),
     frameScheduler(),
-    printer()
+    odometer(),
+    printer(),
+    _odomResetPending(true)
 {
 }
 
@@ -4041,6 +4382,7 @@ void FrontApp::handleIncomingLines(uint32_t now)
     if (rearFrameClient.handleVistLine(line))
     {
         updateVehicleIst();
+        updateOdometerFromCompletedFrame();
 
         printer.printCompletedFrame(
             vehicle,
@@ -4049,6 +4391,11 @@ void FrontApp::handleIncomingLines(uint32_t now)
             rearFrameClient.hiReIst(),
             rearFrameClient.hiLiPwm(),
             rearFrameClient.hiRePwm()
+        );
+
+        printer.printOdom(
+            rearFrameClient.frame().t,
+            odometer
         );
     }
 }
@@ -4184,6 +4531,31 @@ void FrontApp::updateVehicleIst()
     );
 }
 
+void FrontApp::updateOdometerFromCompletedFrame()
+{
+    const RearPendingFrame& frame = rearFrameClient.frame();
+
+    if (_odomResetPending || !odometer.isPrimed())
+    {
+        odometer.reset(
+            frame.voReCnt,
+            frame.voLiCnt,
+            frame.hiLiCnt,
+            frame.hiReCnt
+        );
+
+        _odomResetPending = false;
+        return;
+    }
+
+    odometer.update(
+        frame.voReCnt,
+        frame.voLiCnt,
+        frame.hiLiCnt,
+        frame.hiReCnt
+    );
+}
+
 RearFrameRequest FrontApp::makeRearFrameRequest(uint32_t frameTime, bool resetPi)
 {
     RearFrameRequest request = {};
@@ -4194,10 +4566,12 @@ RearFrameRequest FrontApp::makeRearFrameRequest(uint32_t frameTime, bool resetPi
     request.voLi_s = commandRunner.getWheelSoll(VoLi);
     request.voLi_i = speed[Li].mps();
     request.voLi_pwm = rad[Li].lastPwm();
+    request.voLiCnt = (int32_t)speed[Li].counts_total();
 
     request.voRe_s = commandRunner.getWheelSoll(VoRe);
     request.voRe_i = speed[Re].mps();
     request.voRe_pwm = rad[Re].lastPwm();
+    request.voReCnt = (int32_t)speed[Re].counts_total();
 
     request.hiLi_s = commandRunner.getWheelSoll(HiLi);
     request.hiRe_s = commandRunner.getWheelSoll(HiRe);
@@ -4224,11 +4598,10 @@ void FrontApp::requestStartFrameForNewCommand(uint32_t now)
     if (rearFrameClient.isBusy()) return;
 
     // Neuer CMDT-Fahrabschnitt:
-    // Kein globaler PI-Hard-Reset mehr.
-    // Rad::setSoll() entscheidet lokal:
-    // - gleicher Vortrieb: Integrator behalten
-    // - Stop: reset() + Bremse
-    // - Start/Richtungswechsel: presetOutput()
+    // Odometrie wird beim ersten vollstaendigen Frame dieses Befehls
+    // auf die dann vorhandenen vier Encoderstaende genullt.
+    _odomResetPending = true;
+
     applyFrontWheelSoll();
 
     rearFrameClient.clearWaiting();
@@ -4237,7 +4610,8 @@ void FrontApp::requestStartFrameForNewCommand(uint32_t now)
     frameScheduler.start(now);
 
     // Echter Startframe des neuen Befehls:
-    // t = 0, neue Sollwerte, aktuelle Istwerte, aktuelle PWM-Zustaende.
+    // t = 0, neue Sollwerte, aktuelle Istwerte, aktuelle PWM-Zustaende,
+    // aktuelle Front-Counts. Rear-Counts kommen danach ueber VIST.
     requestRearFrame(now, 0, false);
 }
 
@@ -4253,6 +4627,7 @@ FILE: C:\Users\Acer\source\repos\robot\vorne\src\FrontApp.h
 #include "CommandScript.h"
 
 #include "src/VehicleController.h"
+#include "src/MecanumOdometer.h"
 #include "src/UartLink.h"
 #include "src/Connection/ConnectionMonitor.h"
 #include "src/Parser/CommandParser.h"
@@ -4292,6 +4667,7 @@ public:
 
     RearFrameClient rearFrameClient;
     FrameScheduler frameScheduler;
+    MecanumOdometer odometer;
     Printer printer;
 
     // --------------------------------------------------------
@@ -4311,10 +4687,13 @@ public:
     bool isConnected() const;
 
 private:
+    bool _odomResetPending;
+
     void resetByWatchdog();
 
     void applyFrontWheelSoll();
     void updateVehicleIst();
+    void updateOdometerFromCompletedFrame();
 
     RearFrameRequest makeRearFrameRequest(uint32_t frameTime, bool resetPi);
     void requestRearFrame(uint32_t now, uint32_t frameTime, bool resetPi);
