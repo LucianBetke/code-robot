@@ -13,13 +13,13 @@
 
 FrontApp::FrontApp()
     : vehicle(),
+    odometer(),
     uart(Serial, true),
     conn(uart, 13),
     parser(),
-    commandRunner(vehicle, uart, parser, CommandScript::get, CommandScript::size),
+    commandRunner(vehicle, odometer, uart, parser, CommandScript::get, CommandScript::size),
     rearFrameClient(),
     frameScheduler(),
-    odometer(),
     printer(),
     _odomResetPending(true)
 {
@@ -277,7 +277,7 @@ void FrontApp::requestStartFrameForNewCommand(uint32_t now)
     if (!uart.isConnected()) return;
     if (rearFrameClient.isBusy()) return;
 
-    // Neuer CMDT-Fahrabschnitt:
+    // Neuer Fahrabschnitt:
     // Odometrie wird beim ersten vollstaendigen Frame dieses Befehls
     // auf die dann vorhandenen vier Encoderstaende genullt.
     _odomResetPending = true;

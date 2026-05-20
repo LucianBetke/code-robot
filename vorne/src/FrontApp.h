@@ -40,6 +40,8 @@ public:
     // --------------------------------------------------------
 
     VehicleController vehicle;
+    MecanumOdometer odometer;
+
     UartLink uart;
     ConnectionMonitor conn;
     CommandParser parser;
@@ -47,7 +49,6 @@ public:
 
     RearFrameClient rearFrameClient;
     FrameScheduler frameScheduler;
-    MecanumOdometer odometer;
     Printer printer;
 
     // --------------------------------------------------------

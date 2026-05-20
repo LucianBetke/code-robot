@@ -459,7 +459,6 @@ FILE: C:\Users\Acer\source\repos\robot\1_Common\src\globals.h
 #ifndef GLOBALS_H
 #define GLOBALS_H
 
-#pragma once
 
 #include <Arduino.h>
 
@@ -951,7 +950,6 @@ FILE: C:\Users\Acer\source\repos\robot\2_Hardware\src\Motor.h
 #ifndef MOTOR_H
 #define MOTOR_H
 
-#pragma once
 #include <Arduino.h>
 
 class Enc;
@@ -1110,7 +1108,6 @@ FILE: C:\Users\Acer\source\repos\robot\2_Hardware\src\UartLink.h
 #ifndef UARTLINK_H
 #define UARTLINK_H
 
-#pragma once
 #include <Arduino.h>
 
 class UartLink
@@ -1270,7 +1267,6 @@ FILE: C:\Users\Acer\source\repos\robot\3_Control\src\Control.h
 #ifndef CONTROL_H
 #define CONTROL_H
 
-#pragma once
 
 #include <Arduino.h>
 #include "src/globals.h"
@@ -1330,7 +1326,6 @@ FILE: C:\Users\Acer\source\repos\robot\3_Control\src\ControlConfig.h
 #ifndef CONTROLCONFIG_H
 #define CONTROLCONFIG_H
 
-#pragma once
 
 #include <Arduino.h>
 #include "src/globals.h"
@@ -2689,13 +2684,38 @@ FILE: C:\Users\Acer\source\repos\robot\5_System\src\CommandRunner\CommandRunner.
 // ============================================================
 #include "CommandRunner.h"
 
-CommandRunner::CommandRunner(VehicleController& vehicle, UartLink& uart, CommandParser& parser,
-    GetCmdFn getCmd, SizeFn size)
-    : _vehicle(vehicle), _uart(uart), _parser(parser),
-    _getCmd(getCmd), _size(size),
-    _cmdIndex(0), _active(false), _finished(false),
+#include <math.h>
+
+namespace
+{
+    const float CMDP_TOLERANCE_CM = 1.0f;
+    const float CMDP_SPEED_EPS = 0.001f;
+}
+
+CommandRunner::CommandRunner(
+    VehicleController& vehicle,
+    MecanumOdometer& odometer,
+    UartLink& uart,
+    CommandParser& parser,
+    GetCmdFn getCmd,
+    SizeFn size)
+    : _vehicle(vehicle),
+    _odometer(odometer),
+    _uart(uart),
+    _parser(parser),
+    _getCmd(getCmd),
+    _size(size),
+    _cmdIndex(0),
+    _active(false),
+    _finished(false),
     _startFramePending(false),
-    _startTime(0), _durationMs(0)
+    _activeType(CMD_NONE),
+    _startTime(0),
+    _durationMs(0),
+    _pathTargetCm(0.0f),
+    _pathUnitX(0.0f),
+    _pathUnitY(0.0f),
+    _pathProgressCm(0.0f)
 {
 }
 
@@ -2705,8 +2725,15 @@ void CommandRunner::begin()
     _active = false;
     _finished = false;
     _startFramePending = false;
+    _activeType = CMD_NONE;
+
     _startTime = 0;
     _durationMs = 0;
+
+    _pathTargetCm = 0.0f;
+    _pathUnitX = 0.0f;
+    _pathUnitY = 0.0f;
+    _pathProgressCm = 0.0f;
 }
 
 void CommandRunner::stopAll()
@@ -2714,7 +2741,7 @@ void CommandRunner::stopAll()
     _vehicle.cmd(0.0f, 0.0f, 0.0f);
 }
 
-void CommandRunner::startCmd(const ParsedCommand& cmd, uint32_t now)
+void CommandRunner::startTimeCmd(const ParsedCommand& cmd, uint32_t now)
 {
     _durationMs = (uint32_t)cmd.param * 1000UL;
 
@@ -2729,21 +2756,75 @@ void CommandRunner::startCmd(const ParsedCommand& cmd, uint32_t now)
     Serial.print(F(",durationMs="));
     Serial.println(_durationMs);
 
-    // Integer-Protokoll:
-    // vx, vy kommen aus dem Script als cm/s.
-    // VehicleController arbeitet weiterhin mit m/s.
-    //
-    // wz kommt aus dem Script als Grad/s.
-    // VehicleController arbeitet weiterhin mit rad/s.
     const float vx = (float)cmd.vx * 0.01f;
     const float vy = (float)cmd.vy * 0.01f;
-    const float wz = (float)cmd.wz * 0.01745329252f;
+    const float wz = (float)cmd.wz * DEG_TO_RAD;
 
     _vehicle.cmd(vx, vy, wz);
 
     _startTime = now;
     _active = true;
+    _activeType = CMD_TIME;
     _startFramePending = true;
+}
+
+bool CommandRunner::startPathCmd(const ParsedCommand& cmd, uint32_t now)
+{
+    if (cmd.wz != 0)
+    {
+        Serial.println(F("#ERROR,CMDP,wz_muss_0_sein"));
+        return false;
+    }
+
+    if (cmd.param == 0)
+    {
+        Serial.println(F("#ERROR,CMDP,zielweg_muss_groesser_0_sein"));
+        return false;
+    }
+
+    const float vx_cms = (float)cmd.vx;
+    const float vy_cms = (float)cmd.vy;
+
+    const float v_abs_cms = sqrtf(vx_cms * vx_cms + vy_cms * vy_cms);
+
+    if (v_abs_cms <= CMDP_SPEED_EPS)
+    {
+        Serial.println(F("#ERROR,CMDP,vx_vy_duerfen_nicht_beide_0_sein"));
+        return false;
+    }
+
+    _pathUnitX = vx_cms / v_abs_cms;
+    _pathUnitY = vy_cms / v_abs_cms;
+    _pathTargetCm = (float)cmd.param;
+    _pathProgressCm = 0.0f;
+
+    Serial.print(F("#EVENT,startCmdp,vx="));
+    Serial.print(cmd.vx);
+    Serial.print(F(",vy="));
+    Serial.print(cmd.vy);
+    Serial.print(F(",wz="));
+    Serial.print(cmd.wz);
+    Serial.print(F(",targetCm="));
+    Serial.print(cmd.param);
+    Serial.print(F(",unitX="));
+    Serial.print(_pathUnitX, 3);
+    Serial.print(F(",unitY="));
+    Serial.println(_pathUnitY, 3);
+
+    const float vx = (float)cmd.vx * 0.01f;
+    const float vy = (float)cmd.vy * 0.01f;
+    const float wz = 0.0f;
+
+    _vehicle.cmd(vx, vy, wz);
+
+    _startTime = now;
+    _durationMs = 0;
+
+    _active = true;
+    _activeType = CMD_PATH;
+    _startFramePending = true;
+
+    return true;
 }
 
 void CommandRunner::update(uint32_t now)
@@ -2753,39 +2834,23 @@ void CommandRunner::update(uint32_t now)
         return;
     }
 
-    // --------------------------------------------------------
-    // Aktiver Befehl laeuft.
-    // --------------------------------------------------------
-
     if (_active)
     {
-        if (now - _startTime < _durationMs)
+        if (_activeType == CMD_TIME)
         {
+            updateActiveTimeCmd(now);
             return;
         }
 
-        // Befehl ist zeitlich fertig.
-        // Wichtig:
-        // NICHT sofort stopAll(), wenn danach noch ein weiterer Befehl kommt.
-        // Sonst entsteht zwischen zwei CMDT-Befehlen ein kuenstlicher
-        // Null-Sollwert.
-        _active = false;
-        _cmdIndex++;
-
-        if (_cmdIndex >= _size())
+        if (_activeType == CMD_PATH)
         {
-            // Nur wenn das ganze Script fertig ist, wirklich stoppen.
-            stopAll();
-            _finished = true;
+            updateActivePathCmd();
+            return;
         }
 
-        return;
+        _active = false;
+        _activeType = CMD_NONE;
     }
-
-    // --------------------------------------------------------
-    // Kein aktiver Befehl:
-    // Naechsten gueltigen Befehl suchen und starten.
-    // --------------------------------------------------------
 
     while (_cmdIndex < _size())
     {
@@ -2793,25 +2858,107 @@ void CommandRunner::update(uint32_t now)
 
         if (!CommandParser::parse(_getCmd(_cmdIndex), cmd))
         {
+            Serial.print(F("#ERROR,parse,index="));
+            Serial.println(_cmdIndex);
             _cmdIndex++;
             continue;
         }
 
         if (cmd.type == CMD_TIME)
         {
-            startCmd(cmd, now);
+            startTimeCmd(cmd, now);
             return;
+        }
+
+        if (cmd.type == CMD_PATH)
+        {
+            if (startPathCmd(cmd, now))
+            {
+                return;
+            }
+
+            _cmdIndex++;
+            continue;
         }
 
         _cmdIndex++;
     }
 
-    // --------------------------------------------------------
-    // Kein weiterer gueltiger Befehl vorhanden.
-    // --------------------------------------------------------
-
     stopAll();
     _finished = true;
+}
+
+void CommandRunner::updateActiveTimeCmd(uint32_t now)
+{
+    if (now - _startTime < _durationMs)
+    {
+        return;
+    }
+
+    finishTimeCmd();
+}
+
+void CommandRunner::updateActivePathCmd()
+{
+    updatePathProgress();
+
+    if (!pathReached())
+    {
+        return;
+    }
+
+    finishPathCmd();
+}
+
+void CommandRunner::finishTimeCmd()
+{
+    _active = false;
+    _activeType = CMD_NONE;
+    _cmdIndex++;
+
+    if (_cmdIndex >= _size())
+    {
+        stopAll();
+        _finished = true;
+    }
+}
+
+void CommandRunner::finishPathCmd()
+{
+    Serial.print(F("#EVENT,pathReached,targetCm="));
+    Serial.print(_pathTargetCm, 2);
+    Serial.print(F(",progressCm="));
+    Serial.println(_pathProgressCm, 2);
+
+    stopAll();
+
+    _active = false;
+    _activeType = CMD_NONE;
+    _cmdIndex++;
+
+    if (_cmdIndex >= _size())
+    {
+        _finished = true;
+    }
+}
+
+void CommandRunner::updatePathProgress()
+{
+    _pathProgressCm =
+        _odometer.xCm() * _pathUnitX +
+        _odometer.yCm() * _pathUnitY;
+}
+
+bool CommandRunner::pathReached() const
+{
+    const float threshold = _pathTargetCm - CMDP_TOLERANCE_CM;
+
+    if (threshold <= 0.0f)
+    {
+        return _pathProgressCm >= 0.0f;
+    }
+
+    return _pathProgressCm >= threshold;
 }
 
 float CommandRunner::getWheelSoll(WheelVehicle w) const
@@ -2853,6 +3000,7 @@ FILE: C:\Users\Acer\source\repos\robot\5_System\src\CommandRunner\CommandRunner.
 #include "src/Parser/CommandParser.h"
 #include "src/UartLink.h"
 #include "src/VehicleController.h"
+#include "src/MecanumOdometer.h"
 
 typedef const char* (*GetCmdFn)(uint8_t index);
 typedef uint8_t(*SizeFn)();
@@ -2860,33 +3008,62 @@ typedef uint8_t(*SizeFn)();
 class CommandRunner
 {
 public:
-    CommandRunner(VehicleController& vehicle, UartLink& uart, CommandParser& parser,
-        GetCmdFn getCmd, SizeFn size);
+    CommandRunner(
+        VehicleController& vehicle,
+        MecanumOdometer& odometer,
+        UartLink& uart,
+        CommandParser& parser,
+        GetCmdFn getCmd,
+        SizeFn size);
+
     void begin();
     void update(uint32_t now);
 
     float getWheelSoll(WheelVehicle w) const;
     bool  isActive() const;
-    bool isFinished() const;
+    bool  isFinished() const;
 
     bool consumeStartFramePending();
 
+    float pathProgressCm() const { return _pathProgressCm; }
+    float pathTargetCm() const { return _pathTargetCm; }
+
 private:
-    void startCmd(const ParsedCommand& cmd, uint32_t now);
+    void startTimeCmd(const ParsedCommand& cmd, uint32_t now);
+    bool startPathCmd(const ParsedCommand& cmd, uint32_t now);
+
+    void updateActiveTimeCmd(uint32_t now);
+    void updateActivePathCmd();
+
+    void finishTimeCmd();
+    void finishPathCmd();
+
+    bool pathReached() const;
+    void updatePathProgress();
+
     void stopAll();
 
     VehicleController& _vehicle;
+    MecanumOdometer& _odometer;
     UartLink& _uart;
     CommandParser& _parser;
-    GetCmdFn           _getCmd;
-    SizeFn             _size;
+    GetCmdFn _getCmd;
+    SizeFn _size;
 
-    uint8_t   _cmdIndex;
-    bool      _active;
-    bool      _finished;
-    bool      _startFramePending;
-    uint32_t  _startTime;
-    uint32_t  _durationMs;
+    uint8_t _cmdIndex;
+    bool _active;
+    bool _finished;
+    bool _startFramePending;
+
+    CmdType _activeType;
+
+    uint32_t _startTime;
+    uint32_t _durationMs;
+
+    float _pathTargetCm;
+    float _pathUnitX;
+    float _pathUnitY;
+    float _pathProgressCm;
 };
 
 #endif
@@ -4190,15 +4367,27 @@ void RearApp::handleSyncVist()
 
     syncFlag = false;
 
-    int16_t vIstLi = floatToInt100(speed[Li].mps());
-    int16_t vIstRe = floatToInt100(speed[Re].mps());
+    const int16_t vIstLi = floatToInt100(speed[Li].mps());
+    const int16_t vIstRe = floatToInt100(speed[Re].mps());
 
-    int16_t pwm2 = rad[Li].lastPwm();
-    int16_t pwm3 = rad[Re].lastPwm();
+    const int16_t pwmLi = rad[Li].lastPwm();
+    const int16_t pwmRe = rad[Re].lastPwm();
+
+    const int32_t cntLi = (int32_t)speed[Li].counts_total();
+    const int32_t cntRe = (int32_t)speed[Re].counts_total();
 
     if (uart.isConnected())
     {
-        printVist(Serial, lastVsolFrameId, vIstLi, vIstRe, pwm2, pwm3);
+        printVist(
+            Serial,
+            lastVsolFrameId,
+            vIstLi,
+            vIstRe,
+            pwmLi,
+            pwmRe,
+            cntLi,
+            cntRe
+        );
     }
 }
 
@@ -4242,7 +4431,7 @@ private:
     volatile bool syncFlag;
 };
 
-#endif
+#endif // REAR_APP_H
 
 ============================================================
 FILE: C:\Users\Acer\source\repos\robot\vorne\__vm\.vorne.vsarduino.h
@@ -4277,16 +4466,7 @@ FILE: C:\Users\Acer\source\repos\robot\vorne\src\CommandScript.cpp
 #include "CommandScript.h"
 
 static const char* _script[] = {
-    "CMDT(0,0,90) 1;",
-    "CMDT(0,0,0) 2;",
-
-    "CMDT(0,0,-90) 1;",
-    "CMDT(0,0,0) 2;",
-
-    "CMDT(0,0,90) 1;",
-    "CMDT(0,0,90) 1;",
-    "CMDT(0,0,90) 1;",
-    "CMDT(0,0,90) 1;",
+    "CMDP(20,0,0) 30;",
     "CMDT(0,0,0) 2;"
 };
 
@@ -4333,13 +4513,13 @@ FILE: C:\Users\Acer\source\repos\robot\vorne\src\FrontApp.cpp
 
 FrontApp::FrontApp()
     : vehicle(),
+    odometer(),
     uart(Serial, true),
     conn(uart, 13),
     parser(),
-    commandRunner(vehicle, uart, parser, CommandScript::get, CommandScript::size),
+    commandRunner(vehicle, odometer, uart, parser, CommandScript::get, CommandScript::size),
     rearFrameClient(),
     frameScheduler(),
-    odometer(),
     printer(),
     _odomResetPending(true)
 {
@@ -4597,7 +4777,7 @@ void FrontApp::requestStartFrameForNewCommand(uint32_t now)
     if (!uart.isConnected()) return;
     if (rearFrameClient.isBusy()) return;
 
-    // Neuer CMDT-Fahrabschnitt:
+    // Neuer Fahrabschnitt:
     // Odometrie wird beim ersten vollstaendigen Frame dieses Befehls
     // auf die dann vorhandenen vier Encoderstaende genullt.
     _odomResetPending = true;
@@ -4660,6 +4840,8 @@ public:
     // --------------------------------------------------------
 
     VehicleController vehicle;
+    MecanumOdometer odometer;
+
     UartLink uart;
     ConnectionMonitor conn;
     CommandParser parser;
@@ -4667,7 +4849,6 @@ public:
 
     RearFrameClient rearFrameClient;
     FrameScheduler frameScheduler;
-    MecanumOdometer odometer;
     Printer printer;
 
     // --------------------------------------------------------
