@@ -41,16 +41,16 @@ void loop()
     uint32_t now = millis();
 
     app.updateCommunication();
-    app.updateConnectionSafety(now);
     app.handleIncomingLines(now);
     app.updateFrameTimeout(now);
+    app.updateConnectionSafety(now);
 
-    if (app.isConnected()) app.tryRequestFrame(now);
-
-    app.updateCommandRunner(now);
-    app.updateLogRaster(now);
-    app.updateVehicleAndFrontControl(now);
-    app.updateRearStopSequence(now);
-
-    if (app.isConnected()) app.tryRequestFrame(now);
+    if (app.isConnected())
+    {
+        app.updateCommandRunner(now);
+        app.updateLogRaster(now);
+        app.updateVehicleAndFrontControl(now);
+        app.updateRearStopSequence(now);
+        app.tryRequestFrame(now);
+    }
 }

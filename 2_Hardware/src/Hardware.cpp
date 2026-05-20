@@ -7,6 +7,9 @@
 
 Enc   enc[WHEEL_COUNT];
 Motor motor[WHEEL_COUNT];
+// Dieser Pin ist board-abhaengig:
+// vorne: Sync-Ausgang fuer VIST-Anforderung
+// hinten: STBY-Ausgang fuer beide Motortreiber
 static uint8_t s_stby_sync = 0;
 
 void hardware_begin(const HardwarePinSet& pins, bool resetEnc)
