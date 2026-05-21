@@ -33,7 +33,7 @@ void setup()
     app.uart.begin();
     app.conn.begin(true);
 
-    app.printer.printHeader(app.vehicle, ConfigFront::CONFIG);
+    app.printer.printInfo(app.vehicle, ConfigFront::CONFIG);
 }
 
 void loop()

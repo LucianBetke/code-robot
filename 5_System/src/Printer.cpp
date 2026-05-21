@@ -3,8 +3,9 @@
 
 #include "src/MecanumOdometer.h"
 
-void Printer::printHeader(VehicleController& vehicle, const ControlConfig& cfg)
+void Printer::printInfo(VehicleController& vehicle, const ControlConfig& cfg)
 {
+#if PRINTER_ENABLE_INFO
     Serial.print(F("#INFO,Raeder,Li,Kp=")); Serial.print(cfg.pi[Li].Kp, 2);
     Serial.print(F(",Ki="));                Serial.print(cfg.pi[Li].Ki, 2);
     Serial.print(F(",dead="));              Serial.print(cfg.deadPwm[Li]);
@@ -18,14 +19,6 @@ void Printer::printHeader(VehicleController& vehicle, const ControlConfig& cfg)
     Serial.print(F(",Ki="));                  Serial.print(vehicle.KiVy(), 2);
     Serial.print(F(",wz,Kp="));               Serial.print(vehicle.KpWz(), 2);
     Serial.print(F(",Ki="));                  Serial.println(vehicle.KiWz(), 2);
-
-#ifdef PRINTER_MODE_CHASSIS
-    Serial.println(F("#HDR,CHASSIS,ms,VoLi_i,VoRe_i,HiLi_i,HiRe_i,vx_i,vy_i,wz_i"));
-#endif
-
-#ifdef PRINTER_MODE_RAEDER
-    Serial.println(F("#HDR,WHEELS,ms,VoLi_s,VoLi_i,VoLi_pwm,VoRe_s,VoRe_i,VoRe_pwm,HiLi_s,HiLi_i,HiLi_pwm,HiRe_s,HiRe_i,HiRe_pwm"));
-    Serial.println(F("#HDR,CNTF,ms,VoLi_cnt,VoRe_cnt"));
 #endif
 }
 
@@ -73,12 +66,14 @@ void Printer::printCompletedFrame(
 
 void Printer::printOdom(uint32_t t_ms, const MecanumOdometer& odom)
 {
+#if PRINTER_ENABLE_ODOM
     Serial.print(F("#ODOM,"));
     Serial.print(t_ms);              Serial.print(',');
     Serial.print(odom.xCm(), 2);     Serial.print(',');
     Serial.print(odom.yCm(), 2);     Serial.print(',');
     Serial.print(odom.absCm(), 2);   Serial.print(',');
     Serial.println(odom.phiDeg(), 2);
+#endif
 }
 
 #ifdef PRINTER_MODE_CHASSIS
@@ -87,6 +82,7 @@ void Printer::printWheels(VehicleController& vehicle,
     float v2_ist, float v3_ist,
     uint32_t t_ms)
 {
+#if PRINTER_ENABLE_CHASSIS
     Serial.print(F("#CHASSIS,"));
     Serial.print(t_ms);               Serial.print(',');
     Serial.print(speed[Li].mps(), 2); Serial.print(',');
@@ -96,6 +92,7 @@ void Printer::printWheels(VehicleController& vehicle,
     Serial.print(vehicle.vxIst(), 2); Serial.print(',');
     Serial.print(vehicle.vyIst(), 2); Serial.print(',');
     Serial.println(vehicle.wzIst(), 2);
+#endif
 }
 
 void Printer::printFrame(VehicleController& vehicle,
@@ -105,6 +102,7 @@ void Printer::printFrame(VehicleController& vehicle,
     float hiLi_i,
     float hiRe_i)
 {
+#if PRINTER_ENABLE_CHASSIS
     Serial.print(F("#CHASSIS,"));
     Serial.print(t_ms);               Serial.print(',');
     Serial.print(voLi_i, 2);          Serial.print(',');
@@ -114,6 +112,7 @@ void Printer::printFrame(VehicleController& vehicle,
     Serial.print(vehicle.vxIst(), 2); Serial.print(',');
     Serial.print(vehicle.vyIst(), 2); Serial.print(',');
     Serial.println(vehicle.wzIst(), 2);
+#endif
 }
 
 #endif
@@ -125,8 +124,9 @@ void Printer::printWheels(VehicleController& vehicle,
     int16_t pwm2, int16_t pwm3,
     uint32_t t_ms)
 {
+#if PRINTER_ENABLE_WHEELS
     Serial.print(F("#WHEELS,"));
-    Serial.print(t_ms);                           Serial.print(',');
+    Serial.print(t_ms);                          Serial.print(',');
 
     Serial.print(vehicle.getWheelSoll(VoLi), 2); Serial.print(',');
     Serial.print(speed[Li].mps(), 2);            Serial.print(',');
@@ -143,11 +143,14 @@ void Printer::printWheels(VehicleController& vehicle,
     Serial.print(vehicle.getWheelSoll(HiRe), 2); Serial.print(',');
     Serial.print(v3_ist, 2);                     Serial.print(',');
     Serial.println(pwm3);
+#endif
 
+#if PRINTER_ENABLE_COUNTS
     Serial.print(F("#CNTF,"));
     Serial.print(t_ms);                          Serial.print(',');
     Serial.print(speed[Li].counts_total());      Serial.print(',');
     Serial.println(speed[Re].counts_total());
+#endif
 }
 
 void Printer::printFrame(
@@ -165,6 +168,7 @@ void Printer::printFrame(
     float hiRe_i,
     int16_t hiRe_pwm)
 {
+#if PRINTER_ENABLE_WHEELS
     Serial.print(F("#WHEELS,"));
     Serial.print(t_ms);      Serial.print(',');
 
@@ -183,11 +187,14 @@ void Printer::printFrame(
     Serial.print(hiRe_s, 2); Serial.print(',');
     Serial.print(hiRe_i, 2); Serial.print(',');
     Serial.println(hiRe_pwm);
+#endif
 
+#if PRINTER_ENABLE_COUNTS
     Serial.print(F("#CNTF,"));
     Serial.print(t_ms);                     Serial.print(',');
     Serial.print(speed[Li].counts_total()); Serial.print(',');
     Serial.println(speed[Re].counts_total());
+#endif
 }
 
 #endif

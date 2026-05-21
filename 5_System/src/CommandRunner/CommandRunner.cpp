@@ -2,6 +2,7 @@
 // CommandRunner.cpp
 // ============================================================
 #include "CommandRunner.h"
+#include "src/PrinterConfig.h"
 
 #include <math.h>
 
@@ -81,6 +82,7 @@ void CommandRunner::startTimeCmd(const ParsedCommand& cmd, uint32_t now)
 {
     _durationMs = (uint32_t)cmd.param * 1000UL;
 
+#if PRINTER_ENABLE_EVENTS
     Serial.print(F("#EVENT,startCmd,vx="));
     Serial.print(cmd.vx);
     Serial.print(F(",vy="));
@@ -91,6 +93,7 @@ void CommandRunner::startTimeCmd(const ParsedCommand& cmd, uint32_t now)
     Serial.print(cmd.param);
     Serial.print(F(",durationMs="));
     Serial.println(_durationMs);
+#endif
 
     const float vx = (float)cmd.vx * 0.01f;
     const float vy = (float)cmd.vy * 0.01f;
@@ -109,7 +112,9 @@ bool CommandRunner::startPathCmd(const ParsedCommand& cmd, uint32_t now)
 {
     if (cmd.param == 0)
     {
+#if PRINTER_ENABLE_ERRORS
         Serial.println(F("#ERROR,CMDP,ziel_muss_groesser_0_sein"));
+#endif
         return false;
     }
 
@@ -118,13 +123,17 @@ bool CommandRunner::startPathCmd(const ParsedCommand& cmd, uint32_t now)
 
     if (!hasTranslation && !hasRotation)
     {
+#if PRINTER_ENABLE_ERRORS
         Serial.println(F("#ERROR,CMDP,vx_vy_wz_duerfen_nicht_alle_0_sein"));
+#endif
         return false;
     }
 
     if (hasTranslation && hasRotation)
     {
+#if PRINTER_ENABLE_ERRORS
         Serial.println(F("#ERROR,CMDP,translation_und_drehung_noch_nicht_erlaubt"));
+#endif
         return false;
     }
 
@@ -145,7 +154,9 @@ bool CommandRunner::startTranslationPathCmd(const ParsedCommand& cmd, uint32_t n
 
     if (v_abs_cms <= CMDP_SPEED_EPS)
     {
+#if PRINTER_ENABLE_ERRORS
         Serial.println(F("#ERROR,CMDP,vx_vy_duerfen_nicht_beide_0_sein"));
+#endif
         return false;
     }
 
@@ -162,6 +173,7 @@ bool CommandRunner::startTranslationPathCmd(const ParsedCommand& cmd, uint32_t n
 
     _durationMs = calcPathTimeoutMs(cmd.param, v_abs_cms);
 
+#if PRINTER_ENABLE_EVENTS
     Serial.print(F("#EVENT,startCmdp,vx="));
     Serial.print(cmd.vx);
     Serial.print(F(",vy="));
@@ -176,6 +188,7 @@ bool CommandRunner::startTranslationPathCmd(const ParsedCommand& cmd, uint32_t n
     Serial.print(_pathUnitY, 3);
     Serial.print(F(",timeoutMs="));
     Serial.println(_durationMs);
+#endif
 
     const float vx = (float)cmd.vx * 0.01f;
     const float vy = (float)cmd.vy * 0.01f;
@@ -198,7 +211,9 @@ bool CommandRunner::startRotationPathCmd(const ParsedCommand& cmd, uint32_t now)
 
     if (wz_abs_deg_s <= CMDP_ROT_SPEED_EPS)
     {
+#if PRINTER_ENABLE_ERRORS
         Serial.println(F("#ERROR,CMDP,wz_darf_nicht_0_sein"));
+#endif
         return false;
     }
 
@@ -215,6 +230,7 @@ bool CommandRunner::startRotationPathCmd(const ParsedCommand& cmd, uint32_t now)
 
     _durationMs = calcAngleTimeoutMs(cmd.param, wz_abs_deg_s);
 
+#if PRINTER_ENABLE_EVENTS
     Serial.print(F("#EVENT,startCmdpTurn,wz="));
     Serial.print(cmd.wz);
     Serial.print(F(",targetDeg="));
@@ -223,6 +239,7 @@ bool CommandRunner::startRotationPathCmd(const ParsedCommand& cmd, uint32_t now)
     Serial.print((int)_angleDirection);
     Serial.print(F(",timeoutMs="));
     Serial.println(_durationMs);
+#endif
 
     const float vx = 0.0f;
     const float vy = 0.0f;
@@ -296,8 +313,10 @@ void CommandRunner::update(uint32_t now)
 
         if (!CommandParser::parse(_getCmd(_cmdIndex), cmd))
         {
+#if PRINTER_ENABLE_ERRORS
             Serial.print(F("#ERROR,parse,index="));
             Serial.println(_cmdIndex);
+#endif
             _cmdIndex++;
             continue;
         }
@@ -369,6 +388,7 @@ void CommandRunner::finishTimeCmd()
 
 void CommandRunner::finishPathCmd()
 {
+#if PRINTER_ENABLE_EVENTS
     if (_pathMode == PATH_ROTATION)
     {
         Serial.print(F("#EVENT,angleReached,targetDeg="));
@@ -383,6 +403,7 @@ void CommandRunner::finishPathCmd()
         Serial.print(F(",progressCm="));
         Serial.println(_pathProgressCm, 2);
     }
+#endif
 
     stopAll();
 
@@ -399,6 +420,7 @@ void CommandRunner::finishPathCmd()
 
 void CommandRunner::finishPathTimeoutCmd()
 {
+#if PRINTER_ENABLE_ERRORS
     if (_pathMode == PATH_ROTATION)
     {
         Serial.print(F("#ERROR,CMDP,timeout,targetDeg="));
@@ -417,6 +439,7 @@ void CommandRunner::finishPathTimeoutCmd()
         Serial.print(F(",timeoutMs="));
         Serial.println(_durationMs);
     }
+#endif
 
     stopAll();
 

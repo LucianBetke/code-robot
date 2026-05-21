@@ -14,7 +14,7 @@ class MecanumOdometer;
 class Printer
 {
 public:
-    void printHeader(VehicleController& vehicle, const ControlConfig& cfg);
+    void printInfo(VehicleController& vehicle, const ControlConfig& cfg);
 
     void printCompletedFrame(
         VehicleController& vehicle,
