@@ -2,7 +2,7 @@
 #include "CommandScript.h"
 
 static const char* _script[] = {
-    "CMDP(20,0,0) 50;"
+    "CMDP(30,0,0) 60;"
 };
 
 const char* CommandScript::get(uint8_t index)

@@ -8,33 +8,33 @@ Verbinde dich mit dem COM-Port des VORNE-Arduino (USB).
 Aktuelle Log-Struktur:
 
   Nutz-/Protokolldaten ohne '#':
+    Opening port
+    Port open
+    Port closed
     PING / ACK / KA
-    VSOL,<frameId>,<hiLiSoll>,<hiReSoll>
-    VSOL_OK,<frameId>
-    VIST,<frameId>,<hiLiIst>,<hiReIst>,<hiLiPwm>,<hiRePwm>
+    VSOL,<frameId>,<ackFlag>,<hiLiSoll>,<hiReSoll>
 
   Debug-/Messdaten mit '#':
+    #Warte auf Handshake...
+    #CONNECTED
+    #Handshake1 OK
     #INFO,...
-    #EVENT,startCmd,vx=-20,vy=0,wz=0,duration=3,durationMs=3000
-    #HDR,WHEELS,ms,VoLi_s,VoLi_i,VoLi_pwm,...
-    #HDR,CNTF,ms,VoLi_cnt,VoRe_cnt
-    #WHEELS,100,-0.20,-0.15,-144,...
-    #CNTF,100,-69,-47
-    #CHASSIS,...   optional spaeter
+    #WHEELS,ms,VoLi_s,VoLi_i,VoLi_pwm,VoRe_s,VoRe_i,VoRe_pwm,HiLi_s,HiLi_i,HiLi_pwm,HiRe_s,HiRe_i,HiRe_pwm
 
 Dieses Programm wertet aus:
-  #HDR,WHEELS
-  #HDR,CHASSIS
   #WHEELS
-  #CHASSIS
-  #EVENT
 
 Dieses Programm ignoriert bewusst:
-  #HDR,CNTF
+  PING / ACK / KA
+  VSOL
+  alte #HDR-Zeilen, falls sie doch noch auftauchen
   #CNTF
+  #ODOM
+  #EVENT
 
 Grund:
-  CNTF ist Diagnose. Es darf den WHEELS-Plot nicht ueberschreiben.
+  Der Arduino sendet aktuell keine #HDR-Zeilen mehr.
+  Python kennt das feste #WHEELS-Format selbst.
 
 Abhaengigkeiten:
   pip install pyserial matplotlib pillow pywin32
@@ -69,6 +69,29 @@ MAX_POINTS = 3000
 UPDATE_MS = 200
 
 PLOT_MODES = ("WHEELS", "CHASSIS")
+
+
+# Festes Format fuer die neue Arduino-Ausgabe ohne #HDR:
+#
+# #WHEELS,
+#   ms,
+#   VoLi_s, VoLi_i, VoLi_pwm,
+#   VoRe_s, VoRe_i, VoRe_pwm,
+#   HiLi_s, HiLi_i, HiLi_pwm,
+#   HiRe_s, HiRe_i, HiRe_pwm
+#
+DEFAULT_WHEELS_COLS = [
+    "ms",
+    "VoLi_s", "VoLi_i", "VoLi_pwm",
+    "VoRe_s", "VoRe_i", "VoRe_pwm",
+    "HiLi_s", "HiLi_i", "HiLi_pwm",
+    "HiRe_s", "HiRe_i", "HiRe_pwm",
+]
+
+
+# Reserve fuer spaetere Chassis-Ausgabe ohne #HDR.
+# Solange Arduino kein festes #CHASSIS-Format sendet, bleibt das leer.
+DEFAULT_CHASSIS_COLS = []
 
 
 # ─────────────────────────────────────────────
@@ -196,6 +219,9 @@ store = Store()
 # ─────────────────────────────────────────────
 
 IGNORE_PREFIXES = (
+    "Opening port",
+    "Port open",
+    "Port closed",
     "PING",
     "PONG",
     "ACK",
@@ -221,6 +247,32 @@ def parse_key_value_parts(parts):
 
 def parse_float_list(parts):
     return [float(p.strip()) for p in parts]
+
+
+def ensure_default_header(mode: str, csv_path: str) -> bool:
+    """
+    Legt beim ersten Datensatz automatisch die festen Spalten an.
+
+    Grund:
+      Der Arduino sendet aktuell keine #HDR-Zeilen mehr.
+      Python kennt das feste #WHEELS-Format selbst.
+    """
+    mode = mode.upper()
+
+    if store.ready:
+        return True
+
+    if mode == "WHEELS":
+        store.init_cols("WHEELS", DEFAULT_WHEELS_COLS)
+        store.open_csv(csv_path)
+        return True
+
+    if mode == "CHASSIS" and DEFAULT_CHASSIS_COLS:
+        store.init_cols("CHASSIS", DEFAULT_CHASSIS_COLS)
+        store.open_csv(csv_path)
+        return True
+
+    return False
 
 
 # ─────────────────────────────────────────────
@@ -273,6 +325,8 @@ def serial_thread(port: str, baud: int, csv_path: str):
 
         tag = parts[0].upper()
 
+        # Alte Header werden weiterhin akzeptiert.
+        # Normalerweise kommen sie jetzt aber nicht mehr.
         if tag == "HDR":
             if len(parts) < 3:
                 print(f"[Header?] {line}")
@@ -289,6 +343,7 @@ def serial_thread(port: str, baud: int, csv_path: str):
             store.open_csv(csv_path)
             continue
 
+        # Alte MS-Variante bleibt als Rueckfall erhalten.
         if tag == "MS":
             cols = parts
             mode = "CHASSIS" if "vx_i" in cols else "WHEELS"
@@ -297,6 +352,8 @@ def serial_thread(port: str, baud: int, csv_path: str):
             store.open_csv(csv_path)
             continue
 
+        # Alte EVENT-Zeilen werden weiterhin verstanden,
+        # sind in deiner aktuellen Ausgabe aber abgeschaltet.
         if tag == "EVENT":
             print(f"[event] {line}")
 
@@ -327,9 +384,12 @@ def serial_thread(port: str, baud: int, csv_path: str):
         if tag == "CNTF":
             continue
 
+        if tag == "ODOM":
+            continue
+
         if tag in ("WHEELS", "CHASSIS"):
-            if not store.ready:
-                print(f"[Daten ohne Header] {line}")
+            if not ensure_default_header(tag, csv_path):
+                print(f"[Daten ohne bekanntes Format] {line}")
                 continue
 
             try:
@@ -381,13 +441,13 @@ COLORS_VEH = {
 
 def build_command_boundary_series(t_sec, values, cmd_indices, local_ms):
     """
-    Erzeugt eine durchgehende Linie mit senkrechtem Sprung an CMDT-Grenzen.
+    Erzeugt eine durchgehende Linie mit senkrechtem Sprung an CMD-Grenzen.
 
     Zweck:
-      - innerhalb eines CMDT-Befehls normale Linien
+      - innerhalb eines Befehls normale Linien
       - keine Treppe bei jedem Messpunkt
       - keine Luecken zwischen Befehlen
-      - keine schraege Verbindung ueber einen CMDT-Wechsel
+      - keine schraege Verbindung ueber einen Befehlswechsel
 
     Diese Funktion ist nur fuer Sollwerte und PWM gedacht.
     Istwerte werden bewusst normal geplottet.
@@ -724,7 +784,7 @@ def start_plot():
         last_cmd = cmd_values[-1] if cmd_values else 0
 
         axes[0].set_title(
-            f"{mode} - {n_pts} Messpunkte - CMDT #{int(last_cmd)} - t = {t[-1]:.1f} s",
+            f"{mode} - {n_pts} Messpunkte - CMD #{int(last_cmd)} - t = {t[-1]:.1f} s",
             fontsize=10
         )
 

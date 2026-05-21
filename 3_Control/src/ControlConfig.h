@@ -44,8 +44,8 @@ namespace ConfigFront
 
         // PI-Parameter: Li, Re
         {
-            { 2.0f, 6.0f },   // Li: Kp, Ki
-            { 2.0f, 5.5f }    // Re: Kp, Ki
+            { 2.0f, 8.0f },   // Li: Kp, Ki
+            { 2.0f, 10.0f }    // Re: Kp, Ki
         }
     };
 }
