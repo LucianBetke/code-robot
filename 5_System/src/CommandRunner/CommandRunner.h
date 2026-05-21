@@ -36,9 +36,22 @@ public:
     float pathProgressCm() const { return _pathProgressCm; }
     float pathTargetCm() const { return _pathTargetCm; }
 
+    float angleProgressDeg() const { return _angleProgressDeg; }
+    float angleTargetDeg() const { return _angleTargetDeg; }
+
 private:
+    enum PathMode : uint8_t
+    {
+        PATH_NONE = 0,
+        PATH_TRANSLATION = 1,
+        PATH_ROTATION = 2
+    };
+
     void startTimeCmd(const ParsedCommand& cmd, uint32_t now);
     bool startPathCmd(const ParsedCommand& cmd, uint32_t now);
+
+    bool startTranslationPathCmd(const ParsedCommand& cmd, uint32_t now);
+    bool startRotationPathCmd(const ParsedCommand& cmd, uint32_t now);
 
     void updateActiveTimeCmd(uint32_t now);
     void updateActivePathCmd(uint32_t now);
@@ -52,6 +65,7 @@ private:
     void updatePathProgress();
 
     uint32_t calcPathTimeoutMs(uint16_t targetCm, float speedCms) const;
+    uint32_t calcAngleTimeoutMs(uint16_t targetDeg, float speedDegS) const;
 
     void stopAll();
 
@@ -68,6 +82,7 @@ private:
     bool _startFramePending;
 
     CmdType _activeType;
+    PathMode _pathMode;
 
     uint32_t _startTime;
     uint32_t _durationMs;
@@ -76,6 +91,10 @@ private:
     float _pathUnitX;
     float _pathUnitY;
     float _pathProgressCm;
+
+    float _angleTargetDeg;
+    float _angleDirection;
+    float _angleProgressDeg;
 };
 
 #endif

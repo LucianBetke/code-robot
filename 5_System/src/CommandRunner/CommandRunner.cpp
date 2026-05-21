@@ -8,7 +8,10 @@
 namespace
 {
     const float CMDP_TOLERANCE_CM = 1.0f;
+    const float CMDP_ANGLE_TOLERANCE_DEG = 2.0f;
+
     const float CMDP_SPEED_EPS = 0.001f;
+    const float CMDP_ROT_SPEED_EPS = 0.001f;
 
     // Timeout-Regel:
     // ideale Fahrzeit * 3 + 1000 ms Reserve
@@ -34,12 +37,16 @@ CommandRunner::CommandRunner(
     _finished(false),
     _startFramePending(false),
     _activeType(CMD_NONE),
+    _pathMode(PATH_NONE),
     _startTime(0),
     _durationMs(0),
     _pathTargetCm(0.0f),
     _pathUnitX(0.0f),
     _pathUnitY(0.0f),
-    _pathProgressCm(0.0f)
+    _pathProgressCm(0.0f),
+    _angleTargetDeg(0.0f),
+    _angleDirection(0.0f),
+    _angleProgressDeg(0.0f)
 {
 }
 
@@ -50,6 +57,7 @@ void CommandRunner::begin()
     _finished = false;
     _startFramePending = false;
     _activeType = CMD_NONE;
+    _pathMode = PATH_NONE;
 
     _startTime = 0;
     _durationMs = 0;
@@ -58,6 +66,10 @@ void CommandRunner::begin()
     _pathUnitX = 0.0f;
     _pathUnitY = 0.0f;
     _pathProgressCm = 0.0f;
+
+    _angleTargetDeg = 0.0f;
+    _angleDirection = 0.0f;
+    _angleProgressDeg = 0.0f;
 }
 
 void CommandRunner::stopAll()
@@ -89,23 +101,43 @@ void CommandRunner::startTimeCmd(const ParsedCommand& cmd, uint32_t now)
     _startTime = now;
     _active = true;
     _activeType = CMD_TIME;
+    _pathMode = PATH_NONE;
     _startFramePending = true;
 }
 
 bool CommandRunner::startPathCmd(const ParsedCommand& cmd, uint32_t now)
 {
-    if (cmd.wz != 0)
-    {
-        Serial.println(F("#ERROR,CMDP,wz_muss_0_sein"));
-        return false;
-    }
-
     if (cmd.param == 0)
     {
-        Serial.println(F("#ERROR,CMDP,zielweg_muss_groesser_0_sein"));
+        Serial.println(F("#ERROR,CMDP,ziel_muss_groesser_0_sein"));
         return false;
     }
 
+    const bool hasTranslation = (cmd.vx != 0 || cmd.vy != 0);
+    const bool hasRotation = (cmd.wz != 0);
+
+    if (!hasTranslation && !hasRotation)
+    {
+        Serial.println(F("#ERROR,CMDP,vx_vy_wz_duerfen_nicht_alle_0_sein"));
+        return false;
+    }
+
+    if (hasTranslation && hasRotation)
+    {
+        Serial.println(F("#ERROR,CMDP,translation_und_drehung_noch_nicht_erlaubt"));
+        return false;
+    }
+
+    if (hasTranslation)
+    {
+        return startTranslationPathCmd(cmd, now);
+    }
+
+    return startRotationPathCmd(cmd, now);
+}
+
+bool CommandRunner::startTranslationPathCmd(const ParsedCommand& cmd, uint32_t now)
+{
     const float vx_cms = (float)cmd.vx;
     const float vy_cms = (float)cmd.vy;
 
@@ -117,10 +149,16 @@ bool CommandRunner::startPathCmd(const ParsedCommand& cmd, uint32_t now)
         return false;
     }
 
+    _pathMode = PATH_TRANSLATION;
+
     _pathUnitX = vx_cms / v_abs_cms;
     _pathUnitY = vy_cms / v_abs_cms;
     _pathTargetCm = (float)cmd.param;
     _pathProgressCm = 0.0f;
+
+    _angleTargetDeg = 0.0f;
+    _angleDirection = 0.0f;
+    _angleProgressDeg = 0.0f;
 
     _durationMs = calcPathTimeoutMs(cmd.param, v_abs_cms);
 
@@ -146,7 +184,53 @@ bool CommandRunner::startPathCmd(const ParsedCommand& cmd, uint32_t now)
     _vehicle.cmd(vx, vy, wz);
 
     _startTime = now;
+    _active = true;
+    _activeType = CMD_PATH;
+    _startFramePending = true;
 
+    return true;
+}
+
+bool CommandRunner::startRotationPathCmd(const ParsedCommand& cmd, uint32_t now)
+{
+    const float wz_deg_s = (float)cmd.wz;
+    const float wz_abs_deg_s = fabsf(wz_deg_s);
+
+    if (wz_abs_deg_s <= CMDP_ROT_SPEED_EPS)
+    {
+        Serial.println(F("#ERROR,CMDP,wz_darf_nicht_0_sein"));
+        return false;
+    }
+
+    _pathMode = PATH_ROTATION;
+
+    _pathTargetCm = 0.0f;
+    _pathUnitX = 0.0f;
+    _pathUnitY = 0.0f;
+    _pathProgressCm = 0.0f;
+
+    _angleTargetDeg = (float)cmd.param;
+    _angleDirection = (wz_deg_s >= 0.0f) ? 1.0f : -1.0f;
+    _angleProgressDeg = 0.0f;
+
+    _durationMs = calcAngleTimeoutMs(cmd.param, wz_abs_deg_s);
+
+    Serial.print(F("#EVENT,startCmdpTurn,wz="));
+    Serial.print(cmd.wz);
+    Serial.print(F(",targetDeg="));
+    Serial.print(cmd.param);
+    Serial.print(F(",dir="));
+    Serial.print((int)_angleDirection);
+    Serial.print(F(",timeoutMs="));
+    Serial.println(_durationMs);
+
+    const float vx = 0.0f;
+    const float vy = 0.0f;
+    const float wz = wz_deg_s * DEG_TO_RAD;
+
+    _vehicle.cmd(vx, vy, wz);
+
+    _startTime = now;
     _active = true;
     _activeType = CMD_PATH;
     _startFramePending = true;
@@ -162,6 +246,19 @@ uint32_t CommandRunner::calcPathTimeoutMs(uint16_t targetCm, float speedCms) con
     }
 
     const float idealMsF = ((float)targetCm * 1000.0f) / speedCms;
+    const uint32_t idealMs = (uint32_t)(idealMsF + 0.5f);
+
+    return idealMs * CMDP_TIMEOUT_FACTOR + CMDP_TIMEOUT_RESERVE_MS;
+}
+
+uint32_t CommandRunner::calcAngleTimeoutMs(uint16_t targetDeg, float speedDegS) const
+{
+    if (speedDegS < 1.0f)
+    {
+        speedDegS = 1.0f;
+    }
+
+    const float idealMsF = ((float)targetDeg * 1000.0f) / speedDegS;
     const uint32_t idealMs = (uint32_t)(idealMsF + 0.5f);
 
     return idealMs * CMDP_TIMEOUT_FACTOR + CMDP_TIMEOUT_RESERVE_MS;
@@ -190,6 +287,7 @@ void CommandRunner::update(uint32_t now)
 
         _active = false;
         _activeType = CMD_NONE;
+        _pathMode = PATH_NONE;
     }
 
     while (_cmdIndex < _size())
@@ -259,6 +357,7 @@ void CommandRunner::finishTimeCmd()
 {
     _active = false;
     _activeType = CMD_NONE;
+    _pathMode = PATH_NONE;
     _cmdIndex++;
 
     if (_cmdIndex >= _size())
@@ -270,15 +369,26 @@ void CommandRunner::finishTimeCmd()
 
 void CommandRunner::finishPathCmd()
 {
-    Serial.print(F("#EVENT,pathReached,targetCm="));
-    Serial.print(_pathTargetCm, 2);
-    Serial.print(F(",progressCm="));
-    Serial.println(_pathProgressCm, 2);
+    if (_pathMode == PATH_ROTATION)
+    {
+        Serial.print(F("#EVENT,angleReached,targetDeg="));
+        Serial.print(_angleTargetDeg, 2);
+        Serial.print(F(",progressDeg="));
+        Serial.println(_angleProgressDeg, 2);
+    }
+    else
+    {
+        Serial.print(F("#EVENT,pathReached,targetCm="));
+        Serial.print(_pathTargetCm, 2);
+        Serial.print(F(",progressCm="));
+        Serial.println(_pathProgressCm, 2);
+    }
 
     stopAll();
 
     _active = false;
     _activeType = CMD_NONE;
+    _pathMode = PATH_NONE;
     _cmdIndex++;
 
     if (_cmdIndex >= _size())
@@ -289,17 +399,30 @@ void CommandRunner::finishPathCmd()
 
 void CommandRunner::finishPathTimeoutCmd()
 {
-    Serial.print(F("#ERROR,CMDP,timeout,targetCm="));
-    Serial.print(_pathTargetCm, 2);
-    Serial.print(F(",progressCm="));
-    Serial.print(_pathProgressCm, 2);
-    Serial.print(F(",timeoutMs="));
-    Serial.println(_durationMs);
+    if (_pathMode == PATH_ROTATION)
+    {
+        Serial.print(F("#ERROR,CMDP,timeout,targetDeg="));
+        Serial.print(_angleTargetDeg, 2);
+        Serial.print(F(",progressDeg="));
+        Serial.print(_angleProgressDeg, 2);
+        Serial.print(F(",timeoutMs="));
+        Serial.println(_durationMs);
+    }
+    else
+    {
+        Serial.print(F("#ERROR,CMDP,timeout,targetCm="));
+        Serial.print(_pathTargetCm, 2);
+        Serial.print(F(",progressCm="));
+        Serial.print(_pathProgressCm, 2);
+        Serial.print(F(",timeoutMs="));
+        Serial.println(_durationMs);
+    }
 
     stopAll();
 
     _active = false;
     _activeType = CMD_NONE;
+    _pathMode = PATH_NONE;
     _cmdIndex++;
 
     if (_cmdIndex >= _size())
@@ -310,6 +433,12 @@ void CommandRunner::finishPathTimeoutCmd()
 
 void CommandRunner::updatePathProgress()
 {
+    if (_pathMode == PATH_ROTATION)
+    {
+        _angleProgressDeg = _odometer.phiDeg() * _angleDirection;
+        return;
+    }
+
     _pathProgressCm =
         _odometer.xCm() * _pathUnitX +
         _odometer.yCm() * _pathUnitY;
@@ -317,6 +446,18 @@ void CommandRunner::updatePathProgress()
 
 bool CommandRunner::pathReached() const
 {
+    if (_pathMode == PATH_ROTATION)
+    {
+        const float threshold = _angleTargetDeg - CMDP_ANGLE_TOLERANCE_DEG;
+
+        if (threshold <= 0.0f)
+        {
+            return _angleProgressDeg >= 0.0f;
+        }
+
+        return _angleProgressDeg >= threshold;
+    }
+
     const float threshold = _pathTargetCm - CMDP_TOLERANCE_CM;
 
     if (threshold <= 0.0f)
