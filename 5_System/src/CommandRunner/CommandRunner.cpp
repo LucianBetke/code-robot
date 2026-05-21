@@ -9,6 +9,11 @@ namespace
 {
     const float CMDP_TOLERANCE_CM = 1.0f;
     const float CMDP_SPEED_EPS = 0.001f;
+
+    // Timeout-Regel:
+    // ideale Fahrzeit * 3 + 1000 ms Reserve
+    const uint32_t CMDP_TIMEOUT_FACTOR = 3UL;
+    const uint32_t CMDP_TIMEOUT_RESERVE_MS = 1000UL;
 }
 
 CommandRunner::CommandRunner(
@@ -117,6 +122,8 @@ bool CommandRunner::startPathCmd(const ParsedCommand& cmd, uint32_t now)
     _pathTargetCm = (float)cmd.param;
     _pathProgressCm = 0.0f;
 
+    _durationMs = calcPathTimeoutMs(cmd.param, v_abs_cms);
+
     Serial.print(F("#EVENT,startCmdp,vx="));
     Serial.print(cmd.vx);
     Serial.print(F(",vy="));
@@ -128,7 +135,9 @@ bool CommandRunner::startPathCmd(const ParsedCommand& cmd, uint32_t now)
     Serial.print(F(",unitX="));
     Serial.print(_pathUnitX, 3);
     Serial.print(F(",unitY="));
-    Serial.println(_pathUnitY, 3);
+    Serial.print(_pathUnitY, 3);
+    Serial.print(F(",timeoutMs="));
+    Serial.println(_durationMs);
 
     const float vx = (float)cmd.vx * 0.01f;
     const float vy = (float)cmd.vy * 0.01f;
@@ -137,13 +146,25 @@ bool CommandRunner::startPathCmd(const ParsedCommand& cmd, uint32_t now)
     _vehicle.cmd(vx, vy, wz);
 
     _startTime = now;
-    _durationMs = 0;
 
     _active = true;
     _activeType = CMD_PATH;
     _startFramePending = true;
 
     return true;
+}
+
+uint32_t CommandRunner::calcPathTimeoutMs(uint16_t targetCm, float speedCms) const
+{
+    if (speedCms < 1.0f)
+    {
+        speedCms = 1.0f;
+    }
+
+    const float idealMsF = ((float)targetCm * 1000.0f) / speedCms;
+    const uint32_t idealMs = (uint32_t)(idealMsF + 0.5f);
+
+    return idealMs * CMDP_TIMEOUT_FACTOR + CMDP_TIMEOUT_RESERVE_MS;
 }
 
 void CommandRunner::update(uint32_t now)
@@ -163,7 +184,7 @@ void CommandRunner::update(uint32_t now)
 
         if (_activeType == CMD_PATH)
         {
-            updateActivePathCmd();
+            updateActivePathCmd(now);
             return;
         }
 
@@ -217,16 +238,21 @@ void CommandRunner::updateActiveTimeCmd(uint32_t now)
     finishTimeCmd();
 }
 
-void CommandRunner::updateActivePathCmd()
+void CommandRunner::updateActivePathCmd(uint32_t now)
 {
     updatePathProgress();
 
-    if (!pathReached())
+    if (pathReached())
     {
+        finishPathCmd();
         return;
     }
 
-    finishPathCmd();
+    if (pathTimedOut(now))
+    {
+        finishPathTimeoutCmd();
+        return;
+    }
 }
 
 void CommandRunner::finishTimeCmd()
@@ -261,6 +287,27 @@ void CommandRunner::finishPathCmd()
     }
 }
 
+void CommandRunner::finishPathTimeoutCmd()
+{
+    Serial.print(F("#ERROR,CMDP,timeout,targetCm="));
+    Serial.print(_pathTargetCm, 2);
+    Serial.print(F(",progressCm="));
+    Serial.print(_pathProgressCm, 2);
+    Serial.print(F(",timeoutMs="));
+    Serial.println(_durationMs);
+
+    stopAll();
+
+    _active = false;
+    _activeType = CMD_NONE;
+    _cmdIndex++;
+
+    if (_cmdIndex >= _size())
+    {
+        _finished = true;
+    }
+}
+
 void CommandRunner::updatePathProgress()
 {
     _pathProgressCm =
@@ -278,6 +325,11 @@ bool CommandRunner::pathReached() const
     }
 
     return _pathProgressCm >= threshold;
+}
+
+bool CommandRunner::pathTimedOut(uint32_t now) const
+{
+    return (uint32_t)(now - _startTime) >= _durationMs;
 }
 
 float CommandRunner::getWheelSoll(WheelVehicle w) const

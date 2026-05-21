@@ -41,13 +41,17 @@ private:
     bool startPathCmd(const ParsedCommand& cmd, uint32_t now);
 
     void updateActiveTimeCmd(uint32_t now);
-    void updateActivePathCmd();
+    void updateActivePathCmd(uint32_t now);
 
     void finishTimeCmd();
     void finishPathCmd();
+    void finishPathTimeoutCmd();
 
     bool pathReached() const;
+    bool pathTimedOut(uint32_t now) const;
     void updatePathProgress();
+
+    uint32_t calcPathTimeoutMs(uint16_t targetCm, float speedCms) const;
 
     void stopAll();
 
