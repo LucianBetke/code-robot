@@ -47,10 +47,14 @@ void loop()
 
     if (app.isConnected())
     {
+        app.updateVehicleAndFrontControl(now);
+
+        // Erst Messframe pruefen.
+        // Danach darf der CommandRunner den aktiven Befehl beenden.
+        app.tryRequestFrame(now);
+
         app.updateCommandRunner(now);
         app.updateLogRaster(now);
-        app.updateVehicleAndFrontControl(now);
         app.updateRearStopSequence(now);
-        app.tryRequestFrame(now);
     }
 }

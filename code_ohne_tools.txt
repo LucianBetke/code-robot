@@ -778,6 +778,9 @@ FILE: C:\Users\Acer\source\repos\robot\2_Hardware\src\Hardware.cpp
 
 Enc   enc[WHEEL_COUNT];
 Motor motor[WHEEL_COUNT];
+// Dieser Pin ist board-abhaengig:
+// vorne: Sync-Ausgang fuer VIST-Anforderung
+// hinten: STBY-Ausgang fuer beide Motortreiber
 static uint8_t s_stby_sync = 0;
 
 void hardware_begin(const HardwarePinSet& pins, bool resetEnc)
@@ -4929,17 +4932,17 @@ void loop()
     uint32_t now = millis();
 
     app.updateCommunication();
-    app.updateConnectionSafety(now);
     app.handleIncomingLines(now);
     app.updateFrameTimeout(now);
+    app.updateConnectionSafety(now);
 
-    if (app.isConnected()) app.tryRequestFrame(now);
-
-    app.updateCommandRunner(now);
-    app.updateLogRaster(now);
-    app.updateVehicleAndFrontControl(now);
-    app.updateRearStopSequence(now);
-
-    if (app.isConnected()) app.tryRequestFrame(now);
+    if (app.isConnected())
+    {
+        app.updateCommandRunner(now);
+        app.updateLogRaster(now);
+        app.updateVehicleAndFrontControl(now);
+        app.updateRearStopSequence(now);
+        app.tryRequestFrame(now);
+    }
 }
 

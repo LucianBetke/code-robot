@@ -282,6 +282,11 @@ void FrontApp::requestStartFrameForNewCommand(uint32_t now)
     // auf die dann vorhandenen vier Encoderstaende genullt.
     _odomResetPending = true;
 
+    // Neuer echter Fahrabschnitt:
+    // Front-PI einmalig zuruecksetzen.
+    // Rear-PI wird ueber resetPi=true im VSOL-Startframe zurueckgesetzt.
+    control_resetPiStates();
+
     applyFrontWheelSoll();
 
     rearFrameClient.clearWaiting();
@@ -289,8 +294,7 @@ void FrontApp::requestStartFrameForNewCommand(uint32_t now)
 
     frameScheduler.start(now);
 
-    // Echter Startframe des neuen Befehls:
-    // t = 0, neue Sollwerte, aktuelle Istwerte, aktuelle PWM-Zustaende,
-    // aktuelle Front-Counts. Rear-Counts kommen danach ueber VIST.
-    requestRearFrame(now, 0, false);
+    // Startframe:
+    // t = 0, neue Sollwerte, resetPi=true fuer Rear.
+    requestRearFrame(now, 0, true);
 }
