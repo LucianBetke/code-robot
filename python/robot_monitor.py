@@ -1,3 +1,5 @@
+# File: robot_monitor.py
+
 """
 robot_monitor.py
 =================
@@ -36,6 +38,10 @@ Grund:
   Der Arduino sendet aktuell keine #HDR-Zeilen mehr.
   Python kennt das feste #WHEELS-Format selbst.
 
+Korrektur:
+  Mehrere Fahrlaeufe werden anhand eines Zeitruecksprungs erkannt.
+  Dadurch werden alte Kurven nicht mehr diagonal mit neuen Kurven verbunden.
+
 Abhaengigkeiten:
   pip install pyserial matplotlib pillow pywin32
 """
@@ -69,6 +75,14 @@ MAX_POINTS = 3000
 UPDATE_MS = 200
 
 PLOT_MODES = ("WHEELS", "CHASSIS")
+
+# Neuer Lauf:
+# Wenn die lokale Arduino-Zeit deutlich zurueckspringt,
+# wird ein neuer Fahr-/Messlauf erkannt.
+WHEEL_RUN_RESET_TIME_DROP_MS = 500.0
+
+# Sehr kurze Fragmente werden nicht geplottet.
+WHEEL_MIN_RUN_POINTS = 2
 
 
 # Festes Format fuer die neue Arduino-Ausgabe ohne #HDR:
@@ -436,7 +450,7 @@ COLORS_VEH = {
 
 
 # ─────────────────────────────────────────────
-# Plot-Hilfsfunktion
+# Plot-Hilfsfunktionen
 # ─────────────────────────────────────────────
 
 def build_command_boundary_series(t_sec, values, cmd_indices, local_ms):
@@ -479,6 +493,60 @@ def build_command_boundary_series(t_sec, values, cmd_indices, local_ms):
         y.append(values[i])
 
     return x, y
+
+
+def split_time_runs(local_ms):
+    """
+    Teilt Messdaten in mehrere Laeufe.
+
+    Ursache des bisherigen Plotfehlers:
+      Beim naechsten Fahrversuch startet ms wieder bei 0.
+      Matplotlib verbindet aber den letzten Punkt des alten Laufs
+      mit dem ersten Punkt des neuen Laufs. Dadurch entstehen
+      schraege Verbindungslinien.
+
+    Loesung:
+      Wenn ms deutlich zurueckspringt, wird ein neuer Lauf begonnen.
+      Jeder Lauf wird separat geplottet.
+    """
+    runs = []
+
+    if not local_ms:
+        return runs
+
+    start = 0
+
+    for i in range(1, len(local_ms)):
+        try:
+            prev_t = float(local_ms[i - 1])
+            curr_t = float(local_ms[i])
+        except ValueError:
+            continue
+
+        time_reset = curr_t < (prev_t - WHEEL_RUN_RESET_TIME_DROP_MS)
+
+        if time_reset:
+            if i - start >= WHEEL_MIN_RUN_POINTS:
+                runs.append((start, i))
+
+            start = i
+
+    if len(local_ms) - start >= WHEEL_MIN_RUN_POINTS:
+        runs.append((start, len(local_ms)))
+
+    return runs
+
+
+def safe_slice(values, start, end):
+    if not values:
+        return []
+
+    end2 = min(end, len(values))
+
+    if start >= end2:
+        return []
+
+    return values[start:end2]
 
 
 # ─────────────────────────────────────────────
@@ -665,12 +733,15 @@ def start_plot():
 
         d, mode = store.snapshot()
 
-        t_ms = d.get("t_plot_ms", [])
+        local_ms_all = d.get("ms", [])
 
-        if not t_ms:
+        if not local_ms_all:
             return
 
-        t = [x / 1000.0 for x in t_ms]
+        runs = split_time_runs(local_ms_all)
+
+        if not runs:
+            return
 
         for ax in axes:
             ax.cla()
@@ -679,112 +750,24 @@ def start_plot():
         axes[1].set_xlabel("Zeit [s]")
 
         if mode == "WHEELS":
-            ax_v = axes[0]
-            ax_pwm = axes[1]
-
-            ax_v.set_ylabel("Geschwindigkeit [m/s]")
-            ax_pwm.set_ylabel("PWM")
-
-            cmd_indices = d.get("cmd_index", [])
-            local_ms = d.get("ms", [])
-
-            for name, col in COLORS_RAD.items():
-                s_key = f"{name}_s"
-                i_key = f"{name}_i"
-                pwm_key = f"{name}_pwm"
-
-                s = d.get(s_key, [])
-                ist = d.get(i_key, [])
-                pwm = d.get(pwm_key, [])
-
-                n = min(len(t), len(s), len(ist), len(cmd_indices), len(local_ms))
-
-                if n:
-                    x_soll, y_soll = build_command_boundary_series(
-                        t[:n],
-                        s[:n],
-                        cmd_indices[:n],
-                        local_ms[:n]
-                    )
-
-                    ax_v.plot(
-                        x_soll,
-                        y_soll,
-                        linestyle="--",
-                        color=col,
-                        alpha=0.6,
-                        label=f"{name} Soll"
-                    )
-
-                    ax_v.plot(
-                        t[:n],
-                        ist[:n],
-                        linestyle="-",
-                        color=col,
-                        label=f"{name} Ist"
-                    )
-
-                n_p = min(len(t), len(pwm), len(cmd_indices), len(local_ms))
-
-                if n_p:
-                    x_pwm, y_pwm = build_command_boundary_series(
-                        t[:n_p],
-                        pwm[:n_p],
-                        cmd_indices[:n_p],
-                        local_ms[:n_p]
-                    )
-
-                    ax_pwm.plot(
-                        x_pwm,
-                        y_pwm,
-                        linestyle="-",
-                        color=col,
-                        label=f"{name} PWM"
-                    )
-
-            ax_v.legend(loc="lower right", fontsize=7, ncol=4)
-            ax_pwm.legend(loc="lower right", fontsize=7, ncol=4)
+            update_wheels_plot(d, axes, runs)
 
         elif mode == "CHASSIS":
-            ax_rad = axes[0]
-            ax_veh = axes[1]
+            update_chassis_plot(d, axes, runs)
 
-            ax_rad.set_ylabel("Radgeschwindigkeit Ist [m/s]")
-            ax_veh.set_ylabel("Fahrzeug [m/s / rad/s]")
+        total_points = sum(end - start for start, end in runs)
+        run_count = len(runs)
 
-            for name, col in COLORS_RAD.items():
-                vals = d.get(f"{name}_i", [])
-                n = min(len(t), len(vals))
+        last_start, last_end = runs[-1]
+        last_ms_values = safe_slice(local_ms_all, last_start, last_end)
+        last_t = float(last_ms_values[-1]) / 1000.0 if last_ms_values else 0.0
 
-                if n:
-                    ax_rad.plot(
-                        t[:n],
-                        vals[:n],
-                        color=col,
-                        label=f"{name}"
-                    )
-
-            for key, col in COLORS_VEH.items():
-                vals = d.get(key, [])
-                n = min(len(t), len(vals))
-
-                if n:
-                    ax_veh.plot(
-                        t[:n],
-                        vals[:n],
-                        color=col,
-                        label=key
-                    )
-
-            ax_rad.legend(loc="lower right", fontsize=8, ncol=4)
-            ax_veh.legend(loc="lower right", fontsize=8, ncol=3)
-
-        n_pts = len(t)
         cmd_values = d.get("cmd_index", [])
-        last_cmd = cmd_values[-1] if cmd_values else 0
+        last_cmd = cmd_values[last_end - 1] if cmd_values and last_end <= len(cmd_values) else 0
 
         axes[0].set_title(
-            f"{mode} - {n_pts} Messpunkte - CMD #{int(last_cmd)} - t = {t[-1]:.1f} s",
+            f"{mode} - {run_count} Laeufe - {total_points} Messpunkte - "
+            f"CMD #{int(last_cmd)} - letzter Lauf t = {last_t:.1f} s",
             fontsize=10
         )
 
@@ -797,6 +780,147 @@ def start_plot():
 
     plt.show()
     return ani
+
+
+def update_wheels_plot(d, axes, runs):
+    ax_v = axes[0]
+    ax_pwm = axes[1]
+
+    ax_v.set_ylabel("Geschwindigkeit [m/s]")
+    ax_pwm.set_ylabel("PWM")
+
+    cmd_indices_all = d.get("cmd_index", [])
+    local_ms_all = d.get("ms", [])
+
+    last_run_index = len(runs) - 1
+
+    for run_index, (start, end) in enumerate(runs):
+        is_last_run = run_index == last_run_index
+
+        # Alte Laeufe bleiben sichtbar, aber heller.
+        alpha_ist = 1.0 if is_last_run else 0.35
+        alpha_soll = 0.6 if is_last_run else 0.25
+        alpha_pwm = 1.0 if is_last_run else 0.35
+
+        local_ms = safe_slice(local_ms_all, start, end)
+        cmd_indices = safe_slice(cmd_indices_all, start, end)
+
+        if not local_ms:
+            continue
+
+        t = [float(x) / 1000.0 for x in local_ms]
+
+        for name, col in COLORS_RAD.items():
+            s_key = f"{name}_s"
+            i_key = f"{name}_i"
+            pwm_key = f"{name}_pwm"
+
+            s = safe_slice(d.get(s_key, []), start, end)
+            ist = safe_slice(d.get(i_key, []), start, end)
+            pwm = safe_slice(d.get(pwm_key, []), start, end)
+
+            n = min(len(t), len(s), len(ist), len(cmd_indices), len(local_ms))
+
+            if n:
+                x_soll, y_soll = build_command_boundary_series(
+                    t[:n],
+                    s[:n],
+                    cmd_indices[:n],
+                    local_ms[:n]
+                )
+
+                ax_v.plot(
+                    x_soll,
+                    y_soll,
+                    linestyle="--",
+                    color=col,
+                    alpha=alpha_soll,
+                    label=f"{name} Soll" if is_last_run else "_nolegend_"
+                )
+
+                ax_v.plot(
+                    t[:n],
+                    ist[:n],
+                    linestyle="-",
+                    color=col,
+                    alpha=alpha_ist,
+                    label=f"{name} Ist" if is_last_run else "_nolegend_"
+                )
+
+            n_p = min(len(t), len(pwm), len(cmd_indices), len(local_ms))
+
+            if n_p:
+                x_pwm, y_pwm = build_command_boundary_series(
+                    t[:n_p],
+                    pwm[:n_p],
+                    cmd_indices[:n_p],
+                    local_ms[:n_p]
+                )
+
+                ax_pwm.plot(
+                    x_pwm,
+                    y_pwm,
+                    linestyle="-",
+                    color=col,
+                    alpha=alpha_pwm,
+                    label=f"{name} PWM" if is_last_run else "_nolegend_"
+                )
+
+    ax_v.legend(loc="lower right", fontsize=7, ncol=4)
+    ax_pwm.legend(loc="lower right", fontsize=7, ncol=4)
+
+    ax_pwm.set_ylim(-255, 255)
+
+
+def update_chassis_plot(d, axes, runs):
+    ax_rad = axes[0]
+    ax_veh = axes[1]
+
+    ax_rad.set_ylabel("Radgeschwindigkeit Ist [m/s]")
+    ax_veh.set_ylabel("Fahrzeug [m/s / rad/s]")
+
+    local_ms_all = d.get("ms", [])
+    last_run_index = len(runs) - 1
+
+    for run_index, (start, end) in enumerate(runs):
+        is_last_run = run_index == last_run_index
+        alpha = 1.0 if is_last_run else 0.35
+
+        local_ms = safe_slice(local_ms_all, start, end)
+
+        if not local_ms:
+            continue
+
+        t = [float(x) / 1000.0 for x in local_ms]
+
+        for name, col in COLORS_RAD.items():
+            vals = safe_slice(d.get(f"{name}_i", []), start, end)
+            n = min(len(t), len(vals))
+
+            if n:
+                ax_rad.plot(
+                    t[:n],
+                    vals[:n],
+                    color=col,
+                    alpha=alpha,
+                    label=f"{name}" if is_last_run else "_nolegend_"
+                )
+
+        for key, col in COLORS_VEH.items():
+            vals = safe_slice(d.get(key, []), start, end)
+            n = min(len(t), len(vals))
+
+            if n:
+                ax_veh.plot(
+                    t[:n],
+                    vals[:n],
+                    color=col,
+                    alpha=alpha,
+                    label=key if is_last_run else "_nolegend_"
+                )
+
+    ax_rad.legend(loc="lower right", fontsize=8, ncol=4)
+    ax_veh.legend(loc="lower right", fontsize=8, ncol=3)
 
 
 # ─────────────────────────────────────────────

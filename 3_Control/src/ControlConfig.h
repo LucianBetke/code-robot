@@ -40,7 +40,8 @@ namespace ConfigFront
     constexpr ControlConfig CONFIG =
     {
         // deadPwm: Li, Re
-        { 80, 60 },
+        { 70, 70 },
+ //       { 80, 60 }, alter wert
 
         // PI-Parameter: Li, Re
         {
