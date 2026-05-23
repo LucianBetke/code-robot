@@ -1,5 +1,3 @@
-# File: robot_monitor_odom.py
-
 """
 robot_monitor_odom.py
 =====================
@@ -29,8 +27,19 @@ Dieses Programm kann zwei Hauptanzeigen:
   DEFAULT_DISPLAY_MODE = "ODOM"
     x-Achse unten: path_cm
     x-Achse oben:  Zeit des letzten Laufes [s]
-    oben:          y_cm seitliche Verschiebung
-    unten:         phi_deg Verdrehung
+
+    Diagramm 1:    y_world ueber Weg
+    Diagramm 2:    y_body ueber Weg
+    Diagramm 3:    phi_deg Verdrehung ueber Weg
+
+    Wichtig:
+      Der Arduino liefert nach dem Speicherumbau lokale Koordinaten:
+        x_cm = x_body_cm
+        y_cm = y_body_cm
+
+      Python berechnet daraus zusaetzlich:
+        x_world_cm
+        y_world_cm
 
     Mehrere Durchlaeufe werden automatisch erkannt:
       Wenn path_cm stark zurueckspringt, beginnt ein neuer Lauf.
@@ -53,6 +62,7 @@ import threading
 import argparse
 import os
 import io
+import math
 from datetime import datetime
 from collections import deque
 
@@ -85,6 +95,7 @@ ODOM_TIME_AXIS_TICKS = 6
 
 ODOM_STATUS_TEXT_Y = 0.925
 ODOM_STATUS_TEXT_FONTSIZE = 10
+ODOM_FIGSIZE = (11, 8)
 
 
 DEFAULT_WHEELS_COLS = [
@@ -543,6 +554,53 @@ def split_odom_runs(path_cm, y_cm, phi_deg, x_cm, t_ms):
     return runs
 
 
+def compute_world_coordinates(run):
+    """
+    Rekonstruiert Weltkoordinaten aus lokalen Arduino-Koordinaten.
+
+    Eingang aus #ODOM nach dem Arduino-Umbau:
+      x_cm   = x_body_cm
+      y_cm   = y_body_cm
+      phi_deg
+
+    Vorgehen:
+      Aus den Differenzen dx_body/dy_body pro Messschritt wird mit phi_mid
+      wieder dx_world/dy_world gebildet. So bleibt der Arduino ohne sin/cos,
+      aber Python kann trotzdem die Weltbahn anzeigen.
+    """
+    x_body = run["x"]
+    y_body = run["y"]
+    phi_deg = run["phi"]
+
+    n = min(len(x_body), len(y_body), len(phi_deg))
+
+    if n == 0:
+        return [], []
+
+    x_world = [0.0]
+    y_world = [0.0]
+
+    for i in range(1, n):
+        dx_body = x_body[i] - x_body[i - 1]
+        dy_body = y_body[i] - y_body[i - 1]
+
+        phi_prev = math.radians(phi_deg[i - 1])
+        phi_now = math.radians(phi_deg[i])
+        dphi = phi_now - phi_prev
+        phi_mid = phi_prev + 0.5 * dphi
+
+        c = math.cos(phi_mid)
+        s = math.sin(phi_mid)
+
+        dx_world = dx_body * c - dy_body * s
+        dy_world = dx_body * s + dy_body * c
+
+        x_world.append(x_world[-1] + dx_world)
+        y_world.append(y_world[-1] + dy_world)
+
+    return x_world, y_world
+
+
 def get_default_color(index):
     colors = plt.rcParams["axes.prop_cycle"].by_key().get("color", [])
 
@@ -754,8 +812,8 @@ def add_extra_plot_buttons(fig):
 # ─────────────────────────────────────────────
 
 def start_plot():
-    fig, axes = plt.subplots(2, 1, figsize=(10, 6), sharex=False)
-    fig.suptitle("Robot Monitor", fontsize=13, y=0.985)
+    fig, axes = plt.subplots(3, 1, figsize=ODOM_FIGSIZE, sharex=False)
+    fig.suptitle("Robot Monitor", fontsize=13, y=0.988)
 
     status_text = fig.text(
         0.5,
@@ -766,15 +824,15 @@ def start_plot():
         fontsize=ODOM_STATUS_TEXT_FONTSIZE
     )
 
-    time_axes = [axes[0].twiny(), axes[1].twiny()]
+    time_axes = [ax.twiny() for ax in axes]
 
     def apply_layout():
         fig.subplots_adjust(
             left=0.075,
             right=0.985,
-            top=0.78,
-            bottom=0.09,
-            hspace=0.56
+            top=0.82,
+            bottom=0.075,
+            hspace=0.72
         )
 
     apply_layout()
@@ -883,15 +941,18 @@ def clear_axes(axes):
 
 
 def update_odom_plot(d, axes, time_axes, status_text=None):
+    for ax in axes:
+        ax.set_visible(True)
+
     show_time_axes(time_axes)
 
     path_cm = d.get("path_cm", [])
-    y_cm = d.get("y_cm", [])
+    y_body_cm = d.get("y_cm", [])
     phi_deg = d.get("phi_deg", [])
-    x_cm = d.get("x_cm", [])
+    x_body_cm = d.get("x_cm", [])
     t_ms = d.get("ms", [])
 
-    runs = split_odom_runs(path_cm, y_cm, phi_deg, x_cm, t_ms)
+    runs = split_odom_runs(path_cm, y_body_cm, phi_deg, x_body_cm, t_ms)
 
     visible_runs = [
         run for run in runs
@@ -903,24 +964,35 @@ def update_odom_plot(d, axes, time_axes, status_text=None):
 
     clear_axes(axes)
 
-    ax_y = axes[0]
-    ax_phi = axes[1]
+    ax_y_world = axes[0]
+    ax_y_body = axes[1]
+    ax_phi = axes[2]
 
     max_path = 0.0
+    last_world = {
+        "x": 0.0,
+        "y": 0.0,
+    }
 
     for run_index, run in enumerate(visible_runs, start=1):
         color = get_default_color(run_index - 1)
 
         path = run["path"]
-        y = run["y"]
+        y_body = run["y"]
         phi = run["phi"]
+        x_world, y_world = compute_world_coordinates(run)
 
         if path:
             max_path = max(max_path, max(path))
 
-        plot_kwargs_y = {
+        plot_kwargs_world = {
             "linestyle": "-",
-            "label": f"y Lauf {run_index}",
+            "label": f"y_world Lauf {run_index}",
+        }
+
+        plot_kwargs_body = {
+            "linestyle": "-",
+            "label": f"y_body Lauf {run_index}",
         }
 
         plot_kwargs_phi = {
@@ -929,72 +1001,97 @@ def update_odom_plot(d, axes, time_axes, status_text=None):
         }
 
         if color is not None:
-            plot_kwargs_y["color"] = color
+            plot_kwargs_world["color"] = color
+            plot_kwargs_body["color"] = color
             plot_kwargs_phi["color"] = color
 
-        ax_y.plot(path, y, **plot_kwargs_y)
-        ax_phi.plot(path, phi, **plot_kwargs_phi)
+        n_world = min(len(path), len(y_world))
+        if n_world:
+            ax_y_world.plot(path[:n_world], y_world[:n_world], **plot_kwargs_world)
 
-    ax_y.axhline(0.0, linestyle="--", linewidth=1.0, alpha=0.7)
+        n_body = min(len(path), len(y_body))
+        if n_body:
+            ax_y_body.plot(path[:n_body], y_body[:n_body], **plot_kwargs_body)
+
+        n_phi = min(len(path), len(phi))
+        if n_phi:
+            ax_phi.plot(path[:n_phi], phi[:n_phi], **plot_kwargs_phi)
+
+        if run is visible_runs[-1] and x_world and y_world:
+            last_world["x"] = x_world[-1]
+            last_world["y"] = y_world[-1]
+
+    ax_y_world.axhline(0.0, linestyle="--", linewidth=1.0, alpha=0.7)
+    ax_y_body.axhline(0.0, linestyle="--", linewidth=1.0, alpha=0.7)
     ax_phi.axhline(0.0, linestyle="--", linewidth=1.0, alpha=0.7)
 
-    ax_y.set_xlabel("Weg path [cm]")
-    ax_y.set_ylabel("Verschiebung y [cm]")
+    ax_y_world.set_xlabel("Weg path [cm]")
+    ax_y_world.set_ylabel("y_world [cm]")
+
+    ax_y_body.set_xlabel("Weg path [cm]")
+    ax_y_body.set_ylabel("y_body [cm]")
 
     ax_phi.set_xlabel("Weg path [cm]")
-    ax_phi.set_ylabel("Verdrehung phi [deg]")
+    ax_phi.set_ylabel("phi [deg]")
 
     if max_path > 0.0:
-        ax_y.set_xlim(0.0, max_path * 1.03)
-        ax_phi.set_xlim(0.0, max_path * 1.03)
+        x_max = max_path * 1.03
+        ax_y_world.set_xlim(0.0, x_max)
+        ax_y_body.set_xlim(0.0, x_max)
+        ax_phi.set_xlim(0.0, x_max)
 
     # Ordinaten-Zahlenwerte explizit sichtbar lassen.
-    ax_y.tick_params(axis="y", which="both", labelleft=True, left=True)
+    ax_y_world.tick_params(axis="y", which="both", labelleft=True, left=True)
+    ax_y_body.tick_params(axis="y", which="both", labelleft=True, left=True)
     ax_phi.tick_params(axis="y", which="both", labelleft=True, left=True)
 
-    ax_y.legend(loc="lower left", fontsize=8, ncol=2)
+    ax_y_world.legend(loc="lower left", fontsize=8, ncol=2)
+    ax_y_body.legend(loc="lower left", fontsize=8, ncol=2)
     ax_phi.legend(loc="lower left", fontsize=8, ncol=2)
 
     last_run = visible_runs[-1]
 
     last_path = last_run["path"][-1]
-    last_y = last_run["y"][-1]
+    last_x_body = last_run["x"][-1]
+    last_y_body = last_run["y"][-1]
     last_phi = last_run["phi"][-1]
-    last_x = last_run["x"][-1]
     last_t = last_run["t_ms"][-1] / 1000.0
 
     total_points = sum(len(run["path"]) for run in visible_runs)
     run_count = len(visible_runs)
 
-    update_time_axis(
-        time_axes[0],
-        last_run["path"],
-        last_run["t_ms"],
-        max_path
-    )
-
-    update_time_axis(
-        time_axes[1],
-        last_run["path"],
-        last_run["t_ms"],
-        max_path
-    )
+    for time_ax in time_axes:
+        update_time_axis(
+            time_ax,
+            last_run["path"],
+            last_run["t_ms"],
+            max_path
+        )
 
     status_line = (
         f"ODOM - {run_count} Laeufe - {total_points} Messpunkte - "
         f"letzter Lauf: path = {last_path:.2f} cm - "
-        f"x = {last_x:.2f} cm - y = {last_y:.2f} cm - "
+        f"x_body = {last_x_body:.2f} cm - "
+        f"y_body = {last_y_body:.2f} cm - "
+        f"x_world = {last_world['x']:.2f} cm - "
+        f"y_world = {last_world['y']:.2f} cm - "
         f"phi = {last_phi:.2f} deg - t = {last_t:.1f} s"
     )
 
     if status_text is not None:
         status_text.set_text(status_line)
-        ax_y.set_title("")
+        ax_y_world.set_title("")
     else:
-        ax_y.set_title(status_line, fontsize=10, pad=28)
+        ax_y_world.set_title(status_line, fontsize=10, pad=28)
 
 
 def update_wheels_plot(d, axes):
+    for ax in axes:
+        ax.set_visible(False)
+
+    axes[0].set_visible(True)
+    axes[1].set_visible(True)
+
     t_ms = d.get("t_plot_ms", [])
 
     if not t_ms:
@@ -1002,7 +1099,7 @@ def update_wheels_plot(d, axes):
 
     t = [x / 1000.0 for x in t_ms]
 
-    clear_axes(axes)
+    clear_axes(axes[:2])
 
     axes[1].set_xlabel("Zeit [s]")
 
@@ -1083,6 +1180,12 @@ def update_wheels_plot(d, axes):
 
 
 def update_chassis_plot(d, axes):
+    for ax in axes:
+        ax.set_visible(False)
+
+    axes[0].set_visible(True)
+    axes[1].set_visible(True)
+
     t_ms = d.get("t_plot_ms", [])
 
     if not t_ms:
@@ -1090,7 +1193,7 @@ def update_chassis_plot(d, axes):
 
     t = [x / 1000.0 for x in t_ms]
 
-    clear_axes(axes)
+    clear_axes(axes[:2])
 
     axes[1].set_xlabel("Zeit [s]")
 

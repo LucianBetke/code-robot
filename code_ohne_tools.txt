@@ -1357,12 +1357,13 @@ namespace ConfigFront
     constexpr ControlConfig CONFIG =
     {
         // deadPwm: Li, Re
-        { 80, 60 },
+        { 70, 70 },
+ //       { 80, 60 }, alter wert
 
         // PI-Parameter: Li, Re
         {
-            { 2.0f, 6.0f },   // Li: Kp, Ki
-            { 2.0f, 5.5f }    // Re: Kp, Ki
+            { 2.0f, 8.0f },   // Li: Kp, Ki
+            { 2.0f, 10.0f }    // Re: Kp, Ki
         }
     };
 }
@@ -2766,6 +2767,7 @@ void CommandRunner::startTimeCmd(const ParsedCommand& cmd, uint32_t now)
 {
     _durationMs = (uint32_t)cmd.param * 1000UL;
 
+#if PRINTER_ENABLE_EVENTS
     Serial.print(F("#EVENT,startCmd,vx="));
     Serial.print(cmd.vx);
     Serial.print(F(",vy="));
@@ -2776,6 +2778,7 @@ void CommandRunner::startTimeCmd(const ParsedCommand& cmd, uint32_t now)
     Serial.print(cmd.param);
     Serial.print(F(",durationMs="));
     Serial.println(_durationMs);
+#endif
 
     const float vx = (float)cmd.vx * 0.01f;
     const float vy = (float)cmd.vy * 0.01f;
@@ -2855,6 +2858,7 @@ bool CommandRunner::startTranslationPathCmd(const ParsedCommand& cmd, uint32_t n
 
     _durationMs = calcPathTimeoutMs(cmd.param, v_abs_cms);
 
+#if PRINTER_ENABLE_EVENTS
     Serial.print(F("#EVENT,startCmdp,vx="));
     Serial.print(cmd.vx);
     Serial.print(F(",vy="));
@@ -2869,6 +2873,7 @@ bool CommandRunner::startTranslationPathCmd(const ParsedCommand& cmd, uint32_t n
     Serial.print(_pathUnitY, 3);
     Serial.print(F(",timeoutMs="));
     Serial.println(_durationMs);
+#endif
 
     const float vx = (float)cmd.vx * 0.01f;
     const float vy = (float)cmd.vy * 0.01f;
@@ -2910,6 +2915,7 @@ bool CommandRunner::startRotationPathCmd(const ParsedCommand& cmd, uint32_t now)
 
     _durationMs = calcAngleTimeoutMs(cmd.param, wz_abs_deg_s);
 
+#if PRINTER_ENABLE_EVENTS
     Serial.print(F("#EVENT,startCmdpTurn,wz="));
     Serial.print(cmd.wz);
     Serial.print(F(",targetDeg="));
@@ -2918,6 +2924,7 @@ bool CommandRunner::startRotationPathCmd(const ParsedCommand& cmd, uint32_t now)
     Serial.print((int)_angleDirection);
     Serial.print(F(",timeoutMs="));
     Serial.println(_durationMs);
+#endif
 
     const float vx = 0.0f;
     const float vy = 0.0f;
@@ -3066,6 +3073,7 @@ void CommandRunner::finishTimeCmd()
 
 void CommandRunner::finishPathCmd()
 {
+#if PRINTER_ENABLE_EVENTS
     if (_pathMode == PATH_ROTATION)
     {
         Serial.print(F("#EVENT,angleReached,targetDeg="));
@@ -3080,6 +3088,7 @@ void CommandRunner::finishPathCmd()
         Serial.print(F(",progressCm="));
         Serial.println(_pathProgressCm, 2);
     }
+#endif
 
     stopAll();
 
@@ -4008,10 +4017,10 @@ FILE: C:\Users\Acer\source\repos\robot\5_System\src\PrinterConfig.h
 #define PRINTER_ENABLE_INFO     1
 #define PRINTER_ENABLE_ERRORS   0
 #define PRINTER_ENABLE_EVENTS   0
-#define PRINTER_ENABLE_ODOM     0
+#define PRINTER_ENABLE_ODOM     1
 #define PRINTER_ENABLE_COUNTS   0
 
-#define PRINTER_ENABLE_WHEELS   1
+#define PRINTER_ENABLE_WHEELS   0
 #define PRINTER_ENABLE_CHASSIS  0
 
 #endif // PRINTER_CONFIG_H
@@ -4727,7 +4736,7 @@ FILE: C:\Users\Acer\source\repos\robot\vorne\src\CommandScript.cpp
 #include "CommandScript.h"
 
 static const char* _script[] = {
-    "CMDP(20,0,0) 50;"
+    "CMDP(30,0,0) 100;"
 };
 
 const char* CommandScript::get(uint8_t index)
