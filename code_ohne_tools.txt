@@ -999,15 +999,24 @@ private:
 FILE: C:\Users\Acer\source\repos\robot\2_Hardware\src\UartLink.cpp
 ============================================================
 #include "UartLink.h"
+
 #include <string.h>
+#include <avr/pgmspace.h>
+
+static bool equalsProgmem(const char* text, PGM_P pattern)
+{
+    return strcmp_P(text, pattern) == 0;
+}
 
 UartLink::UartLink(Stream& link, bool initiator)
-    : _link(link), _initiator(initiator),
+    : _link(link),
+    _initiator(initiator),
     _connected(false),
     _lastPing(0),
     _lastSeen(0),
     _idx(0),
-    _lineAvailable(false) {
+    _lineAvailable(false)
+{
 }
 
 void UartLink::begin()
@@ -1022,65 +1031,62 @@ void UartLink::begin()
 
 void UartLink::update()
 {
-    uint32_t now = millis();
+    const uint32_t now = millis();
+
     // ===== RX =====
     while (_link.available())
     {
-        char c = _link.read();
+        const char c = _link.read();
+
         if (c == '\r') continue;
+
         if (c == '\n')
         {
             _buf[_idx] = '\0';
             _lastSeen = now;
-            if (!_initiator && strcmp(_buf, "PING") == 0)
+
+            if (!_initiator && equalsProgmem(_buf, PSTR("PING")))
+                _link.println(F("PONG"));
+
+            else if (_initiator && equalsProgmem(_buf, PSTR("PONG")) && !_connected)
             {
-                _link.println("PONG");
-            }
-            else if (_initiator && strcmp(_buf, "PONG") == 0 && !_connected)
-            {
-                _link.println("ACK");
+                _link.println(F("ACK"));
                 _connected = true;
             }
-            else if (!_initiator && strcmp(_buf, "ACK") == 0)
-            {
+
+            else if (!_initiator && equalsProgmem(_buf, PSTR("ACK")))
                 _connected = true;
-            }
-            else if (strcmp(_buf, "KA") != 0 && _buf[0] != '#')
+
+            else if (!equalsProgmem(_buf, PSTR("KA")) && _buf[0] != '#')
             {
-                // 👉 Nutzdaten speichern
                 strncpy(_line, _buf, sizeof(_line) - 1);
                 _line[sizeof(_line) - 1] = '\0';
                 _lineAvailable = true;
             }
+
             _idx = 0;
         }
         else if (_idx < sizeof(_buf) - 1)
-        {
             _buf[_idx++] = c;
-        }
         else
-        {
-            _idx = 0; // Overflow-Schutz
-        }
+            _idx = 0;
     }
+
     // ===== TX =====
     if (now - _lastPing > PING_INTERVAL)
     {
         _lastPing = now;
+
         if (!_connected)
         {
-            if (_initiator) _link.println("PING");
+            if (_initiator) _link.println(F("PING"));
         }
         else
-        {
-            _link.println("KA");
-        }
+            _link.println(F("KA"));
     }
+
     // ===== Timeout =====
-    if (_connected && (now - _lastSeen > TIMEOUT))
-    {
-        _connected = false;
-    }
+    if (_connected && (now - _lastSeen > TIMEOUT)) _connected = false;
 }
 
 void UartLink::sendLine(const char* msg)
@@ -1088,10 +1094,7 @@ void UartLink::sendLine(const char* msg)
     if (_connected) _link.println(msg);
 }
 
-bool UartLink::availableLine() const
-{
-    return _lineAvailable;
-}
+bool UartLink::availableLine() const { return _lineAvailable; }
 
 const char* UartLink::getLine()
 {
@@ -1099,10 +1102,7 @@ const char* UartLink::getLine()
     return _line;
 }
 
-bool UartLink::isConnected() const
-{
-    return _connected;
-}
+bool UartLink::isConnected() const { return _connected; }
 
 ============================================================
 FILE: C:\Users\Acer\source\repos\robot\2_Hardware\src\UartLink.h
@@ -2197,20 +2197,28 @@ bool MecanumOdometer::update(
     _last_dy_body_mm = dy_body_mm;
     _last_dphi_rad = dphi_rad;
 
-    // Körperkoordinaten in Weltkoordinaten drehen.
-    // Bei CMDP Version 1 ist wz = 0, aber so bleibt die Klasse
-    // schon fuer spaetere Drehbewegungen richtig vorbereitet.
-    const float phi_mid = _phi_rad + 0.5f * dphi_rad;
-    const float c = cosf(phi_mid);
-    const float s = sinf(phi_mid);
+    // Speicheroptimierung:
+    // Keine Weltkoordinaten-Transformation mehr auf dem Arduino.
+    //
+    // Vorher:
+    //   dx_body/dy_body wurden mit sinf()/cosf() in Weltkoordinaten gedreht.
+    //
+    // Jetzt:
+    //   Der Arduino summiert nur die lokale Roboterbewegung.
+    //   Die Umrechnung in Weltkoordinaten uebernimmt spaeter Python.
+    //
+    // Wichtig:
+    //   _phi_rad bleibt erhalten, damit Python oder eine spaetere Regelung
+    //   die Roboterverdrehung weiterhin kennt.
 
-    const float dx_world_mm = dx_body_mm * c - dy_body_mm * s;
-    const float dy_world_mm = dx_body_mm * s + dy_body_mm * c;
-
-    _x_mm += dx_world_mm;
-    _y_mm += dy_world_mm;
+    _x_mm += dx_body_mm;
+    _y_mm += dy_body_mm;
     _phi_rad += dphi_rad;
 
+    // sqrtf bleibt in diesem ersten Schritt absichtlich erhalten.
+    // Dadurch bleiben absMm(), absCm() und die bestehende ODOM-Ausgabe stabil.
+    // Wenn sqrtf spaeter auch raus soll, muss CommandRunner.cpp ebenfalls
+    // geprueft werden, weil dort noch ein weiteres sqrtf() fuer CMDP steckt.
     _abs_mm = sqrtf(_x_mm * _x_mm + _y_mm * _y_mm);
 
     return true;
@@ -3318,55 +3326,50 @@ FILE: C:\Users\Acer\source\repos\robot\5_System\src\Connection\ConnectionMonitor
 #include "ConnectionMonitor.h"
 
 ConnectionMonitor::ConnectionMonitor(UartLink& uart, uint8_t ledPin)
-    : _uart(uart), _ledPin(ledPin), _lastState(false), _lastOk(0)
+    : _uart(uart),
+    _ledPin(ledPin),
+    _lastState(false),
+    _lastOk(0)
 {
 }
 
 void ConnectionMonitor::waitForConnection()
 {
-    Serial.println("#Warte auf Handshake...");
+    Serial.println(F("#Warte auf Handshake..."));
 
     while (!_uart.isConnected())
     {
         _uart.update();
-        update();   // eigene Logik
+        update();
     }
 
-    Serial.println("#Handshake1 OK");
+    Serial.println(F("#Handshake1 OK"));
 }
 
 void ConnectionMonitor::begin(bool wait)
 {
-    // 🔥 Hardware-Init
     pinMode(_ledPin, OUTPUT);
-    digitalWrite(_ledPin, HIGH);   // wartet auf Verbindung
+    digitalWrite(_ledPin, HIGH);
 
-    // 🔥 Zustand
     _lastState = false;
     _lastOk = millis();
 
-    // 🔥 optional blockierend
-    if (wait)
-    {
-        waitForConnection();
-    }
+    if (wait) waitForConnection();
 }
 
 void ConnectionMonitor::update()
 {
-    bool now = _uart.isConnected();
+    const bool now = _uart.isConnected();
 
-    // 🔴 Verbindung verloren
     if (!now && _lastState)
     {
-        Serial.println("#DISCONNECTED");
+        Serial.println(F("#DISCONNECTED"));
         digitalWrite(_ledPin, HIGH);
     }
 
-    // 🟢 Verbindung neu da
     if (now && !_lastState)
     {
-        Serial.println("#CONNECTED");
+        Serial.println(F("#CONNECTED"));
         digitalWrite(_ledPin, LOW);
     }
 
@@ -4737,6 +4740,7 @@ FILE: C:\Users\Acer\source\repos\robot\vorne\src\CommandScript.cpp
 
 static const char* _script[] = {
     "CMDP(30,0,0) 100;"
+    "CMDP(20,0,0) 100;"
 };
 
 const char* CommandScript::get(uint8_t index)
