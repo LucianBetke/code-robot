@@ -106,9 +106,8 @@ void UartLink::update()
 
             // ------------------------------------------------
             // KA:
-            // Wird intern verarbeitet, aber NICHT als Nutzdaten
-            // an availableLine() / getLine() weitergegeben.
-            // Dadurch sieht Python/Plot/PC-Log diese Zeile nicht.
+            // Intern als Lebenszeichen auswerten,
+            // aber nicht als Nutzdaten weitergeben.
             // ------------------------------------------------
             else if (equalsProgmem(_buf, PSTR("KA")))
             {
@@ -168,14 +167,10 @@ void UartLink::update()
     // ========================================================
     // TX: KeepAlive
     //
-    // Wichtige Aenderung:
+    // Der Front-Nano sendet im verbundenen Zustand kein KA,
+    // damit der PC-Serial-Monitor nicht mit KA-Zeilen gefuellt wird.
     //
-    // Der Initiator sendet im verbundenen Zustand KEIN KA mehr.
-    // Bei deinem Aufbau ist der Initiator der Front-Nano, und
-    // dessen Serial-TX ist im PC-Monitor sichtbar.
-    //
-    // Deshalb sendet nur der Rear-Nano KA, und auch nur dann,
-    // wenn laenger keine andere UART-Aktivitaet lief.
+    // Der Rear-Nano darf KA senden, aber nur bei Funkstille.
     // Front empfaengt KA, aktualisiert _lastSeen, gibt KA aber
     // nicht als Nutzdaten weiter.
     // ========================================================
@@ -188,14 +183,11 @@ void UartLink::update()
     // ========================================================
     // Timeout
     //
-    // Der Front-Nano erkennt Verbindungsverlust sichtbar ueber
-    // ConnectionMonitor/#DISCONNECTED.
-    //
-    // Beim Rear-Nano ist zusaetzlich updateVsolTimeout() wichtig:
-    // Wenn waehrend aktiver Fahrt keine VSOL-Frames mehr kommen,
-    // werden die hinteren Raeder gestoppt.
+    // Muss fuer BEIDE Seiten gelten:
+    // - Front: meldet #DIS / startet neuen Handshake
+    // - Rear: erkennt Schalter offen und LED geht wieder in Fehlerzustand
     // ========================================================
-    if (_initiator && _connected && (now - _lastSeen > TIMEOUT))
+    if (_connected && (now - _lastSeen > TIMEOUT))
     {
         _connected = false;
     }
