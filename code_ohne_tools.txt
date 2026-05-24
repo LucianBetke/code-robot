@@ -4739,8 +4739,8 @@ FILE: C:\Users\Acer\source\repos\robot\vorne\src\CommandScript.cpp
 #include "CommandScript.h"
 
 static const char* _script[] = {
-    "CMDP(30,0,0) 100;"
-    "CMDP(20,0,0) 100;"
+    "CMDP(30,0,0) 100;",
+    "CMDP(20,20,0) 141;"
 };
 
 const char* CommandScript::get(uint8_t index)
