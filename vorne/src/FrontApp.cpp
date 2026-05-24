@@ -77,6 +77,15 @@ void FrontApp::handleIncomingLines(uint32_t now)
             rearFrameClient.frame().t,
             odometer
         );
+
+        if (commandRunner.hasActivePathCommand())
+        {
+            printer.printOdom2(
+                commandRunner.activeCmdpId(),
+                rearFrameClient.frame().t,
+                odometer
+            );
+        }
     }
 }
 

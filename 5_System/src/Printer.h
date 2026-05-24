@@ -26,6 +26,11 @@ public:
 
     void printOdom(uint32_t t_ms, const MecanumOdometer& odom);
 
+    void printOdom2(
+        uint16_t cmdpId,
+        uint32_t t_ms,
+        const MecanumOdometer& odom);
+
 #ifdef PRINTER_MODE_CHASSIS
     void printWheels(VehicleController& vehicle,
         float v2_ist, float v3_ist,

@@ -39,6 +39,9 @@ public:
     float angleProgressDeg() const { return _angleProgressDeg; }
     float angleTargetDeg() const { return _angleTargetDeg; }
 
+    uint16_t activeCmdpId() const { return _activeCmdpId; }
+    bool hasActivePathCommand() const;
+
 private:
     enum PathMode : uint8_t
     {
@@ -69,6 +72,10 @@ private:
 
     void stopAll();
 
+    uint16_t nextCmdpId();
+    void startCmdpProtocol(const ParsedCommand& cmd);
+    void clearCmdpProtocol();
+
     VehicleController& _vehicle;
     MecanumOdometer& _odometer;
     UartLink& _uart;
@@ -95,6 +102,9 @@ private:
     float _angleTargetDeg;
     float _angleDirection;
     float _angleProgressDeg;
+
+    uint16_t _nextCmdpId;
+    uint16_t _activeCmdpId;
 };
 
 #endif
