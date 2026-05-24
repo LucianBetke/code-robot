@@ -1,4 +1,5 @@
-﻿#include "UartLink.h"
+﻿// UartLink.cpp
+#include "UartLink.h"
 
 #include <string.h>
 #include <avr/pgmspace.h>
@@ -8,29 +9,12 @@ static bool equalsProgmem(const char* text, PGM_P pattern)
     return strcmp_P(text, pattern) == 0;
 }
 
-static void copyLine(char* dst, const char* src, uint8_t dstSize)
-{
-    if (dstSize == 0) return;
-
-    uint8_t i = 0;
-    const uint8_t maxIndex = dstSize - 1;
-
-    while (i < maxIndex && src[i] != '\0')
-    {
-        dst[i] = src[i];
-        i++;
-    }
-
-    dst[i] = '\0';
-}
-
 UartLink::UartLink(Stream& link, bool initiator)
     : _link(link),
     _initiator(initiator),
     _connected(false),
     _lastPing(0),
     _lastSeen(0),
-    _lastActivity(0),
     _idx(0),
     _lineAvailable(false)
 {
@@ -38,30 +22,22 @@ UartLink::UartLink(Stream& link, bool initiator)
 
 void UartLink::begin()
 {
-    const unsigned long now = millis();
-
     _connected = false;
     _lastPing = 0;
-    _lastSeen = now;
-    _lastActivity = now;
-
+    _lastSeen = millis();
     _idx = 0;
     _lineAvailable = false;
-
-    _buf[0] = '\0';
     _line[0] = '\0';
 }
 
 void UartLink::update()
 {
-    const unsigned long now = millis();
+    const uint32_t now = millis();
 
-    // ========================================================
-    // RX: Zeichen einlesen
-    // ========================================================
+    // ===== RX =====
     while (_link.available())
     {
-        const char c = (char)_link.read();
+        const char c = _link.read();
 
         if (c == '\r')
         {
@@ -71,64 +47,25 @@ void UartLink::update()
         if (c == '\n')
         {
             _buf[_idx] = '\0';
-
-            // Jede vollstaendige empfangene Zeile beweist:
-            // Die Gegenstelle lebt.
             _lastSeen = now;
-            _lastActivity = now;
 
-            // ------------------------------------------------
-            // Handshake: Front -> Rear
-            // ------------------------------------------------
             if (!_initiator && equalsProgmem(_buf, PSTR("PING")))
             {
                 _link.println(F("PONG"));
-                _lastActivity = now;
             }
-
-            // ------------------------------------------------
-            // Handshake: Rear -> Front
-            // ------------------------------------------------
             else if (_initiator && equalsProgmem(_buf, PSTR("PONG")) && !_connected)
             {
                 _link.println(F("ACK"));
                 _connected = true;
-                _lastActivity = now;
             }
-
-            // ------------------------------------------------
-            // Handshake-Abschluss am Rear
-            // ------------------------------------------------
             else if (!_initiator && equalsProgmem(_buf, PSTR("ACK")))
             {
                 _connected = true;
             }
-
-            // ------------------------------------------------
-            // KA:
-            // Intern als Lebenszeichen auswerten,
-            // aber nicht als Nutzdaten weitergeben.
-            // ------------------------------------------------
-            else if (equalsProgmem(_buf, PSTR("KA")))
+            else if (!equalsProgmem(_buf, PSTR("KA")) && _buf[0] != '#')
             {
-                // absichtlich leer
-            }
-
-            // ------------------------------------------------
-            // Debug-Zeilen der Gegenstelle nicht als Protokoll-
-            // Nutzdaten behandeln.
-            // ------------------------------------------------
-            else if (_buf[0] == '#')
-            {
-                // absichtlich leer
-            }
-
-            // ------------------------------------------------
-            // Normale Nutzdatenzeile
-            // ------------------------------------------------
-            else
-            {
-                copyLine(_line, _buf, sizeof(_line));
+                strncpy(_line, _buf, sizeof(_line) - 1);
+                _line[sizeof(_line) - 1] = '\0';
                 _lineAvailable = true;
             }
 
@@ -136,58 +73,38 @@ void UartLink::update()
         }
         else if (_idx < sizeof(_buf) - 1)
         {
-            _buf[_idx] = c;
-            _idx++;
+            _buf[_idx++] = c;
         }
         else
         {
-            // Ueberlange Zeile verwerfen
             _idx = 0;
         }
     }
 
-    // ========================================================
-    // TX: Verbindungsaufbau
-    //
-    // Nur der Initiator sendet PING, solange noch keine
-    // Verbindung besteht. Das ist dein Front-Nano.
-    // ========================================================
-    if (!_connected)
+    // ===== TX =====
+    if ((uint32_t)(now - _lastPing) > PING_INTERVAL)
     {
-        if (_initiator && (now - _lastPing > PING_INTERVAL))
+        _lastPing = now;
+
+        if (!_connected)
         {
-            _lastPing = now;
-            _link.println(F("PING"));
-            _lastActivity = now;
+            if (_initiator)
+            {
+                _link.println(F("PING"));
+            }
         }
-
-        return;
+        else
+        {
+            // Wichtig:
+            // KA darf NICHT entfernt werden.
+            // Nach Ende eines Fahrprogramms gibt es sonst keine VSOL/VIST-Zeilen mehr.
+            // Dann läuft der Timeout ab, Front meldet #DIS und startet per Watchdog neu.
+            _link.println(F("KA"));
+        }
     }
 
-    // ========================================================
-    // TX: KeepAlive
-    //
-    // Der Front-Nano sendet im verbundenen Zustand kein KA,
-    // damit der PC-Serial-Monitor nicht mit KA-Zeilen gefuellt wird.
-    //
-    // Der Rear-Nano darf KA senden, aber nur bei Funkstille.
-    // Front empfaengt KA, aktualisiert _lastSeen, gibt KA aber
-    // nicht als Nutzdaten weiter.
-    // ========================================================
-    if (!_initiator && (now - _lastActivity > KEEPALIVE_INTERVAL))
-    {
-        _link.println(F("KA"));
-        _lastActivity = now;
-    }
-
-    // ========================================================
-    // Timeout
-    //
-    // Muss fuer BEIDE Seiten gelten:
-    // - Front: meldet #DIS / startet neuen Handshake
-    // - Rear: erkennt Schalter offen und LED geht wieder in Fehlerzustand
-    // ========================================================
-    if (_connected && (now - _lastSeen > TIMEOUT))
+    // ===== Timeout =====
+    if (_connected && (uint32_t)(now - _lastSeen) > TIMEOUT)
     {
         _connected = false;
     }
@@ -195,11 +112,10 @@ void UartLink::update()
 
 void UartLink::sendLine(const char* msg)
 {
-    if (!_connected) return;
-    if (!msg) return;
-
-    _link.println(msg);
-    _lastActivity = millis();
+    if (_connected)
+    {
+        _link.println(msg);
+    }
 }
 
 bool UartLink::availableLine() const

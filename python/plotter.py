@@ -1,551 +1,337 @@
+# plotter.py
 # ============================================================
-# Datei: plotter.py
-# Zweck:
-#   - Live-Plot-Fenster fuer WHEELS / ODOM / CHASSIS
-#   - matplotlib-Fenster, Animation, Layout
-#   - Clipboard-Button
-#   - WHEELS-Plot
-#   - CHASSIS-Plot
-#
-# ODOM ist ausgelagert nach:
-#   plot_odom.py
-#
-# Voraussetzung:
-#   - config.py enthaelt alle Konstanten
-#   - serial_io.py enthaelt die globale Variable store
-#   - plot_odom.py enthaelt update_odom_plot()
+# Aufgabe:
+#  - Matplotlib-Fenster koordinieren
+#  - WHEELS- und ODOM-Ansicht anzeigen
+#  - ODOM nutzt #CMDP_BEGIN + #ODOM2 ueber plot_odom.py
+#  - Matplotlib-Toolbar unten bleibt aktiv
+#  - eigener kompakter Button "Kopieren" oben rechts
+#  - stabiles manuelles Layout
 # ============================================================
+
+from __future__ import annotations
 
 import os
-import io
+import subprocess
+import sys
+import tempfile
 
 import matplotlib
-matplotlib.use("TkAgg")
+
+# Klassische Matplotlib-Toolbar unten bleibt aktiv.
+matplotlib.rcParams["toolbar"] = "toolbar2"
+
+# Globale Schriftgroessen
+matplotlib.rcParams["font.size"] = 12
+matplotlib.rcParams["axes.labelsize"] = 13
+matplotlib.rcParams["xtick.labelsize"] = 11
+matplotlib.rcParams["ytick.labelsize"] = 11
+matplotlib.rcParams["figure.titlesize"] = 16
 
 import matplotlib.pyplot as plt
-import matplotlib.animation as animation
+from matplotlib.animation import FuncAnimation
+from matplotlib.widgets import Button
 
-from config import *
-from serial_io import store
 from plot_odom import update_odom_plot
 
 
 # ============================================================
-# Farben
+# Fenster / Bildschirm
 # ============================================================
 
-COLORS_RAD = {
-    "VoLi": "#1f77b4",
-    "VoRe": "#ff7f0e",
-    "HiLi": "#2ca02c",
-    "HiRe": "#d62728",
-}
+def _get_screen_size_fallback() -> tuple[int, int]:
+    try:
+        import tkinter as tk
 
-COLORS_VEH = {
-    "vx_i": "#9467bd",
-    "vy_i": "#8c564b",
-    "wz_i": "#e377c2",
-}
+        root = tk.Tk()
+        root.withdraw()
 
+        width = root.winfo_screenwidth()
+        height = root.winfo_screenheight()
 
-# ============================================================
-# WHEELS-Hilfsfunktion
-# ============================================================
+        root.destroy()
 
-def build_command_boundary_series(t_sec, values, cmd_indices, local_ms):
-    n = min(len(t_sec), len(values), len(cmd_indices))
+        return int(width), int(height)
 
-    if n == 0:
-        return [], []
-
-    x = [t_sec[0]]
-    y = [values[0]]
-
-    for i in range(1, n):
-        cmd_changed = cmd_indices[i] != cmd_indices[i - 1]
-
-        if cmd_changed:
-            boundary = t_sec[i]
-
-            x.append(boundary)
-            y.append(y[-1])
-
-            x.append(boundary)
-            y.append(values[i])
-
-        x.append(t_sec[i])
-        y.append(values[i])
-
-    return x, y
+    except Exception:
+        return 1600, 900
 
 
-# ============================================================
-# Meldungen
-# ============================================================
-
-def show_message(title, text):
-    print(f"[{title}] {text}")
+def _set_window_size(fig, width: int, height: int) -> None:
+    try:
+        manager = fig.canvas.manager
+        window = manager.window
+    except Exception:
+        return
 
     try:
-        import tkinter.messagebox as messagebox
-        messagebox.showinfo(title, text)
+        window.geometry(f"{width}x{height}+0+0")
+        return
+    except Exception:
+        pass
+
+    try:
+        window.resize(width, height)
+        window.move(0, 0)
+        return
     except Exception:
         pass
 
 
 # ============================================================
-# Plot als Bild erzeugen
+# Zwischenablage
 # ============================================================
 
-def figure_to_pil_image(fig, dpi=150):
-    from PIL import Image
+def _copy_figure_to_clipboard(fig) -> None:
+    tmp_path = None
 
-    fig.canvas.draw()
+    try:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmp:
+            tmp_path = tmp.name
 
-    buffer = io.BytesIO()
+        fig.savefig(tmp_path, dpi=150)
 
-    fig.savefig(
-        buffer,
-        format="png",
-        dpi=dpi,
-        facecolor="white"
+        if sys.platform.startswith("win"):
+            ps_script = (
+                "Add-Type -AssemblyName System.Windows.Forms; "
+                "Add-Type -AssemblyName System.Drawing; "
+                f"$img=[System.Drawing.Image]::FromFile('{tmp_path}'); "
+                "[System.Windows.Forms.Clipboard]::SetImage($img); "
+                "$img.Dispose();"
+            )
+
+            subprocess.run(
+                [
+                    "powershell",
+                    "-NoProfile",
+                    "-STA",
+                    "-Command",
+                    ps_script,
+                ],
+                check=True,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+
+            print("Bild wurde in die Zwischenablage kopiert.")
+        else:
+            print(f"Bild wurde gespeichert: {tmp_path}")
+            tmp_path = None
+
+    except Exception as exc:
+        print(f"Bild konnte nicht in die Zwischenablage kopiert werden: {exc}")
+
+    finally:
+        if tmp_path is not None:
+            try:
+                os.remove(tmp_path)
+            except OSError:
+                pass
+
+
+# ============================================================
+# Figure-Elemente
+# ============================================================
+
+def _add_copy_button(fig) -> None:
+    # Sehr kompakter Button oben rechts.
+    button_ax = fig.add_axes([0.915, 0.942, 0.065, 0.032])
+    button = Button(button_ax, "Kopieren")
+
+    def on_click(_event) -> None:
+        _copy_figure_to_clipboard(fig)
+
+    button.on_clicked(on_click)
+
+    # Referenz behalten, sonst kann Matplotlib den Button entsorgen.
+    fig._robot_copy_button = button
+
+
+def _add_status_text(fig) -> None:
+    status = fig.text(
+        0.025,
+        0.948,
+        "",
+        ha="left",
+        va="center",
+        fontsize=11,
     )
 
-    buffer.seek(0)
+    fig._robot_status_text = status
 
-    image = Image.open(buffer).convert("RGB")
-    return image
+
+def _make_base_figure(title: str):
+    screen_w, screen_h = _get_screen_size_fallback()
+
+    # Taskleiste + Matplotlib-Toolbar unten beruecksichtigen.
+    win_w = screen_w
+    win_h = max(760, screen_h - 95)
+
+    dpi = 100
+    fig_w = win_w / dpi
+    fig_h = win_h / dpi
+
+    fig = plt.figure(figsize=(fig_w, fig_h), dpi=dpi)
+    fig.canvas.manager.set_window_title(title)
+
+    fig.suptitle(title, fontsize=16, y=0.990)
+
+    _set_window_size(fig, win_w, win_h)
+
+    _add_status_text(fig)
+    _add_copy_button(fig)
+
+    return fig
 
 
 # ============================================================
-# Bild in Zwischenablage kopieren
+# WHEELS
 # ============================================================
 
-def copy_plot_to_clipboard(fig):
-    if os.name != "nt":
-        show_message(
-            "Clipboard",
-            "Bild-Zwischenablage ist hier nur fuer Windows eingebaut."
+def _latest_wheel_rows(snapshot: dict):
+    return snapshot.get("wheels_rows", [])
+
+
+def _wheel_value(row, index: int, default: float = 0.0) -> float:
+    values = getattr(row, "values", None)
+
+    if values is None and isinstance(row, dict):
+        values = row.get("values", [])
+
+    if not values or index >= len(values):
+        return default
+
+    return float(values[index])
+
+
+def _wheel_ms(row) -> float:
+    if hasattr(row, "ms"):
+        return float(getattr(row, "ms"))
+
+    if isinstance(row, dict):
+        return float(row.get("ms", 0.0))
+
+    return 0.0
+
+
+def _update_wheels_plot(axes, store) -> None:
+    snapshot = store.snapshot()
+    rows = _latest_wheel_rows(snapshot)
+
+    for ax in axes:
+        ax.clear()
+        ax.grid(True)
+
+    if len(axes) < 2:
+        return
+
+    ax_speed = axes[0]
+    ax_pwm = axes[1]
+
+    ax_speed.set_ylabel("v [m/s]")
+    ax_pwm.set_xlabel("Zeit [s]")
+    ax_pwm.set_ylabel("PWM")
+
+    if not rows:
+        ax_speed.text(
+            0.5,
+            0.5,
+            "warte auf #WHEELS ...",
+            transform=ax_speed.transAxes,
+            ha="center",
+            va="center",
         )
         return
 
-    try:
-        import win32clipboard
-        import win32con
-    except ImportError:
-        show_message(
-            "Clipboard",
-            "Fehlende Pakete. Bitte ausfuehren:\n\npy -m pip install --upgrade pillow pywin32"
-        )
-        return
+    t = [_wheel_ms(r) * 0.001 for r in rows]
 
-    try:
-        image = figure_to_pil_image(fig, dpi=150)
+    names = ["VoLi", "VoRe", "HiLi", "HiRe"]
 
-        bmp_buffer = io.BytesIO()
-        image.save(bmp_buffer, "BMP")
+    for wheel_index, name in enumerate(names):
+        base = wheel_index * 3
 
-        dib_data = bmp_buffer.getvalue()[14:]
+        soll = [_wheel_value(r, base + 0) for r in rows]
+        ist = [_wheel_value(r, base + 1) for r in rows]
+        pwm = [_wheel_value(r, base + 2) for r in rows]
 
-        win32clipboard.OpenClipboard()
+        ax_speed.plot(t, soll, label=f"{name}_s", linewidth=1.7)
+        ax_speed.plot(t, ist, label=f"{name}_i", linewidth=1.7)
+        ax_pwm.plot(t, pwm, label=f"{name}_pwm", linewidth=1.7)
 
-        try:
-            win32clipboard.EmptyClipboard()
-            win32clipboard.SetClipboardData(win32con.CF_DIB, dib_data)
-        finally:
-            win32clipboard.CloseClipboard()
-
-        show_message(
-            "Clipboard",
-            "Plot wurde als Bild in die Zwischenablage kopiert."
-        )
-
-    except Exception as e:
-        show_message(
-            "Clipboard Fehler",
-            f"Kopieren fehlgeschlagen:\n\n{e}"
-        )
-
-
-def add_extra_plot_buttons(fig):
-    try:
-        import tkinter as tk
-
-        manager = plt.get_current_fig_manager()
-        window = manager.window
-
-        button_frame = tk.Frame(window, bd=1, relief=tk.GROOVE)
-
-        btn_copy = tk.Button(
-            button_frame,
-            text="Bild kopieren",
-            command=lambda: copy_plot_to_clipboard(fig),
-            width=18
-        )
-
-        btn_copy.pack(side=tk.LEFT, padx=4, pady=3)
-
-        button_frame.pack(side=tk.BOTTOM, fill=tk.X)
-
-        print("[Plot] Zusatzbutton geladen: Bild kopieren")
-
-    except Exception as e:
-        print(f"[Plot] Zusatzbutton konnte nicht geladen werden: {e}")
+    ax_speed.legend(loc="upper right", fontsize=9)
+    ax_pwm.legend(loc="upper right", fontsize=9)
 
 
 # ============================================================
-# Layout-Auswahl
+# Figure-Erzeugung
 # ============================================================
 
-def get_plot_layout(display_mode: str):
-    mode = display_mode.upper()
+def _make_odom_figure():
+    fig = _make_base_figure("Robot Monitor - ODOM2")
+
+    # Manuelles Layout:
+    # [left, bottom, width, height]
+    #
+    # Kompakter als vorher:
+    #   hoehe vorher: 0.205
+    #   hoehe jetzt:  0.245
+    #
+    # Zwischenraeume werden kleiner, ohne dass Zeit/Weg-Achsen kollidieren.
+    left = 0.070
+    width = 0.910
+    height = 0.245
+
+    ax1 = fig.add_axes([left, 0.645, width, height])
+    ax2 = fig.add_axes([left, 0.365, width, height])
+    ax3 = fig.add_axes([left, 0.085, width, height])
+
+    axes = [ax1, ax2, ax3]
+
+    return fig, axes
+
+
+def _make_wheels_figure():
+    fig = _make_base_figure("Robot Monitor - WHEELS")
+
+    left = 0.070
+    width = 0.910
+
+    ax1 = fig.add_axes([left, 0.555, width, 0.335])
+    ax2 = fig.add_axes([left, 0.110, width, 0.335], sharex=ax1)
+
+    axes = [ax1, ax2]
+
+    return fig, axes
+
+
+# ============================================================
+# Start
+# ============================================================
+
+def start_plot(store, mode: str = "ODOM", interval_ms: int = 200):
+    mode = (mode or "ODOM").upper()
 
     if mode == "WHEELS":
-        return {
-            "rows": 2,
-            "figsize": FIGSIZE_WHEELS,
-            "top": 0.91,
-            "bottom": 0.085,
-            "hspace": 0.10,
-            "sharex": True,
-        }
+        fig, axes = _make_wheels_figure()
 
-    if mode == "CHASSIS":
-        return {
-            "rows": 2,
-            "figsize": FIGSIZE_CHASSIS,
-            "top": 0.91,
-            "bottom": 0.085,
-            "hspace": 0.10,
-            "sharex": True,
-        }
+        def animate(_frame):
+            _update_wheels_plot(axes, store)
 
-    return {
-        "rows": 3,
-        "figsize": FIGSIZE_ODOM,
-        "top": 0.82,
-        "bottom": 0.075,
-        "hspace": 0.72,
-        "sharex": False,
-    }
-
-
-# ============================================================
-# Live-Plot
-# ============================================================
-
-def start_plot(display_mode: str):
-    initial_mode = display_mode.upper()
-    layout = get_plot_layout(initial_mode)
-
-    fig, axes = plt.subplots(
-        layout["rows"],
-        1,
-        figsize=layout["figsize"],
-        sharex=layout["sharex"]
-    )
-
-    if layout["rows"] == 1:
-        axes = [axes]
     else:
-        axes = list(axes)
+        fig, axes = _make_odom_figure()
 
-    fig.suptitle("Robot Monitor", fontsize=13, y=0.985)
+        def animate(_frame):
+            update_odom_plot(axes, store)
 
-    status_text = fig.text(
-        0.5,
-        ODOM_STATUS_TEXT_Y,
-        "",
-        ha="center",
-        va="top",
-        fontsize=ODOM_STATUS_TEXT_FONTSIZE
-    )
-
-    if layout["rows"] >= 3:
-        time_axes = [ax.twiny() for ax in axes]
-    else:
-        time_axes = []
-
-    def apply_layout():
-        fig.subplots_adjust(
-            left=0.075,
-            right=0.985,
-            top=layout["top"],
-            bottom=layout["bottom"],
-            hspace=layout["hspace"]
-        )
-
-    apply_layout()
-
-    add_extra_plot_buttons(fig)
-
-    def maximize_and_fit_to_window():
-        try:
-            manager = plt.get_current_fig_manager()
-            window = manager.window
-
-            window.state("zoomed")
-            window.update_idletasks()
-
-            widget = fig.canvas.get_tk_widget()
-            width_px = widget.winfo_width()
-            height_px = widget.winfo_height()
-
-            dpi = fig.get_dpi()
-
-            if width_px > 200 and height_px > 200:
-                fig.set_size_inches(
-                    width_px / dpi,
-                    height_px / dpi,
-                    forward=True
-                )
-
-            apply_layout()
-            fig.canvas.draw_idle()
-
-            print("[Plot] Fenster maximiert und Figure an sichtbare Flaeche angepasst")
-
-        except Exception as e:
-            print(f"[Plot] Maximieren nicht moeglich: {e}")
-
-    try:
-        manager = plt.get_current_fig_manager()
-        manager.window.after(300, maximize_and_fit_to_window)
-    except Exception as e:
-        print(f"[Plot] Maximieren nicht vorbereitet: {e}")
-
-    def update(_):
-        if not store.ready:
-            return
-
-        d, mode = store.snapshot()
-
-        if mode == "ODOM":
-            if len(axes) < 3:
-                status_text.set_text(
-                    "ODOM-Daten empfangen, aber Plot wurde als 2-Achsen-WHEELS-Fenster gestartet."
-                )
-                return
-
-            update_odom_plot(d, axes, time_axes, status_text)
-
-        elif mode == "WHEELS":
-            status_text.set_text("")
-            hide_time_axes(time_axes)
-            update_wheels_plot(d, axes)
-
-        elif mode == "CHASSIS":
-            status_text.set_text("")
-            hide_time_axes(time_axes)
-            update_chassis_plot(d, axes)
-
-    ani = animation.FuncAnimation(
+    ani = FuncAnimation(
         fig,
-        update,
-        interval=UPDATE_MS,
-        cache_frame_data=False
+        animate,
+        interval=interval_ms,
+        cache_frame_data=False,
     )
 
     plt.show()
     return ani
 
 
-# ============================================================
-# Gemeinsame Plot-Helfer
-# ============================================================
-
-def hide_time_axes(time_axes):
-    for ax in time_axes:
-        ax.set_visible(False)
-        ax.set_xlabel("")
-        ax.set_xticks([])
-
-        ax.tick_params(
-            axis="x",
-            which="both",
-            top=False,
-            labeltop=False,
-            bottom=False,
-            labelbottom=False
-        )
-
-        ax.tick_params(
-            axis="y",
-            which="both",
-            left=False,
-            right=False,
-            labelleft=False,
-            labelright=False
-        )
-
-
-def clear_axes(axes):
-    for ax in axes:
-        ax.cla()
-        ax.grid(True, linestyle="--", alpha=0.5)
-
-
-# ============================================================
-# WHEELS-Plot
-# ============================================================
-
-def update_wheels_plot(d, axes):
-    axes[0].set_visible(True)
-    axes[1].set_visible(True)
-
-    t_ms = d.get("t_plot_ms", [])
-
-    if not t_ms:
-        return
-
-    t = [x / 1000.0 for x in t_ms]
-
-    clear_axes(axes[:2])
-
-    ax_v = axes[0]
-    ax_pwm = axes[1]
-
-    ax_v.set_ylabel("Geschwindigkeit [m/s]")
-    ax_pwm.set_ylabel("PWM")
-    ax_pwm.set_xlabel("Zeit [s]")
-
-    cmd_indices = d.get("cmd_index", [])
-    local_ms = d.get("ms", [])
-
-    for name, col in COLORS_RAD.items():
-        s_key = f"{name}_s"
-        i_key = f"{name}_i"
-        pwm_key = f"{name}_pwm"
-
-        s = d.get(s_key, [])
-        ist = d.get(i_key, [])
-        pwm = d.get(pwm_key, [])
-
-        n = min(
-            len(t),
-            len(s),
-            len(ist),
-            len(cmd_indices),
-            len(local_ms)
-        )
-
-        if n:
-            x_soll, y_soll = build_command_boundary_series(
-                t[:n],
-                s[:n],
-                cmd_indices[:n],
-                local_ms[:n]
-            )
-
-            ax_v.plot(
-                x_soll,
-                y_soll,
-                linestyle="--",
-                color=col,
-                alpha=0.6,
-                label=f"{name} Soll"
-            )
-
-            ax_v.plot(
-                t[:n],
-                ist[:n],
-                linestyle="-",
-                color=col,
-                label=f"{name} Ist"
-            )
-
-        n_p = min(
-            len(t),
-            len(pwm),
-            len(cmd_indices),
-            len(local_ms)
-        )
-
-        if n_p:
-            x_pwm, y_pwm = build_command_boundary_series(
-                t[:n_p],
-                pwm[:n_p],
-                cmd_indices[:n_p],
-                local_ms[:n_p]
-            )
-
-            ax_pwm.plot(
-                x_pwm,
-                y_pwm,
-                linestyle="-",
-                color=col,
-                label=f"{name} PWM"
-            )
-
-    ax_v.legend(loc="lower right", fontsize=7, ncol=4)
-    ax_pwm.legend(loc="lower right", fontsize=7, ncol=4)
-
-    ax_pwm.set_ylim(-255, 255)
-
-    n_pts = len(t)
-
-    ax_v.set_title(
-        f"WHEELS - {n_pts} Messpunkte - t = {t[-1]:.1f} s",
-        fontsize=10,
-        pad=6
-    )
-
-
-# ============================================================
-# CHASSIS-Plot
-# ============================================================
-
-def update_chassis_plot(d, axes):
-    axes[0].set_visible(True)
-    axes[1].set_visible(True)
-
-    t_ms = d.get("t_plot_ms", [])
-
-    if not t_ms:
-        return
-
-    t = [x / 1000.0 for x in t_ms]
-
-    clear_axes(axes[:2])
-
-    ax_rad = axes[0]
-    ax_veh = axes[1]
-
-    ax_rad.set_ylabel("Radgeschwindigkeit Ist [m/s]")
-    ax_veh.set_ylabel("Fahrzeug [m/s / rad/s]")
-    ax_veh.set_xlabel("Zeit [s]")
-
-    for name, col in COLORS_RAD.items():
-        vals = d.get(f"{name}_i", [])
-        n = min(len(t), len(vals))
-
-        if n:
-            ax_rad.plot(
-                t[:n],
-                vals[:n],
-                color=col,
-                label=f"{name}"
-            )
-
-    for key, col in COLORS_VEH.items():
-        vals = d.get(key, [])
-        n = min(len(t), len(vals))
-
-        if n:
-            ax_veh.plot(
-                t[:n],
-                vals[:n],
-                color=col,
-                label=key
-            )
-
-    ax_rad.legend(loc="lower right", fontsize=8, ncol=4)
-    ax_veh.legend(loc="lower right", fontsize=8, ncol=3)
-
-    n_pts = len(t)
-
-    ax_rad.set_title(
-        f"CHASSIS - {n_pts} Messpunkte - t = {t[-1]:.1f} s",
-        fontsize=10,
-        pad=6
-    )
+run_plot = start_plot

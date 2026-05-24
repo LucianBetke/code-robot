@@ -58,10 +58,11 @@ private:
 
     void updateActiveTimeCmd(uint32_t now);
     void updateActivePathCmd(uint32_t now);
+    void updateSettlePhase(uint32_t now);
 
     void finishTimeCmd();
-    void finishPathCmd();
-    void finishPathTimeoutCmd();
+    void finishPathCmd(uint32_t now);
+    void finishPathTimeoutCmd(uint32_t now);
 
     bool pathReached() const;
     bool pathTimedOut(uint32_t now) const;
@@ -71,6 +72,8 @@ private:
     uint32_t calcAngleTimeoutMs(uint16_t targetDeg, float speedDegS) const;
 
     void stopAll();
+
+    void startSettlePhase(uint32_t now);
 
     uint16_t nextCmdpId();
     void startCmdpProtocol(const ParsedCommand& cmd);
@@ -86,6 +89,7 @@ private:
     uint8_t _cmdIndex;
     bool _active;
     bool _finished;
+    bool _settleActive;
     bool _startFramePending;
 
     CmdType _activeType;

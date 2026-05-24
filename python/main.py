@@ -19,14 +19,14 @@ import argparse
 import threading
 from datetime import datetime
 
-import serial.tools.list_ports
-
 from config import DEFAULT_PORT
 from config import DEFAULT_BAUD
 from config import DEFAULT_DISPLAY_MODE
+from config import MAX_POINTS
+from config import UPDATE_MS
 
+from serial_io import make_store
 from serial_io import serial_thread
-from plotter import start_plot
 
 
 # ============================================================
@@ -71,6 +71,12 @@ def resolve_display_mode(mode_from_args) -> str:
 
 def print_available_ports():
     print("Verfuegbare COM-Ports:")
+
+    try:
+        import serial.tools.list_ports
+    except ImportError:
+        print("pyserial ist nicht installiert. Installiere es mit: pip install pyserial")
+        return
 
     for pt in serial.tools.list_ports.comports():
         print(f"  {pt.device:12s} {pt.description}")
@@ -139,29 +145,66 @@ def main():
 
     display_mode = resolve_display_mode(args.mode)
 
+    if display_mode == "AUTO":
+        display_mode = "ODOM"
+
     if args.csv is not None:
         csv_path = args.csv
     else:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         csv_path = f"robot_{display_mode.lower()}_{timestamp}.csv"
 
+    store = make_store(MAX_POINTS)
+    stop_event = threading.Event()
+
+    csv_file = open(csv_path, "w", newline="", encoding="utf-8")
+
     thread = threading.Thread(
         target=serial_thread,
-        args=(args.port, args.baud, csv_path, display_mode),
+        args=(
+            args.port,
+            args.baud,
+            store,
+            stop_event,
+            csv_file,
+            True
+        ),
         daemon=True
     )
 
-    thread.start()
+    try:
+        thread.start()
 
-    if args.no_plot:
-        print("Kein Plot aktiv. STRG+C zum Beenden.")
+        if args.no_plot:
+            print("Kein Plot aktiv. STRG+C zum Beenden.")
+            print(f"CSV-Datei: {csv_path}")
+
+            try:
+                thread.join()
+            except KeyboardInterrupt:
+                pass
+        else:
+            # Wichtig:
+            # plotter wird erst NACH der Modus-Auswahl importiert.
+            # Dadurch kann ein Fehler in plotter.py / plot_odom.py
+            # die Auswahlfrage nicht mehr verhindern.
+            from plotter import start_plot
+
+            start_plot(
+                store,
+                mode=display_mode,
+                interval_ms=UPDATE_MS
+            )
+
+    finally:
+        stop_event.set()
 
         try:
-            thread.join()
-        except KeyboardInterrupt:
+            thread.join(timeout=1.0)
+        except RuntimeError:
             pass
-    else:
-        start_plot(display_mode)
+
+        csv_file.close()
 
 
 if __name__ == "__main__":

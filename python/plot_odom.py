@@ -1,411 +1,439 @@
+# plot_odom.py
 # ============================================================
-# Datei: plot_odom.py
-# Zweck:
-#   - ODOM-spezifische Rechenfunktionen
-#   - mehrere CMDP-Teilstuecke fortlaufend zusammensetzen
-#   - Weltkoordinaten fuer den Plot berechnen
-#   - obere Zeitachse fuer ODOM erzeugen
-#   - ODOM-Plot aktualisieren
+# Aufgabe:
+#  - Neues ODOM2-Protokoll auswerten
+#  - Sollbewegung aus #CMDP_BEGIN berechnen
+#  - Istbewegung aus #ODOM2 zusammensetzen
+#  - Laengsfehler und Querfehler berechnen
 #
-# Diese Datei kennt keinen Serial-Port.
-# Diese Datei startet kein Fenster.
-# Sie wird von plotter.py benutzt.
+# Neues Arduino-Format:
+#   #CMDP_BEGIN,id,vx,vy,wz,target
+#   #ODOM2,id,ms,path_cm,x_body_cm,y_body_cm,phi_deg
+#
+# Darstellung:
+#   1. e_quer
+#   2. e_laengs
+#   3. e_verdrehen
+#
+# Keine Diagrammtitel.
+#
+# Unten an jedem Diagramm:
+#   Weg [cm]
+#
+# Oben an jedem Diagramm:
+#   Zeit [s]
 # ============================================================
 
-import math
+from __future__ import annotations
 
-from config import *
+from dataclasses import dataclass
+from math import sqrt
 
-
-# ============================================================
-# Kleine Plot-Helfer fuer ODOM
-# ============================================================
-
-def clear_axes(axes):
-    for ax in axes:
-        ax.cla()
-        ax.grid(True, linestyle="--", alpha=0.5)
+import numpy as np
 
 
-def show_time_axes(time_axes):
-    for ax in time_axes:
-        ax.set_visible(True)
+@dataclass
+class OdomPlotData:
+    s_cm: list[float]
+    t_s: list[float]
+
+    x_ist_cm: list[float]
+    y_ist_cm: list[float]
+
+    x_soll_cm: list[float]
+    y_soll_cm: list[float]
+
+    e_parallel_cm: list[float]
+    e_cross_cm: list[float]
+
+    phi_deg: list[float]
+    cmd_id: list[int]
+
+    text: str
 
 
-# ============================================================
-# ODOM-Hilfsfunktionen
-# ============================================================
+def _cmd_value(cmd, name: str, default: float = 0.0) -> float:
+    if hasattr(cmd, name):
+        return float(getattr(cmd, name))
 
-def reset_delta(current_value: float, previous_value: float, reset_detected: bool) -> float:
-    if not reset_detected:
-        return current_value - previous_value
+    if isinstance(cmd, dict):
+        return float(cmd.get(name, default))
 
-    return current_value
+    return default
 
 
-def build_continuous_odom(path_cm, x_cm, y_cm, phi_deg, raw_ms, plot_ms):
-    """
-    Setzt mehrere CMDP-Teilstuecke zu EINER fortlaufenden Odometrie-Strecke zusammen.
+def _row_value(row, name: str, default: float = 0.0) -> float:
+    if hasattr(row, name):
+        return float(getattr(row, name))
 
-    Problem:
-      Arduino gibt bei jedem neuen CMDP wieder lokale Werte aus:
-        ms      : 0,100,200,...
-        path_cm : 0,...,100
-        x_cm    : lokal zum CMDP
-        y_cm    : lokal zum CMDP
-        phi_deg : lokal zum CMDP
+    if isinstance(row, dict):
+        return float(row.get(name, default))
 
-    Der Plot soll daraus machen:
-        fortlaufender Weg
-        fortlaufende x/y/phi-Werte
-    """
+    return default
 
-    n = min(len(path_cm), len(x_cm), len(y_cm), len(phi_deg), len(plot_ms))
 
-    if n == 0:
-        return {
-            "path": [],
-            "x": [],
-            "y": [],
-            "phi": [],
-            "t_ms": [],
-        }
+def _row_id(row) -> int:
+    if hasattr(row, "cmd_id"):
+        return int(getattr(row, "cmd_id"))
 
-    result = {
-        "path": [],
-        "x": [],
-        "y": [],
-        "phi": [],
-        "t_ms": [],
-    }
+    if isinstance(row, dict):
+        return int(row.get("cmd_id", 0))
 
-    cum_path = 0.0
-    cum_x = 0.0
-    cum_y = 0.0
-    cum_phi = 0.0
+    return 0
 
-    prev_path = None
-    prev_x = None
-    prev_y = None
-    prev_phi = None
-    prev_raw_ms = None
 
-    for i in range(n):
-        p = float(path_cm[i])
-        x = float(x_cm[i])
-        y = float(y_cm[i])
-        phi = float(phi_deg[i])
-        t_plot = float(plot_ms[i])
+def _safe_unit(vx: float, vy: float) -> tuple[float, float, float]:
+    v_abs = sqrt(vx * vx + vy * vy)
 
-        if i < len(raw_ms):
-            t_raw = float(raw_ms[i])
+    if v_abs <= 1.0e-9:
+        return 0.0, 0.0, 0.0
+
+    return vx / v_abs, vy / v_abs, v_abs
+
+
+def build_odom_plot_data(snapshot: dict) -> OdomPlotData:
+    cmdp_by_id = snapshot.get("cmdp_by_id", {})
+    cmdp_order = snapshot.get("cmdp_order", [])
+    odom2_rows = snapshot.get("odom2_rows", [])
+
+    if not odom2_rows:
+        return OdomPlotData(
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            "warte auf #ODOM2 ...",
+        )
+
+    ideal_start_by_id: dict[int, tuple[float, float, float, float]] = {}
+    actual_start_by_id: dict[int, tuple[float, float, float, float, float]] = {}
+
+    ideal_x = 0.0
+    ideal_y = 0.0
+    ideal_s = 0.0
+    ideal_t = 0.0
+
+    actual_x = 0.0
+    actual_y = 0.0
+    actual_s = 0.0
+    actual_t = 0.0
+    actual_phi = 0.0
+
+    rows_by_id: dict[int, list] = {}
+
+    for row in odom2_rows:
+        rows_by_id.setdefault(_row_id(row), []).append(row)
+
+    ordered_ids = [int(i) for i in cmdp_order if int(i) in rows_by_id]
+
+    for cmd_id in rows_by_id.keys():
+        if cmd_id not in ordered_ids:
+            ordered_ids.append(cmd_id)
+
+    for cmd_id in ordered_ids:
+        ideal_start_by_id[cmd_id] = (ideal_x, ideal_y, ideal_s, ideal_t)
+        actual_start_by_id[cmd_id] = (
+            actual_x,
+            actual_y,
+            actual_s,
+            actual_t,
+            actual_phi,
+        )
+
+        cmd = cmdp_by_id.get(cmd_id)
+
+        if cmd is not None:
+            vx = _cmd_value(cmd, "vx_cms")
+            vy = _cmd_value(cmd, "vy_cms")
+            target = _cmd_value(cmd, "target")
+            ux, uy, v_abs = _safe_unit(vx, vy)
+
+            ideal_x += ux * target
+            ideal_y += uy * target
+            ideal_s += target
+
+            if v_abs > 1.0e-9:
+                ideal_t += target / v_abs
+
+        seg_rows = rows_by_id.get(cmd_id, [])
+
+        if seg_rows:
+            last = seg_rows[-1]
+
+            actual_x += _row_value(last, "x_body_cm")
+            actual_y += _row_value(last, "y_body_cm")
+            actual_s += _row_value(last, "path_cm")
+            actual_t += _row_value(last, "ms") * 0.001
+            actual_phi += _row_value(last, "phi_deg")
+
+    s_cm: list[float] = []
+    t_s: list[float] = []
+
+    x_ist_cm: list[float] = []
+    y_ist_cm: list[float] = []
+
+    x_soll_cm: list[float] = []
+    y_soll_cm: list[float] = []
+
+    e_parallel_cm: list[float] = []
+    e_cross_cm: list[float] = []
+
+    phi_deg: list[float] = []
+    cmd_id_out: list[int] = []
+
+    for cmd_id in ordered_ids:
+        cmd = cmdp_by_id.get(cmd_id)
+        seg_rows = rows_by_id.get(cmd_id, [])
+
+        if cmd is None:
+            ux = 1.0
+            uy = 0.0
+            v_abs = 0.0
+            target = 0.0
         else:
-            t_raw = t_plot
+            vx = _cmd_value(cmd, "vx_cms")
+            vy = _cmd_value(cmd, "vy_cms")
+            target = _cmd_value(cmd, "target")
+            ux, uy, v_abs = _safe_unit(vx, vy)
 
-        if prev_path is None:
-            cum_path = p
-            cum_x = x
-            cum_y = y
-            cum_phi = phi
-        else:
-            path_reset = p < (prev_path - ODOM_RESET_DROP_CM)
-            time_reset = t_raw < (prev_raw_ms - ODOM_RESET_TIME_DROP_MS)
-            reset_detected = path_reset or time_reset
+        ideal_x0, ideal_y0, ideal_s0, ideal_t0 = ideal_start_by_id.get(
+            cmd_id,
+            (0.0, 0.0, 0.0, 0.0),
+        )
 
-            if reset_detected:
-                dp = p
+        actual_x0, actual_y0, actual_s0, actual_t0, actual_phi0 = actual_start_by_id.get(
+            cmd_id,
+            (0.0, 0.0, 0.0, 0.0, 0.0),
+        )
+
+        for row in seg_rows:
+            ms = _row_value(row, "ms")
+            path_local = _row_value(row, "path_cm")
+            x_local = _row_value(row, "x_body_cm")
+            y_local = _row_value(row, "y_body_cm")
+            phi_local = _row_value(row, "phi_deg")
+
+            t_local = ms * 0.001
+            t_global = actual_t0 + t_local
+
+            if v_abs > 1.0e-9:
+                s_soll_local = v_abs * t_local
+
+                if s_soll_local > target:
+                    s_soll_local = target
             else:
-                dp = p - prev_path
+                s_soll_local = 0.0
 
-            if dp < 0.0:
-                dp = 0.0
+            x_soll_local = ux * s_soll_local
+            y_soll_local = uy * s_soll_local
 
-            dx = reset_delta(x, prev_x, reset_detected)
-            dy = reset_delta(y, prev_y, reset_detected)
-            dphi = reset_delta(phi, prev_phi, reset_detected)
+            x_actual_global = actual_x0 + x_local
+            y_actual_global = actual_y0 + y_local
 
-            cum_path += dp
-            cum_x += dx
-            cum_y += dy
-            cum_phi += dphi
+            x_ideal_global = ideal_x0 + x_soll_local
+            y_ideal_global = ideal_y0 + y_soll_local
 
-        result["path"].append(cum_path)
-        result["x"].append(cum_x)
-        result["y"].append(cum_y)
-        result["phi"].append(cum_phi)
-        result["t_ms"].append(t_plot)
+            s_ist_local = x_local * ux + y_local * uy
 
-        prev_path = p
-        prev_x = x
-        prev_y = y
-        prev_phi = phi
-        prev_raw_ms = t_raw
+            # e_laengs:
+            # Jetzt bezogen auf die gesamte zusammengesetzte Fahrt.
+            # Positiv  -> Roboter ist insgesamt weiter als der ideale Sollfortschritt.
+            # Negativ  -> Roboter hinkt insgesamt hinterher.
+            s_ist_global_parallel = actual_s0 + s_ist_local
+            s_soll_global_parallel = ideal_s0 + s_soll_local
+            e_parallel = s_ist_global_parallel - s_soll_global_parallel
 
-    return result
+            # e_quer:
+            # Weiterhin bezogen auf die aktuelle CMDP-Fahrtrichtung.
+            # Bei reiner x-Fahrt entspricht das naeherungsweise y_body.
+            e_cross = -x_local * uy + y_local * ux
 
+            # e_verdrehen:
+            # Arduino startet phi bei jedem CMDP lokal neu.
+            # Fuer den Gesamtplot wird die lokale Verdrehung auf die
+            # bereits erreichte Gesamtverdrehung aufaddiert.
+            phi_global = actual_phi0 + phi_local
 
-def compute_world_coordinates(run):
-    x_body = run["x"]
-    y_body = run["y"]
-    phi_deg = run["phi"]
+            s_cm.append(actual_s0 + path_local)
+            t_s.append(t_global)
 
-    n = min(len(x_body), len(y_body), len(phi_deg))
+            x_ist_cm.append(x_actual_global)
+            y_ist_cm.append(y_actual_global)
 
-    if n == 0:
-        return [], []
+            x_soll_cm.append(x_ideal_global)
+            y_soll_cm.append(y_ideal_global)
 
-    x_world = [0.0]
-    y_world = [0.0]
+            e_parallel_cm.append(e_parallel)
+            e_cross_cm.append(e_cross)
 
-    for i in range(1, n):
-        dx_body = x_body[i] - x_body[i - 1]
-        dy_body = y_body[i] - y_body[i - 1]
+            phi_deg.append(phi_global)
+            cmd_id_out.append(cmd_id)
 
-        phi_prev = math.radians(phi_deg[i - 1])
-        phi_now = math.radians(phi_deg[i])
-        dphi = phi_now - phi_prev
-        phi_mid = phi_prev + 0.5 * dphi
+    last_text = ""
 
-        c = math.cos(phi_mid)
-        s = math.sin(phi_mid)
+    if s_cm:
+        last_text = (
+            f"s={s_cm[-1]:.2f} cm   "
+            f"e_längs={e_parallel_cm[-1]:.2f} cm   "
+            f"e_quer={e_cross_cm[-1]:.2f} cm   "
+            f"e_verdrehen={phi_deg[-1]:.2f} deg"
+        )
 
-        dx_world = dx_body * c - dy_body * s
-        dy_world = dx_body * s + dy_body * c
-
-        x_world.append(x_world[-1] + dx_world)
-        y_world.append(y_world[-1] + dy_world)
-
-    return x_world, y_world
-
-
-# ============================================================
-# Obere Zeitachse fuer ODOM
-# ============================================================
-
-def interpolate_time_for_path(path_values, time_values_ms, path_target):
-    n = min(len(path_values), len(time_values_ms))
-
-    if n == 0:
-        return 0.0
-
-    if path_target <= path_values[0]:
-        return time_values_ms[0] / 1000.0
-
-    for i in range(1, n):
-        p0 = path_values[i - 1]
-        p1 = path_values[i]
-
-        if p0 <= path_target <= p1:
-            t0 = time_values_ms[i - 1]
-            t1 = time_values_ms[i]
-
-            dp = p1 - p0
-
-            if abs(dp) < 1e-9:
-                return t1 / 1000.0
-
-            alpha = (path_target - p0) / dp
-            return (t0 + alpha * (t1 - t0)) / 1000.0
-
-    return time_values_ms[n - 1] / 1000.0
-
-
-def make_even_ticks(start_value, end_value, count):
-    if count <= 1:
-        return [start_value]
-
-    step = (end_value - start_value) / (count - 1)
-    return [start_value + i * step for i in range(count)]
-
-
-def update_time_axis(time_ax, path_values, time_values_ms, max_path):
-    time_ax.set_visible(True)
-
-    x_max = max_path * 1.03 if max_path > 0.0 else 1.0
-    time_ax.set_xlim(0.0, x_max)
-
-    time_ax.grid(False)
-
-    time_ax.tick_params(
-        axis="y",
-        which="both",
-        left=False,
-        right=False,
-        labelleft=False,
-        labelright=False
+    return OdomPlotData(
+        s_cm=s_cm,
+        t_s=t_s,
+        x_ist_cm=x_ist_cm,
+        y_ist_cm=y_ist_cm,
+        x_soll_cm=x_soll_cm,
+        y_soll_cm=y_soll_cm,
+        e_parallel_cm=e_parallel_cm,
+        e_cross_cm=e_cross_cm,
+        phi_deg=phi_deg,
+        cmd_id=cmd_id_out,
+        text=last_text,
     )
 
-    time_ax.xaxis.set_ticks_position("top")
-    time_ax.xaxis.set_label_position("top")
 
-    time_ax.tick_params(
-        axis="x",
-        which="both",
-        top=True,
-        labeltop=True,
-        bottom=False,
-        labelbottom=False,
-        pad=3
-    )
+def build_continuous_odom(snapshot: dict) -> OdomPlotData:
+    return build_odom_plot_data(snapshot)
 
-    time_ax.set_xlabel("Zeit [s]", labelpad=8)
 
-    time_ax.spines["bottom"].set_visible(False)
-    time_ax.spines["left"].set_visible(False)
-    time_ax.spines["right"].set_visible(False)
-    time_ax.spines["top"].set_visible(True)
-
-    if not path_values or not time_values_ms or max_path <= 0.0:
-        time_ax.set_xticks([])
+def _draw_command_boundaries(ax, s_cm: list[float], cmd_id: list[int]) -> None:
+    if not s_cm or not cmd_id:
         return
 
-    ticks = make_even_ticks(0.0, max_path, ODOM_TIME_AXIS_TICKS)
+    last_id = cmd_id[0]
 
-    labels = [
-        f"{interpolate_time_for_path(path_values, time_values_ms, tick):.1f}"
-        for tick in ticks
-    ]
+    for index in range(1, len(cmd_id)):
+        current_id = cmd_id[index]
 
-    time_ax.set_xticks(ticks)
-    time_ax.set_xticklabels(labels)
+        if current_id != last_id:
+            ax.axvline(s_cm[index], linestyle="--", linewidth=1.1)
+            last_id = current_id
 
 
-# ============================================================
-# ODOM-Plot
-# ============================================================
-
-def update_odom_plot(d, axes, time_axes, status_text=None):
-    for ax in axes:
-        ax.set_visible(True)
-
-    show_time_axes(time_axes)
-
-    raw_path_cm = d.get("path_cm", [])
-    raw_y_body_cm = d.get("y_cm", [])
-    raw_phi_deg = d.get("phi_deg", [])
-    raw_x_body_cm = d.get("x_cm", [])
-    raw_ms = d.get("ms", [])
-    plot_ms = d.get("t_plot_ms", raw_ms)
-
-    run = build_continuous_odom(
-        raw_path_cm,
-        raw_x_body_cm,
-        raw_y_body_cm,
-        raw_phi_deg,
-        raw_ms,
-        plot_ms
-    )
-
-    if len(run["path"]) < ODOM_MIN_RUN_POINTS:
-        return
-
-    clear_axes(axes)
-
-    ax_y_world = axes[0]
-    ax_y_body = axes[1]
-    ax_phi = axes[2]
-
-    path = run["path"]
-    y_body = run["y"]
-    phi = run["phi"]
-
-    x_world, y_world = compute_world_coordinates(run)
-
-    max_path = max(path) if path else 0.0
-
-    n_world = min(len(path), len(y_world))
-
-    if n_world:
-        ax_y_world.plot(
-            path[:n_world],
-            y_world[:n_world],
-            linestyle="-",
-            label="y_world"
-        )
-
-    n_body = min(len(path), len(y_body))
-
-    if n_body:
-        ax_y_body.plot(
-            path[:n_body],
-            y_body[:n_body],
-            linestyle="-",
-            label="y_body"
-        )
-
-    n_phi = min(len(path), len(phi))
-
-    if n_phi:
-        ax_phi.plot(
-            path[:n_phi],
-            phi[:n_phi],
-            linestyle="-",
-            label="phi"
-        )
-
-    ax_y_world.axhline(0.0, linestyle="--", linewidth=1.0, alpha=0.7)
-    ax_y_body.axhline(0.0, linestyle="--", linewidth=1.0, alpha=0.7)
-    ax_phi.axhline(0.0, linestyle="--", linewidth=1.0, alpha=0.7)
-
-    ax_y_world.set_xlabel("Weg path fortlaufend [cm]")
-    ax_y_world.set_ylabel("y_world [cm]")
-
-    ax_y_body.set_xlabel("Weg path fortlaufend [cm]")
-    ax_y_body.set_ylabel("y_body [cm]")
-
-    ax_phi.set_xlabel("Weg path fortlaufend [cm]")
-    ax_phi.set_ylabel("phi [deg]")
-
-    if max_path > 0.0:
-        x_max = max_path * 1.03
-
-        ax_y_world.set_xlim(0.0, x_max)
-        ax_y_body.set_xlim(0.0, x_max)
-        ax_phi.set_xlim(0.0, x_max)
-
-    ax_y_world.tick_params(axis="y", which="both", labelleft=True, left=True)
-    ax_y_body.tick_params(axis="y", which="both", labelleft=True, left=True)
-    ax_phi.tick_params(axis="y", which="both", labelleft=True, left=True)
-
-    ax_y_world.legend(loc="lower left", fontsize=8, ncol=2)
-    ax_y_body.legend(loc="lower left", fontsize=8, ncol=2)
-    ax_phi.legend(loc="lower left", fontsize=8, ncol=2)
-
-    for time_ax in time_axes:
-        update_time_axis(
-            time_ax,
-            run["path"],
-            run["t_ms"],
-            max_path
-        )
-
-    last_path = run["path"][-1]
-    last_x_body = run["x"][-1]
-    last_y_body = run["y"][-1]
-    last_phi = run["phi"][-1]
-    last_t = run["t_ms"][-1] / 1000.0
-
-    if x_world and y_world:
-        last_x_world = x_world[-1]
-        last_y_world = y_world[-1]
-    else:
-        last_x_world = 0.0
-        last_y_world = 0.0
-
-    total_points = len(run["path"])
-
-    status_line = (
-        f"ODOM - fortlaufende Strecke - {total_points} Messpunkte - "
-        f"path = {last_path:.2f} cm - "
-        f"x_body = {last_x_body:.2f} cm - "
-        f"y_body = {last_y_body:.2f} cm - "
-        f"x_world = {last_x_world:.2f} cm - "
-        f"y_world = {last_y_world:.2f} cm - "
-        f"phi = {last_phi:.2f} deg - t = {last_t:.1f} s"
-    )
+def _update_status_text(fig, text: str) -> None:
+    status_text = getattr(fig, "_robot_status_text", None)
 
     if status_text is not None:
-        status_text.set_text(status_line)
-        ax_y_world.set_title("")
+        status_text.set_text(text)
+
+
+def _strictly_increasing_arrays(x_values: list[float], y_values: list[float]) -> tuple[np.ndarray, np.ndarray]:
+    xs: list[float] = []
+    ys: list[float] = []
+
+    for x, y in zip(x_values, y_values):
+        xf = float(x)
+        yf = float(y)
+
+        if not xs:
+            xs.append(xf)
+            ys.append(yf)
+            continue
+
+        if xf > xs[-1] + 1.0e-9:
+            xs.append(xf)
+            ys.append(yf)
+        else:
+            # Bei gleichen x-Werten, z. B. am CMDP-Wechsel,
+            # den letzten Wert aktualisieren.
+            ys[-1] = yf
+
+    if len(xs) < 2:
+        return np.array([0.0, 1.0]), np.array([0.0, 1.0])
+
+    return np.array(xs), np.array(ys)
+
+
+def _add_time_axis(ax, data: OdomPlotData, show_label: bool = True) -> None:
+    # Alte Sekundaerachsen entfernen, sonst stapeln sie sich bei Live-Animation.
+    for child in list(ax.child_axes):
+        child.remove()
+
+    s_arr, t_arr = _strictly_increasing_arrays(data.s_cm, data.t_s)
+    t_for_inverse, s_for_inverse = _strictly_increasing_arrays(data.t_s, data.s_cm)
+
+    def s_to_t(x):
+        return np.interp(x, s_arr, t_arr)
+
+    def t_to_s(t):
+        return np.interp(t, t_for_inverse, s_for_inverse)
+
+    secax = ax.secondary_xaxis("top", functions=(s_to_t, t_to_s))
+
+    # Beschriftung "Zeit [s]" nur beim obersten Diagramm anzeigen.
+    if show_label:
+        secax.set_xlabel("Zeit [s]", fontsize=15, labelpad=6)
     else:
-        ax_y_world.set_title(status_line, fontsize=10, pad=28)
+        secax.set_xlabel("")
+
+    secax.tick_params(axis="x", labelsize=13, pad=3)
+
+
+def _format_axis(ax, ylabel: str, show_xlabel: bool = True) -> None:
+    # Kein Diagrammtitel mehr.
+    ax.set_ylabel(ylabel, fontsize=15, labelpad=6)
+
+    # Beschriftung "Weg [cm]" nur beim untersten Diagramm anzeigen.
+    if show_xlabel:
+        ax.set_xlabel("Weg [cm]", fontsize=15, labelpad=6)
+    else:
+        ax.set_xlabel("")
+
+    ax.grid(True)
+    ax.tick_params(axis="both", labelsize=13, pad=3)
+
+
+def update_odom_plot(axes, store) -> None:
+    snapshot = store.snapshot()
+    data = build_odom_plot_data(snapshot)
+
+    if len(axes) < 3:
+        return
+
+    fig = axes[0].figure
+
+    ax_cross = axes[0]
+    ax_parallel = axes[1]
+    ax_phi = axes[2]
+
+    ax_cross.clear()
+    ax_parallel.clear()
+    ax_phi.clear()
+
+    _update_status_text(fig, data.text)
+
+    # Nur das unterste Diagramm bekommt "Weg [cm]" als x-Beschriftung.
+    _format_axis(ax_cross,    "e_quer [cm]",       show_xlabel=False)
+    _format_axis(ax_parallel, "e_längs [cm]",      show_xlabel=False)
+    _format_axis(ax_phi,      "e_verdrehen [deg]", show_xlabel=True)
+
+    if not data.s_cm:
+        ax_cross.text(
+            0.5,
+            0.5,
+            data.text,
+            transform=ax_cross.transAxes,
+            ha="center",
+            va="center",
+            fontsize=13,
+        )
+        return
+
+    # Nur das oberste Diagramm bekommt "Zeit [s]" als Sekundaerachsen-Beschriftung.
+    for i, ax in enumerate((ax_cross, ax_parallel, ax_phi)):
+        ax.axhline(0.0, linewidth=1.2)
+        _draw_command_boundaries(ax, data.s_cm, data.cmd_id)
+        ax.margins(x=0.01)
+        _add_time_axis(ax, data, show_label=(i == 0))
+
+    ax_cross.plot(data.s_cm, data.e_cross_cm, linewidth=1.8)
+    ax_parallel.plot(data.s_cm, data.e_parallel_cm, linewidth=1.8)
+    ax_phi.plot(data.s_cm, data.phi_deg, linewidth=1.8)

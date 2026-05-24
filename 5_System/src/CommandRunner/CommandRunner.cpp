@@ -3,6 +3,7 @@
 // ============================================================
 #include "CommandRunner.h"
 #include "src/PrinterConfig.h"
+#include "src/globals.h"
 
 #include <math.h>
 
@@ -36,6 +37,7 @@ CommandRunner::CommandRunner(
     _cmdIndex(0),
     _active(false),
     _finished(false),
+    _settleActive(false),
     _startFramePending(false),
     _activeType(CMD_NONE),
     _pathMode(PATH_NONE),
@@ -58,6 +60,7 @@ void CommandRunner::begin()
     _cmdIndex = 0;
     _active = false;
     _finished = false;
+    _settleActive = false;
     _startFramePending = false;
     _activeType = CMD_NONE;
     _pathMode = PATH_NONE;
@@ -81,6 +84,39 @@ void CommandRunner::begin()
 void CommandRunner::stopAll()
 {
     _vehicle.cmd(0.0f, 0.0f, 0.0f);
+}
+
+void CommandRunner::startSettlePhase(uint32_t now)
+{
+    if (CMDP_SETTLE_MS == 0)
+    {
+        return;
+    }
+
+    stopAll();
+
+    _active = false;
+    _activeType = CMD_NONE;
+    _pathMode = PATH_NONE;
+
+    clearCmdpProtocol();
+
+    _startTime = now;
+    _durationMs = CMDP_SETTLE_MS;
+
+    _settleActive = true;
+    _startFramePending = true;
+}
+
+void CommandRunner::updateSettlePhase(uint32_t now)
+{
+    if ((uint32_t)(now - _startTime) < _durationMs)
+    {
+        return;
+    }
+
+    _settleActive = false;
+    _durationMs = 0;
 }
 
 uint16_t CommandRunner::nextCmdpId()
@@ -334,6 +370,16 @@ void CommandRunner::update(uint32_t now)
         return;
     }
 
+    if (_settleActive)
+    {
+        updateSettlePhase(now);
+
+        if (_settleActive)
+        {
+            return;
+        }
+    }
+
     if (_active)
     {
         if (_activeType == CMD_TIME)
@@ -409,13 +455,13 @@ void CommandRunner::updateActivePathCmd(uint32_t now)
 
     if (pathReached())
     {
-        finishPathCmd();
+        finishPathCmd(now);
         return;
     }
 
     if (pathTimedOut(now))
     {
-        finishPathTimeoutCmd();
+        finishPathTimeoutCmd(now);
         return;
     }
 }
@@ -435,7 +481,7 @@ void CommandRunner::finishTimeCmd()
     }
 }
 
-void CommandRunner::finishPathCmd()
+void CommandRunner::finishPathCmd(uint32_t now)
 {
 #if PRINTER_ENABLE_EVENTS
     if (_pathMode == PATH_ROTATION)
@@ -465,10 +511,13 @@ void CommandRunner::finishPathCmd()
     if (_cmdIndex >= _size())
     {
         _finished = true;
+        return;
     }
+
+    startSettlePhase(now);
 }
 
-void CommandRunner::finishPathTimeoutCmd()
+void CommandRunner::finishPathTimeoutCmd(uint32_t now)
 {
 #if PRINTER_ENABLE_ERRORS
     if (_pathMode == PATH_ROTATION)
@@ -502,7 +551,10 @@ void CommandRunner::finishPathTimeoutCmd()
     if (_cmdIndex >= _size())
     {
         _finished = true;
+        return;
     }
+
+    startSettlePhase(now);
 }
 
 void CommandRunner::updatePathProgress()
@@ -554,7 +606,7 @@ float CommandRunner::getWheelSoll(WheelVehicle w) const
 
 bool CommandRunner::isActive() const
 {
-    return _active;
+    return _active || _settleActive;
 }
 
 bool CommandRunner::isFinished() const

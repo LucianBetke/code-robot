@@ -72,6 +72,9 @@ constexpr uint16_t RAD_REGEL_DT_MS = 20;
 /** Regelperiode Fahrzeug + UART VSOL/VIST (ms) */
 constexpr uint16_t VEHICLE_DT_MS = 100;
 
+/** Beruhigungszeit nach erreichtem CMDP-Ziel vor dem nächsten Fahrbefehl (ms) */
+constexpr uint16_t CMDP_SETTLE_MS = 100;
+
 /** Debug-Ausgabe Intervall */
 constexpr uint16_t DBG_INTERVAL_MS = 20;
 
