@@ -1008,12 +1008,29 @@ static bool equalsProgmem(const char* text, PGM_P pattern)
     return strcmp_P(text, pattern) == 0;
 }
 
+static void copyLine(char* dst, const char* src, uint8_t dstSize)
+{
+    if (dstSize == 0) return;
+
+    uint8_t i = 0;
+    const uint8_t maxIndex = dstSize - 1;
+
+    while (i < maxIndex && src[i] != '\0')
+    {
+        dst[i] = src[i];
+        i++;
+    }
+
+    dst[i] = '\0';
+}
+
 UartLink::UartLink(Stream& link, bool initiator)
     : _link(link),
     _initiator(initiator),
     _connected(false),
     _lastPing(0),
     _lastSeen(0),
+    _lastActivity(0),
     _idx(0),
     _lineAvailable(false)
 {
@@ -1021,80 +1038,182 @@ UartLink::UartLink(Stream& link, bool initiator)
 
 void UartLink::begin()
 {
+    const unsigned long now = millis();
+
     _connected = false;
     _lastPing = 0;
-    _lastSeen = millis();
+    _lastSeen = now;
+    _lastActivity = now;
+
     _idx = 0;
     _lineAvailable = false;
+
+    _buf[0] = '\0';
     _line[0] = '\0';
 }
 
 void UartLink::update()
 {
-    const uint32_t now = millis();
+    const unsigned long now = millis();
 
-    // ===== RX =====
+    // ========================================================
+    // RX: Zeichen einlesen
+    // ========================================================
     while (_link.available())
     {
-        const char c = _link.read();
+        const char c = (char)_link.read();
 
-        if (c == '\r') continue;
+        if (c == '\r')
+        {
+            continue;
+        }
 
         if (c == '\n')
         {
             _buf[_idx] = '\0';
+
+            // Jede vollstaendige empfangene Zeile beweist:
+            // Die Gegenstelle lebt.
             _lastSeen = now;
+            _lastActivity = now;
 
+            // ------------------------------------------------
+            // Handshake: Front -> Rear
+            // ------------------------------------------------
             if (!_initiator && equalsProgmem(_buf, PSTR("PING")))
+            {
                 _link.println(F("PONG"));
+                _lastActivity = now;
+            }
 
+            // ------------------------------------------------
+            // Handshake: Rear -> Front
+            // ------------------------------------------------
             else if (_initiator && equalsProgmem(_buf, PSTR("PONG")) && !_connected)
             {
                 _link.println(F("ACK"));
                 _connected = true;
+                _lastActivity = now;
             }
 
+            // ------------------------------------------------
+            // Handshake-Abschluss am Rear
+            // ------------------------------------------------
             else if (!_initiator && equalsProgmem(_buf, PSTR("ACK")))
-                _connected = true;
-
-            else if (!equalsProgmem(_buf, PSTR("KA")) && _buf[0] != '#')
             {
-                strncpy(_line, _buf, sizeof(_line) - 1);
-                _line[sizeof(_line) - 1] = '\0';
+                _connected = true;
+            }
+
+            // ------------------------------------------------
+            // KA:
+            // Wird intern verarbeitet, aber NICHT als Nutzdaten
+            // an availableLine() / getLine() weitergegeben.
+            // Dadurch sieht Python/Plot/PC-Log diese Zeile nicht.
+            // ------------------------------------------------
+            else if (equalsProgmem(_buf, PSTR("KA")))
+            {
+                // absichtlich leer
+            }
+
+            // ------------------------------------------------
+            // Debug-Zeilen der Gegenstelle nicht als Protokoll-
+            // Nutzdaten behandeln.
+            // ------------------------------------------------
+            else if (_buf[0] == '#')
+            {
+                // absichtlich leer
+            }
+
+            // ------------------------------------------------
+            // Normale Nutzdatenzeile
+            // ------------------------------------------------
+            else
+            {
+                copyLine(_line, _buf, sizeof(_line));
                 _lineAvailable = true;
             }
 
             _idx = 0;
         }
         else if (_idx < sizeof(_buf) - 1)
-            _buf[_idx++] = c;
-        else
-            _idx = 0;
-    }
-
-    // ===== TX =====
-    if (now - _lastPing > PING_INTERVAL)
-    {
-        _lastPing = now;
-
-        if (!_connected)
         {
-            if (_initiator) _link.println(F("PING"));
+            _buf[_idx] = c;
+            _idx++;
         }
         else
-            _link.println(F("KA"));
+        {
+            // Ueberlange Zeile verwerfen
+            _idx = 0;
+        }
     }
 
-    // ===== Timeout =====
-    if (_connected && (now - _lastSeen > TIMEOUT)) _connected = false;
+    // ========================================================
+    // TX: Verbindungsaufbau
+    //
+    // Nur der Initiator sendet PING, solange noch keine
+    // Verbindung besteht. Das ist dein Front-Nano.
+    // ========================================================
+    if (!_connected)
+    {
+        if (_initiator && (now - _lastPing > PING_INTERVAL))
+        {
+            _lastPing = now;
+            _link.println(F("PING"));
+            _lastActivity = now;
+        }
+
+        return;
+    }
+
+    // ========================================================
+    // TX: KeepAlive
+    //
+    // Wichtige Aenderung:
+    //
+    // Der Initiator sendet im verbundenen Zustand KEIN KA mehr.
+    // Bei deinem Aufbau ist der Initiator der Front-Nano, und
+    // dessen Serial-TX ist im PC-Monitor sichtbar.
+    //
+    // Deshalb sendet nur der Rear-Nano KA, und auch nur dann,
+    // wenn laenger keine andere UART-Aktivitaet lief.
+    // Front empfaengt KA, aktualisiert _lastSeen, gibt KA aber
+    // nicht als Nutzdaten weiter.
+    // ========================================================
+    if (!_initiator && (now - _lastActivity > KEEPALIVE_INTERVAL))
+    {
+        _link.println(F("KA"));
+        _lastActivity = now;
+    }
+
+    // ========================================================
+    // Timeout
+    //
+    // Der Front-Nano erkennt Verbindungsverlust sichtbar ueber
+    // ConnectionMonitor/#DISCONNECTED.
+    //
+    // Beim Rear-Nano ist zusaetzlich updateVsolTimeout() wichtig:
+    // Wenn waehrend aktiver Fahrt keine VSOL-Frames mehr kommen,
+    // werden die hinteren Raeder gestoppt.
+    // ========================================================
+    if (_initiator && _connected && (now - _lastSeen > TIMEOUT))
+    {
+        _connected = false;
+    }
 }
 
 void UartLink::sendLine(const char* msg)
 {
-    if (_connected) _link.println(msg);
+    if (!_connected) return;
+    if (!msg) return;
+
+    _link.println(msg);
+    _lastActivity = millis();
 }
 
-bool UartLink::availableLine() const { return _lineAvailable; }
+bool UartLink::availableLine() const
+{
+    return _lineAvailable;
+}
 
 const char* UartLink::getLine()
 {
@@ -1102,12 +1221,15 @@ const char* UartLink::getLine()
     return _line;
 }
 
-bool UartLink::isConnected() const { return _connected; }
+bool UartLink::isConnected() const
+{
+    return _connected;
+}
 
 ============================================================
 FILE: C:\Users\Acer\source\repos\robot\2_Hardware\src\UartLink.h
 ============================================================
-//UartLink.h
+// UartLink.h
 #ifndef UARTLINK_H
 #define UARTLINK_H
 
@@ -1117,9 +1239,12 @@ class UartLink
 {
 public:
     UartLink(Stream& link, bool initiator = false);
+
     void begin();
     void update();
+
     void sendLine(const char* msg);
+
     bool isConnected() const;
     bool availableLine() const;
     const char* getLine();
@@ -1132,16 +1257,18 @@ private:
     // Timing
     unsigned long _lastPing;
     unsigned long _lastSeen;
+    unsigned long _lastActivity;
 
-    // Buffer
+    // Buffer fuer eingehende Zeichen
     char _buf[64];
     uint8_t _idx;
 
-    // Empfangene vollständige Zeile (non-handshake)
+    // Empfangene vollstaendige Nutzdatenzeile
     char _line[64];
     bool _lineAvailable;
 
     static constexpr unsigned long PING_INTERVAL = 500;
+    static constexpr unsigned long KEEPALIVE_INTERVAL = 500;
     static constexpr unsigned long TIMEOUT = 2000;
 };
 
@@ -2740,7 +2867,9 @@ CommandRunner::CommandRunner(
     _pathProgressCm(0.0f),
     _angleTargetDeg(0.0f),
     _angleDirection(0.0f),
-    _angleProgressDeg(0.0f)
+    _angleProgressDeg(0.0f),
+    _nextCmdpId(1),
+    _activeCmdpId(0)
 {
 }
 
@@ -2764,6 +2893,9 @@ void CommandRunner::begin()
     _angleTargetDeg = 0.0f;
     _angleDirection = 0.0f;
     _angleProgressDeg = 0.0f;
+
+    _nextCmdpId = 1;
+    _activeCmdpId = 0;
 }
 
 void CommandRunner::stopAll()
@@ -2771,8 +2903,45 @@ void CommandRunner::stopAll()
     _vehicle.cmd(0.0f, 0.0f, 0.0f);
 }
 
+uint16_t CommandRunner::nextCmdpId()
+{
+    const uint16_t id = _nextCmdpId++;
+
+    if (_nextCmdpId == 0)
+    {
+        _nextCmdpId = 1;
+    }
+
+    return id;
+}
+
+void CommandRunner::startCmdpProtocol(const ParsedCommand& cmd)
+{
+    _activeCmdpId = nextCmdpId();
+
+#if PRINTER_ENABLE_ODOM
+    Serial.print(F("#CMDP_BEGIN,"));
+    Serial.print((unsigned int)_activeCmdpId);
+    Serial.print(',');
+    Serial.print((int)cmd.vx);
+    Serial.print(',');
+    Serial.print((int)cmd.vy);
+    Serial.print(',');
+    Serial.print((int)cmd.wz);
+    Serial.print(',');
+    Serial.println((unsigned int)cmd.param);
+#endif
+}
+
+void CommandRunner::clearCmdpProtocol()
+{
+    _activeCmdpId = 0;
+}
+
 void CommandRunner::startTimeCmd(const ParsedCommand& cmd, uint32_t now)
 {
+    clearCmdpProtocol();
+
     _durationMs = (uint32_t)cmd.param * 1000UL;
 
 #if PRINTER_ENABLE_EVENTS
@@ -2853,6 +3022,8 @@ bool CommandRunner::startTranslationPathCmd(const ParsedCommand& cmd, uint32_t n
         return false;
     }
 
+    startCmdpProtocol(cmd);
+
     _pathMode = PATH_TRANSLATION;
 
     _pathUnitX = vx_cms / v_abs_cms;
@@ -2909,6 +3080,8 @@ bool CommandRunner::startRotationPathCmd(const ParsedCommand& cmd, uint32_t now)
 #endif
         return false;
     }
+
+    startCmdpProtocol(cmd);
 
     _pathMode = PATH_ROTATION;
 
@@ -2998,6 +3171,7 @@ void CommandRunner::update(uint32_t now)
         _active = false;
         _activeType = CMD_NONE;
         _pathMode = PATH_NONE;
+        clearCmdpProtocol();
     }
 
     while (_cmdIndex < _size())
@@ -3035,6 +3209,7 @@ void CommandRunner::update(uint32_t now)
     }
 
     stopAll();
+    clearCmdpProtocol();
     _finished = true;
 }
 
@@ -3070,6 +3245,7 @@ void CommandRunner::finishTimeCmd()
     _active = false;
     _activeType = CMD_NONE;
     _pathMode = PATH_NONE;
+    clearCmdpProtocol();
     _cmdIndex++;
 
     if (_cmdIndex >= _size())
@@ -3103,6 +3279,7 @@ void CommandRunner::finishPathCmd()
     _active = false;
     _activeType = CMD_NONE;
     _pathMode = PATH_NONE;
+    clearCmdpProtocol();
     _cmdIndex++;
 
     if (_cmdIndex >= _size())
@@ -3139,6 +3316,7 @@ void CommandRunner::finishPathTimeoutCmd()
     _active = false;
     _activeType = CMD_NONE;
     _pathMode = PATH_NONE;
+    clearCmdpProtocol();
     _cmdIndex++;
 
     if (_cmdIndex >= _size())
@@ -3204,6 +3382,11 @@ bool CommandRunner::isFinished() const
     return _finished;
 }
 
+bool CommandRunner::hasActivePathCommand() const
+{
+    return _active && _activeType == CMD_PATH && _activeCmdpId != 0;
+}
+
 bool CommandRunner::consumeStartFramePending()
 {
     if (!_startFramePending)
@@ -3259,6 +3442,9 @@ public:
     float angleProgressDeg() const { return _angleProgressDeg; }
     float angleTargetDeg() const { return _angleTargetDeg; }
 
+    uint16_t activeCmdpId() const { return _activeCmdpId; }
+    bool hasActivePathCommand() const;
+
 private:
     enum PathMode : uint8_t
     {
@@ -3289,6 +3475,10 @@ private:
 
     void stopAll();
 
+    uint16_t nextCmdpId();
+    void startCmdpProtocol(const ParsedCommand& cmd);
+    void clearCmdpProtocol();
+
     VehicleController& _vehicle;
     MecanumOdometer& _odometer;
     UartLink& _uart;
@@ -3315,6 +3505,9 @@ private:
     float _angleTargetDeg;
     float _angleDirection;
     float _angleProgressDeg;
+
+    uint16_t _nextCmdpId;
+    uint16_t _activeCmdpId;
 };
 
 #endif
@@ -3335,7 +3528,7 @@ ConnectionMonitor::ConnectionMonitor(UartLink& uart, uint8_t ledPin)
 
 void ConnectionMonitor::waitForConnection()
 {
-    Serial.println(F("#Warte auf Handshake..."));
+    Serial.println(F("#WAIT"));
 
     while (!_uart.isConnected())
     {
@@ -3343,7 +3536,7 @@ void ConnectionMonitor::waitForConnection()
         update();
     }
 
-    Serial.println(F("#Handshake1 OK"));
+    Serial.println(F("#HS1"));
 }
 
 void ConnectionMonitor::begin(bool wait)
@@ -3363,13 +3556,13 @@ void ConnectionMonitor::update()
 
     if (!now && _lastState)
     {
-        Serial.println(F("#DISCONNECTED"));
+        Serial.println(F("#DIS"));
         digitalWrite(_ledPin, HIGH);
     }
 
     if (now && !_lastState)
     {
-        Serial.println(F("#CONNECTED"));
+        Serial.println(F("#CON"));
         digitalWrite(_ledPin, LOW);
     }
 
@@ -3804,6 +3997,27 @@ void Printer::printOdom(uint32_t t_ms, const MecanumOdometer& odom)
 #endif
 }
 
+void Printer::printOdom2(
+    uint16_t cmdpId,
+    uint32_t t_ms,
+    const MecanumOdometer& odom)
+{
+#if PRINTER_ENABLE_ODOM
+    if (cmdpId == 0)
+    {
+        return;
+    }
+
+    Serial.print(F("#ODOM2,"));
+    Serial.print((unsigned int)cmdpId); Serial.print(',');
+    Serial.print(t_ms);                 Serial.print(',');
+    Serial.print(odom.absCm(), 2);      Serial.print(',');
+    Serial.print(odom.xCm(), 2);        Serial.print(',');
+    Serial.print(odom.yCm(), 2);        Serial.print(',');
+    Serial.println(odom.phiDeg(), 2);
+#endif
+}
+
 #ifdef PRINTER_MODE_CHASSIS
 
 void Printer::printWheels(VehicleController& vehicle,
@@ -3957,6 +4171,11 @@ public:
         int16_t hiRe_pwm);
 
     void printOdom(uint32_t t_ms, const MecanumOdometer& odom);
+
+    void printOdom2(
+        uint16_t cmdpId,
+        uint32_t t_ms,
+        const MecanumOdometer& odom);
 
 #ifdef PRINTER_MODE_CHASSIS
     void printWheels(VehicleController& vehicle,
@@ -4850,6 +5069,15 @@ void FrontApp::handleIncomingLines(uint32_t now)
             rearFrameClient.frame().t,
             odometer
         );
+
+        if (commandRunner.hasActivePathCommand())
+        {
+            printer.printOdom2(
+                commandRunner.activeCmdpId(),
+                rearFrameClient.frame().t,
+                odometer
+            );
+        }
     }
 }
 

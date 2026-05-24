@@ -11,7 +11,7 @@ ConnectionMonitor::ConnectionMonitor(UartLink& uart, uint8_t ledPin)
 
 void ConnectionMonitor::waitForConnection()
 {
-    Serial.println(F("#Warte auf Handshake..."));
+    Serial.println(F("#WAIT"));
 
     while (!_uart.isConnected())
     {
@@ -19,7 +19,7 @@ void ConnectionMonitor::waitForConnection()
         update();
     }
 
-    Serial.println(F("#Handshake1 OK"));
+    Serial.println(F("#HS1"));
 }
 
 void ConnectionMonitor::begin(bool wait)
@@ -39,13 +39,13 @@ void ConnectionMonitor::update()
 
     if (!now && _lastState)
     {
-        Serial.println(F("#DISCONNECTED"));
+        Serial.println(F("#DIS"));
         digitalWrite(_ledPin, HIGH);
     }
 
     if (now && !_lastState)
     {
-        Serial.println(F("#CONNECTED"));
+        Serial.println(F("#CON"));
         digitalWrite(_ledPin, LOW);
     }
 

@@ -1,4 +1,4 @@
-﻿//UartLink.h
+﻿// UartLink.h
 #ifndef UARTLINK_H
 #define UARTLINK_H
 
@@ -8,9 +8,12 @@ class UartLink
 {
 public:
     UartLink(Stream& link, bool initiator = false);
+
     void begin();
     void update();
+
     void sendLine(const char* msg);
+
     bool isConnected() const;
     bool availableLine() const;
     const char* getLine();
@@ -23,16 +26,18 @@ private:
     // Timing
     unsigned long _lastPing;
     unsigned long _lastSeen;
+    unsigned long _lastActivity;
 
-    // Buffer
+    // Buffer fuer eingehende Zeichen
     char _buf[64];
     uint8_t _idx;
 
-    // Empfangene vollständige Zeile (non-handshake)
+    // Empfangene vollstaendige Nutzdatenzeile
     char _line[64];
     bool _lineAvailable;
 
     static constexpr unsigned long PING_INTERVAL = 500;
+    static constexpr unsigned long KEEPALIVE_INTERVAL = 500;
     static constexpr unsigned long TIMEOUT = 2000;
 };
 
