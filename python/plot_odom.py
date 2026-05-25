@@ -239,25 +239,16 @@ def build_odom_plot_data(snapshot: dict) -> OdomPlotData:
             x_ideal_global = ideal_x0 + x_soll_local
             y_ideal_global = ideal_y0 + y_soll_local
 
-            s_ist_local = x_local * ux + y_local * uy
+            error_x = x_actual_global - x_ideal_global
+            error_y = y_actual_global - y_ideal_global
 
-            # e_laengs:
-            # Jetzt bezogen auf die gesamte zusammengesetzte Fahrt.
-            # Positiv  -> Roboter ist insgesamt weiter als der ideale Sollfortschritt.
-            # Negativ  -> Roboter hinkt insgesamt hinterher.
-            s_ist_global_parallel = actual_s0 + s_ist_local
-            s_soll_global_parallel = ideal_s0 + s_soll_local
-            e_parallel = s_ist_global_parallel - s_soll_global_parallel
+            if v_abs > 1.0e-9:
+                e_parallel = error_x * ux + error_y * uy
+                e_cross = -error_x * uy + error_y * ux
+            else:
+                e_parallel = 0.0
+                e_cross = 0.0
 
-            # e_quer:
-            # Weiterhin bezogen auf die aktuelle CMDP-Fahrtrichtung.
-            # Bei reiner x-Fahrt entspricht das naeherungsweise y_body.
-            e_cross = -x_local * uy + y_local * ux
-
-            # e_verdrehen:
-            # Arduino startet phi bei jedem CMDP lokal neu.
-            # Fuer den Gesamtplot wird die lokale Verdrehung auf die
-            # bereits erreichte Gesamtverdrehung aufaddiert.
             phi_global = actual_phi0 + phi_local
 
             s_cm.append(actual_s0 + path_local)
@@ -280,7 +271,7 @@ def build_odom_plot_data(snapshot: dict) -> OdomPlotData:
     if s_cm:
         last_text = (
             f"s={s_cm[-1]:.2f} cm   "
-            f"e_längs={e_parallel_cm[-1]:.2f} cm   "
+            f"e_laengs={e_parallel_cm[-1]:.2f} cm   "
             f"e_quer={e_cross_cm[-1]:.2f} cm   "
             f"e_verdrehen={phi_deg[-1]:.2f} deg"
         )
@@ -342,8 +333,6 @@ def _strictly_increasing_arrays(x_values: list[float], y_values: list[float]) ->
             xs.append(xf)
             ys.append(yf)
         else:
-            # Bei gleichen x-Werten, z. B. am CMDP-Wechsel,
-            # den letzten Wert aktualisieren.
             ys[-1] = yf
 
     if len(xs) < 2:
@@ -368,7 +357,6 @@ def _add_time_axis(ax, data: OdomPlotData, show_label: bool = True) -> None:
 
     secax = ax.secondary_xaxis("top", functions=(s_to_t, t_to_s))
 
-    # Beschriftung "Zeit [s]" nur beim obersten Diagramm anzeigen.
     if show_label:
         secax.set_xlabel("Zeit [s]", fontsize=15, labelpad=6)
     else:
@@ -378,10 +366,8 @@ def _add_time_axis(ax, data: OdomPlotData, show_label: bool = True) -> None:
 
 
 def _format_axis(ax, ylabel: str, show_xlabel: bool = True) -> None:
-    # Kein Diagrammtitel mehr.
     ax.set_ylabel(ylabel, fontsize=15, labelpad=6)
 
-    # Beschriftung "Weg [cm]" nur beim untersten Diagramm anzeigen.
     if show_xlabel:
         ax.set_xlabel("Weg [cm]", fontsize=15, labelpad=6)
     else:
@@ -389,6 +375,36 @@ def _format_axis(ax, ylabel: str, show_xlabel: bool = True) -> None:
 
     ax.grid(True)
     ax.tick_params(axis="both", labelsize=13, pad=3)
+
+
+def _insert_nan_breaks(*lists: list) -> tuple:
+    """Fuegt NaN-Trennpunkte ein, wo s_cm (erstes Element) rueckwaerts springt.
+
+    Bei zwei aufeinanderfolgenden Testlaeufen mit identischen cmd_ids
+    laeuft s_cm im zweiten Lauf erneut von 0 an. Die kombinierte Liste
+    enthaelt dann z.B. [0 ... 130, 0 ... 110]. matplotlib verbindet diese
+    Punkte mit einer geraden Linie von (130) zurueck zu (0).
+
+    Loesung: Immer wenn s_cm kleiner wird als beim Vorgaengerpunkt,
+    wird in alle Listen gleichzeitig ein float('nan') eingefuegt.
+    matplotlib bricht die Linie dort auf - keine Verbindungslinie mehr.
+    """
+    if not lists or not lists[0]:
+        return tuple(list(lst) for lst in lists)
+
+    s_list = lists[0]
+    result: tuple = tuple([] for _ in lists)
+    prev_s: float | None = None
+
+    for i, s in enumerate(s_list):
+        if prev_s is not None and s < prev_s - 1.0e-9:
+            for out in result:
+                out.append(float("nan"))
+        for j, lst in enumerate(lists):
+            result[j].append(lst[i])
+        prev_s = s
+
+    return result
 
 
 def update_odom_plot(axes, store) -> None:
@@ -410,9 +426,8 @@ def update_odom_plot(axes, store) -> None:
 
     _update_status_text(fig, data.text)
 
-    # Nur das unterste Diagramm bekommt "Weg [cm]" als x-Beschriftung.
     _format_axis(ax_cross,    "e_quer [cm]",       show_xlabel=False)
-    _format_axis(ax_parallel, "e_längs [cm]",      show_xlabel=False)
+    _format_axis(ax_parallel, "e_laengs [cm]",     show_xlabel=False)
     _format_axis(ax_phi,      "e_verdrehen [deg]", show_xlabel=True)
 
     if not data.s_cm:
@@ -427,13 +442,20 @@ def update_odom_plot(axes, store) -> None:
         )
         return
 
-    # Nur das oberste Diagramm bekommt "Zeit [s]" als Sekundaerachsen-Beschriftung.
     for i, ax in enumerate((ax_cross, ax_parallel, ax_phi)):
         ax.axhline(0.0, linewidth=1.2)
         _draw_command_boundaries(ax, data.s_cm, data.cmd_id)
         ax.margins(x=0.01)
         _add_time_axis(ax, data, show_label=(i == 0))
 
-    ax_cross.plot(data.s_cm, data.e_cross_cm, linewidth=1.8)
-    ax_parallel.plot(data.s_cm, data.e_parallel_cm, linewidth=1.8)
-    ax_phi.plot(data.s_cm, data.phi_deg, linewidth=1.8)
+    # FIX: NaN-Trennpunkte einfuegen, wo s_cm beim Start eines neuen
+    # Testlaufs (gleiche cmd_ids) von vorn beginnt. Ohne diesen Schritt
+    # verbindet matplotlib End- und Startpunkt beider Laeufe mit einer
+    # geraden Linie.
+    s_plot, e_cross_plot, e_parallel_plot, phi_plot = _insert_nan_breaks(
+        data.s_cm, data.e_cross_cm, data.e_parallel_cm, data.phi_deg
+    )
+
+    ax_cross.plot(s_plot, e_cross_plot, linewidth=1.8)
+    ax_parallel.plot(s_plot, e_parallel_plot, linewidth=1.8)
+    ax_phi.plot(s_plot, phi_plot, linewidth=1.8)
