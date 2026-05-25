@@ -22,6 +22,12 @@
 #
 # Oben an jedem Diagramm:
 #   Zeit [s]
+#
+# Mehrfachlauf-Unterstuetzung:
+#   Werden mehrere Laeufe mit gleichen cmd_ids aufgezeichnet, erkennt
+#   _split_rows_by_run() den Reset am ms-Ruecksprung und trennt die
+#   Laeufe. Jeder Lauf wird unabhaengig berechnet; im Plot erscheinen
+#   die Kurven uebereinander mit NaN-Luecke dazwischen.
 # ============================================================
 
 from __future__ import annotations
@@ -91,26 +97,50 @@ def _safe_unit(vx: float, vy: float) -> tuple[float, float, float]:
     return vx / v_abs, vy / v_abs, v_abs
 
 
-def build_odom_plot_data(snapshot: dict) -> OdomPlotData:
-    cmdp_by_id = snapshot.get("cmdp_by_id", {})
-    cmdp_order = snapshot.get("cmdp_order", [])
-    odom2_rows = snapshot.get("odom2_rows", [])
+# ============================================================
+# Lauf-Trennung
+# ============================================================
 
-    if not odom2_rows:
-        return OdomPlotData(
-            [],
-            [],
-            [],
-            [],
-            [],
-            [],
-            [],
-            [],
-            [],
-            [],
-            "warte auf #ODOM2 ...",
-        )
+def _split_rows_by_run(rows: list, threshold_ms: float = 1000.0) -> list[list]:
+    """Teilt eine Zeilenliste anhand eines ms-Resets in einzelne Laeufe auf.
 
+    Wenn ms von einem hohen Wert auf nahe 0 springt (Differenz > threshold_ms),
+    beginnt ein neuer Lauf. Fuer Einzellaeufe gibt die Funktion eine Liste
+    mit einem einzigen Element zurueck.
+    """
+    if not rows:
+        return []
+
+    runs: list[list] = [[]]
+    prev_ms: float | None = None
+
+    for row in rows:
+        ms = _row_value(row, "ms")
+
+        if prev_ms is not None and ms < prev_ms - threshold_ms:
+            runs.append([])
+
+        runs[-1].append(row)
+        prev_ms = ms
+
+    return runs
+
+
+# ============================================================
+# Datenaufbau pro Lauf
+# ============================================================
+
+def _build_single_run_data(
+    rows_by_id_run: dict[int, list],
+    cmdp_by_id: dict,
+    ordered_ids: list[int],
+) -> OdomPlotData:
+    """Berechnet OdomPlotData fuer einen einzelnen Lauf.
+
+    rows_by_id_run enthaelt nur die Zeilen des jeweiligen Laufs
+    (bereits aufgeteilt durch _split_rows_by_run).
+    """
+    # Erster Durchlauf: kumulative Versaetze pro cmd_id berechnen
     ideal_start_by_id: dict[int, tuple[float, float, float, float]] = {}
     actual_start_by_id: dict[int, tuple[float, float, float, float, float]] = {}
 
@@ -124,17 +154,6 @@ def build_odom_plot_data(snapshot: dict) -> OdomPlotData:
     actual_s = 0.0
     actual_t = 0.0
     actual_phi = 0.0
-
-    rows_by_id: dict[int, list] = {}
-
-    for row in odom2_rows:
-        rows_by_id.setdefault(_row_id(row), []).append(row)
-
-    ordered_ids = [int(i) for i in cmdp_order if int(i) in rows_by_id]
-
-    for cmd_id in rows_by_id.keys():
-        if cmd_id not in ordered_ids:
-            ordered_ids.append(cmd_id)
 
     for cmd_id in ordered_ids:
         ideal_start_by_id[cmd_id] = (ideal_x, ideal_y, ideal_s, ideal_t)
@@ -161,7 +180,7 @@ def build_odom_plot_data(snapshot: dict) -> OdomPlotData:
             if v_abs > 1.0e-9:
                 ideal_t += target / v_abs
 
-        seg_rows = rows_by_id.get(cmd_id, [])
+        seg_rows = rows_by_id_run.get(cmd_id, [])
 
         if seg_rows:
             last = seg_rows[-1]
@@ -172,6 +191,7 @@ def build_odom_plot_data(snapshot: dict) -> OdomPlotData:
             actual_t += _row_value(last, "ms") * 0.001
             actual_phi += _row_value(last, "phi_deg")
 
+    # Zweiter Durchlauf: Ausgabelisten befuellen
     s_cm: list[float] = []
     t_s: list[float] = []
 
@@ -189,7 +209,10 @@ def build_odom_plot_data(snapshot: dict) -> OdomPlotData:
 
     for cmd_id in ordered_ids:
         cmd = cmdp_by_id.get(cmd_id)
-        seg_rows = rows_by_id.get(cmd_id, [])
+        seg_rows = rows_by_id_run.get(cmd_id, [])
+
+        if not seg_rows:
+            continue
 
         if cmd is None:
             ux = 1.0
@@ -291,9 +314,125 @@ def build_odom_plot_data(snapshot: dict) -> OdomPlotData:
     )
 
 
+# ============================================================
+# Oeffentliche Hauptfunktion
+# ============================================================
+
+def build_odom_plot_data(snapshot: dict) -> OdomPlotData:
+    cmdp_by_id = snapshot.get("cmdp_by_id", {})
+    cmdp_order = snapshot.get("cmdp_order", [])
+    odom2_rows = snapshot.get("odom2_rows", [])
+
+    if not odom2_rows:
+        return OdomPlotData(
+            [], [], [], [], [], [], [], [], [], [],
+            "warte auf #ODOM2 ...",
+        )
+
+    # Alle Zeilen nach cmd_id gruppieren
+    rows_by_id: dict[int, list] = {}
+
+    for row in odom2_rows:
+        rows_by_id.setdefault(_row_id(row), []).append(row)
+
+    # Reihenfolge der cmd_ids bestimmen
+    ordered_ids = [int(i) for i in cmdp_order if int(i) in rows_by_id]
+
+    for cmd_id in rows_by_id.keys():
+        if cmd_id not in ordered_ids:
+            ordered_ids.append(cmd_id)
+
+    # Jeden cmd_id-Bucket in einzelne Laeufe aufteilen (ms-Reset-Erkennung)
+    runs_by_id: dict[int, list[list]] = {
+        cmd_id: _split_rows_by_run(rows)
+        for cmd_id, rows in rows_by_id.items()
+    }
+
+    # Anzahl Laeufe = Maximum der Teillistenlaengen
+    num_runs = max(len(runs) for runs in runs_by_id.values()) if runs_by_id else 1
+
+    # Pro Lauf unabhaengig berechnen
+    run_data_list: list[OdomPlotData] = []
+
+    for run_idx in range(num_runs):
+        run_rows_by_id = {
+            cmd_id: runs[run_idx] if run_idx < len(runs) else []
+            for cmd_id, runs in runs_by_id.items()
+        }
+
+        run_data = _build_single_run_data(run_rows_by_id, cmdp_by_id, ordered_ids)
+        run_data_list.append(run_data)
+
+    # Laeufe mit NaN-Trennpunkt zusammenfuehren
+    NAN = float("nan")
+
+    s_cm: list[float] = []
+    t_s: list[float] = []
+    x_ist_cm: list[float] = []
+    y_ist_cm: list[float] = []
+    x_soll_cm: list[float] = []
+    y_soll_cm: list[float] = []
+    e_parallel_cm: list[float] = []
+    e_cross_cm: list[float] = []
+    phi_deg: list[float] = []
+    cmd_id_out: list[int] = []
+
+    for idx, rd in enumerate(run_data_list):
+        if not rd.s_cm:
+            continue
+
+        if s_cm:
+            # NaN-Trennpunkt zwischen Laeufen einfuegen
+            s_cm.append(NAN)
+            t_s.append(NAN)
+            x_ist_cm.append(NAN)
+            y_ist_cm.append(NAN)
+            x_soll_cm.append(NAN)
+            y_soll_cm.append(NAN)
+            e_parallel_cm.append(NAN)
+            e_cross_cm.append(NAN)
+            phi_deg.append(NAN)
+            cmd_id_out.append(-1)
+
+        s_cm.extend(rd.s_cm)
+        t_s.extend(rd.t_s)
+        x_ist_cm.extend(rd.x_ist_cm)
+        y_ist_cm.extend(rd.y_ist_cm)
+        x_soll_cm.extend(rd.x_soll_cm)
+        y_soll_cm.extend(rd.y_soll_cm)
+        e_parallel_cm.extend(rd.e_parallel_cm)
+        e_cross_cm.extend(rd.e_cross_cm)
+        phi_deg.extend(rd.phi_deg)
+        cmd_id_out.extend(rd.cmd_id)
+
+    # Statustext vom letzten Lauf mit Daten
+    last_text = next(
+        (rd.text for rd in reversed(run_data_list) if rd.text),
+        "",
+    )
+
+    return OdomPlotData(
+        s_cm=s_cm,
+        t_s=t_s,
+        x_ist_cm=x_ist_cm,
+        y_ist_cm=y_ist_cm,
+        x_soll_cm=x_soll_cm,
+        y_soll_cm=y_soll_cm,
+        e_parallel_cm=e_parallel_cm,
+        e_cross_cm=e_cross_cm,
+        phi_deg=phi_deg,
+        cmd_id=cmd_id_out,
+        text=last_text,
+    )
+
+
 def build_continuous_odom(snapshot: dict) -> OdomPlotData:
     return build_odom_plot_data(snapshot)
 
+
+# ============================================================
+# Plot-Hilfsroutinen
+# ============================================================
 
 def _draw_command_boundaries(ax, s_cm: list[float], cmd_id: list[int]) -> None:
     if not s_cm or not cmd_id:
@@ -304,8 +443,11 @@ def _draw_command_boundaries(ax, s_cm: list[float], cmd_id: list[int]) -> None:
     for index in range(1, len(cmd_id)):
         current_id = cmd_id[index]
 
-        if current_id != last_id:
+        # cmd_id == -1 ist ein NaN-Trennpunkt zwischen Laeufen -> ignorieren
+        if current_id != last_id and current_id != -1 and last_id != -1:
             ax.axvline(s_cm[index], linestyle="--", linewidth=1.1)
+
+        if current_id != -1:
             last_id = current_id
 
 
@@ -323,6 +465,9 @@ def _strictly_increasing_arrays(x_values: list[float], y_values: list[float]) ->
     for x, y in zip(x_values, y_values):
         xf = float(x)
         yf = float(y)
+
+        if xf != xf or yf != yf:  # NaN ueberspringen
+            continue
 
         if not xs:
             xs.append(xf)
@@ -377,35 +522,9 @@ def _format_axis(ax, ylabel: str, show_xlabel: bool = True) -> None:
     ax.tick_params(axis="both", labelsize=13, pad=3)
 
 
-def _insert_nan_breaks(*lists: list) -> tuple:
-    """Fuegt NaN-Trennpunkte ein, wo s_cm (erstes Element) rueckwaerts springt.
-
-    Bei zwei aufeinanderfolgenden Testlaeufen mit identischen cmd_ids
-    laeuft s_cm im zweiten Lauf erneut von 0 an. Die kombinierte Liste
-    enthaelt dann z.B. [0 ... 130, 0 ... 110]. matplotlib verbindet diese
-    Punkte mit einer geraden Linie von (130) zurueck zu (0).
-
-    Loesung: Immer wenn s_cm kleiner wird als beim Vorgaengerpunkt,
-    wird in alle Listen gleichzeitig ein float('nan') eingefuegt.
-    matplotlib bricht die Linie dort auf - keine Verbindungslinie mehr.
-    """
-    if not lists or not lists[0]:
-        return tuple(list(lst) for lst in lists)
-
-    s_list = lists[0]
-    result: tuple = tuple([] for _ in lists)
-    prev_s: float | None = None
-
-    for i, s in enumerate(s_list):
-        if prev_s is not None and s < prev_s - 1.0e-9:
-            for out in result:
-                out.append(float("nan"))
-        for j, lst in enumerate(lists):
-            result[j].append(lst[i])
-        prev_s = s
-
-    return result
-
+# ============================================================
+# Plot-Update
+# ============================================================
 
 def update_odom_plot(axes, store) -> None:
     snapshot = store.snapshot()
@@ -448,14 +567,8 @@ def update_odom_plot(axes, store) -> None:
         ax.margins(x=0.01)
         _add_time_axis(ax, data, show_label=(i == 0))
 
-    # FIX: NaN-Trennpunkte einfuegen, wo s_cm beim Start eines neuen
-    # Testlaufs (gleiche cmd_ids) von vorn beginnt. Ohne diesen Schritt
-    # verbindet matplotlib End- und Startpunkt beider Laeufe mit einer
-    # geraden Linie.
-    s_plot, e_cross_plot, e_parallel_plot, phi_plot = _insert_nan_breaks(
-        data.s_cm, data.e_cross_cm, data.e_parallel_cm, data.phi_deg
-    )
-
-    ax_cross.plot(s_plot, e_cross_plot, linewidth=1.8)
-    ax_parallel.plot(s_plot, e_parallel_plot, linewidth=1.8)
-    ax_phi.plot(s_plot, phi_plot, linewidth=1.8)
+    # NaN-Trennpunkte sind bereits in data enthalten (zwischen Laeufen).
+    # Direktes Plotten genuegt.
+    ax_cross.plot(data.s_cm, data.e_cross_cm, linewidth=1.8)
+    ax_parallel.plot(data.s_cm, data.e_parallel_cm, linewidth=1.8)
+    ax_phi.plot(data.s_cm, data.phi_deg, linewidth=1.8)
