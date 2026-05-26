@@ -16,7 +16,7 @@
 // 1 = Ausgabe aktiv
 // 0 = Ausgabe wird beim Kompilieren entfernt
 
-#define PRINTER_ENABLE_INFO     1
+#define PRINTER_ENABLE_INFO     0
 #define PRINTER_ENABLE_ERRORS   0
 #define PRINTER_ENABLE_EVENTS   0
 #define PRINTER_ENABLE_ODOM     1

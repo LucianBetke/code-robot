@@ -82,11 +82,6 @@ void FrontApp::handleIncomingLines(uint32_t now)
             rearFrameClient.hiRePwm()
         );
 
-        printer.printOdom(
-            rearFrameClient.frame().t,
-            odometer
-        );
-
 #if PRINTER_ENABLE_ODOM
         if (commandRunner.hasActivePathCommand())
         {

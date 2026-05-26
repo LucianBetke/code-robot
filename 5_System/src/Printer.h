@@ -9,8 +9,6 @@
 #include "src/RearFrameClient.h"
 #include "PrinterConfig.h"
 
-class MecanumOdometer;
-
 class Printer
 {
 public:
@@ -23,13 +21,6 @@ public:
         float hiRe_i,
         int16_t hiLi_pwm,
         int16_t hiRe_pwm);
-
-    void printOdom(uint32_t t_ms, const MecanumOdometer& odom);
-
-    void printOdom2(
-        uint16_t cmdpId,
-        uint32_t t_ms,
-        const MecanumOdometer& odom);
 
 #ifdef PRINTER_MODE_CHASSIS
     void printWheels(VehicleController& vehicle,
