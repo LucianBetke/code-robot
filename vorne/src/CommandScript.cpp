@@ -2,6 +2,7 @@
 #include "CommandScript.h"
 
 static const char* _script[] = {
+    "CMDP(20,20,0) 141;",
     "CMDP(30,0,0) 100;"
 };
 

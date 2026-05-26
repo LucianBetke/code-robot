@@ -73,13 +73,16 @@ void FrontApp::handleIncomingLines(uint32_t now)
             rearFrameClient.hiRePwm()
         );
 
-        printer.printOdom(
-            rearFrameClient.frame().t,
-            odometer
-        );
-
+        // ODOM-Ausgabe nur fuer echte aktive CMDP-Pfadabschnitte.
+        // Settle-Frames zwischen zwei CMDP-Befehlen werden dadurch
+        // nicht mehr als #ODOM ausgegeben.
         if (commandRunner.hasActivePathCommand())
         {
+            printer.printOdom(
+                rearFrameClient.frame().t,
+                odometer
+            );
+
             printer.printOdom2(
                 commandRunner.activeCmdpId(),
                 rearFrameClient.frame().t,
