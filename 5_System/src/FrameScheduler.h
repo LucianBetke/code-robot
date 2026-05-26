@@ -7,13 +7,13 @@
 // ============================================================
 // FrameScheduler
 //
-// Verwaltet das Messraster eines aktiven CMDT-Befehls.
+// Verwaltet das Messraster eines aktiven Fahrabschnitts.
 //
 // Aufgabe:
-//  - Startzeit eines Befehls merken
+//  - Startzeit eines Fahrabschnitts merken
 //  - naechsten Messzeitpunkt verwalten
 //  - pruefen, ob ein Frame faellig ist
-//  - Frame-Zeit relativ zum Befehlsstart liefern
+//  - Frame-Zeit relativ zum Fahrabschnittsstart liefern
 //
 // Bewusst NICHT enthalten:
 //  - UART

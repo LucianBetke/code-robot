@@ -9,8 +9,7 @@
 enum CmdType : uint8_t
 {
     CMD_NONE = 0,
-    CMD_TIME = 1,
-    CMD_PATH = 2,   // spaeter
+    CMD_PATH = 1
 };
 
 struct ParsedCommand
@@ -21,7 +20,9 @@ struct ParsedCommand
     // vx    = Geschwindigkeit in cm/s
     // vy    = Geschwindigkeit in cm/s
     // wz    = Winkelgeschwindigkeit in Grad/s
-    // param = Dauer in Sekunden bei CMDT
+    // param = Zielwert bei CMDP:
+    //         Translation: Strecke in cm
+    //         Rotation: Winkel in Grad
     int16_t  vx;
     int16_t  vy;
     int16_t  wz;

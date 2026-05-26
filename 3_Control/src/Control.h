@@ -8,7 +8,6 @@
 #ifndef CONTROL_H
 #define CONTROL_H
 
-
 #include <Arduino.h>
 #include "src/globals.h"
 #include "src/SpeedWeg.h"
@@ -16,7 +15,7 @@
 #include "src/Rad.h"
 #include "ControlConfig.h"
 
-// --- SpeedWeg (Geschwindigkeit/Weg pro Rad) ---
+// --- SpeedWeg (Geschwindigkeit / Counts pro Rad) ---
 extern SpeedWeg speed[WHEEL_COUNT];
 
 // --- Regler / Rad ---
@@ -36,7 +35,7 @@ void control_begin(const ControlConfig& cfg);
 void speed_reset_all();
 
 // PI-Zustaende zuruecksetzen, ohne Sollwerte oder Motorzustand zu aendern.
-// Wichtig fuer neue CMDT-Fahrabschnitte.
+// Wichtig fuer neue Fahrabschnitte, z.B. neue CMDP-Kommandos.
 void control_resetPiStates();
 
 // Regelschleife pro Loop-Durchlauf aufrufen

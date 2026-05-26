@@ -1,4 +1,7 @@
+// ============================================================
 // CommandParser.cpp
+// ============================================================
+
 #include "CommandParser.h"
 #include <string.h>
 
@@ -131,17 +134,6 @@ bool CommandParser::parse(const char* line, ParsedCommand& cmd)
     if (!line)
     {
         return false;
-    }
-
-    if (strncmp(line, "CMDT(", 5) == 0)
-    {
-        if (!parseVxVyWzParam(line + 5, cmd))
-        {
-            return false;
-        }
-
-        cmd.type = CMD_TIME;
-        return true;
     }
 
     if (strncmp(line, "CMDP(", 5) == 0)

@@ -35,7 +35,6 @@ CommandRunner::CommandRunner(
     _finished(false),
     _settleActive(false),
     _startFramePending(false),
-    _activeType(CMD_NONE),
     _pathMode(PATH_NONE),
     _startTime(0),
     _durationMs(0),
@@ -58,7 +57,6 @@ void CommandRunner::begin()
     _finished = false;
     _settleActive = false;
     _startFramePending = false;
-    _activeType = CMD_NONE;
     _pathMode = PATH_NONE;
 
     _startTime = 0;
@@ -92,7 +90,6 @@ void CommandRunner::startSettlePhase(uint32_t now)
     stopAll();
 
     _active = false;
-    _activeType = CMD_NONE;
     _pathMode = PATH_NONE;
 
     clearCmdpProtocol();
@@ -148,38 +145,6 @@ void CommandRunner::startCmdpProtocol(const ParsedCommand& cmd)
 void CommandRunner::clearCmdpProtocol()
 {
     _activeCmdpId = 0;
-}
-
-void CommandRunner::startTimeCmd(const ParsedCommand& cmd, uint32_t now)
-{
-    clearCmdpProtocol();
-
-    _durationMs = (uint32_t)cmd.param * 1000UL;
-
-#if PRINTER_ENABLE_EVENTS
-    Serial.print(F("#EVENT,startCmd,vx="));
-    Serial.print(cmd.vx);
-    Serial.print(F(",vy="));
-    Serial.print(cmd.vy);
-    Serial.print(F(",wz="));
-    Serial.print(cmd.wz);
-    Serial.print(F(",duration="));
-    Serial.print(cmd.param);
-    Serial.print(F(",durationMs="));
-    Serial.println(_durationMs);
-#endif
-
-    const float vx = (float)cmd.vx * 0.01f;
-    const float vy = (float)cmd.vy * 0.01f;
-    const float wz = (float)cmd.wz * DEG_TO_RAD;
-
-    _vehicle.cmd(vx, vy, wz);
-
-    _startTime = now;
-    _active = true;
-    _activeType = CMD_TIME;
-    _pathMode = PATH_NONE;
-    _startFramePending = true;
 }
 
 bool CommandRunner::startPathCmd(const ParsedCommand& cmd, uint32_t now)
@@ -274,7 +239,6 @@ bool CommandRunner::startTranslationPathCmd(const ParsedCommand& cmd, uint32_t n
 
     _startTime = now;
     _active = true;
-    _activeType = CMD_PATH;
     _startFramePending = true;
 
     return true;
@@ -327,7 +291,6 @@ bool CommandRunner::startRotationPathCmd(const ParsedCommand& cmd, uint32_t now)
 
     _startTime = now;
     _active = true;
-    _activeType = CMD_PATH;
     _startFramePending = true;
 
     return true;
@@ -378,22 +341,8 @@ void CommandRunner::update(uint32_t now)
 
     if (_active)
     {
-        if (_activeType == CMD_TIME)
-        {
-            updateActiveTimeCmd(now);
-            return;
-        }
-
-        if (_activeType == CMD_PATH)
-        {
-            updateActivePathCmd(now);
-            return;
-        }
-
-        _active = false;
-        _activeType = CMD_NONE;
-        _pathMode = PATH_NONE;
-        clearCmdpProtocol();
+        updateActivePathCmd(now);
+        return;
     }
 
     while (_cmdIndex < _size())
@@ -408,12 +357,6 @@ void CommandRunner::update(uint32_t now)
 #endif
             _cmdIndex++;
             continue;
-        }
-
-        if (cmd.type == CMD_TIME)
-        {
-            startTimeCmd(cmd, now);
-            return;
         }
 
         if (cmd.type == CMD_PATH)
@@ -435,16 +378,6 @@ void CommandRunner::update(uint32_t now)
     _finished = true;
 }
 
-void CommandRunner::updateActiveTimeCmd(uint32_t now)
-{
-    if (now - _startTime < _durationMs)
-    {
-        return;
-    }
-
-    finishTimeCmd();
-}
-
 void CommandRunner::updateActivePathCmd(uint32_t now)
 {
     updatePathProgress();
@@ -459,21 +392,6 @@ void CommandRunner::updateActivePathCmd(uint32_t now)
     {
         finishPathTimeoutCmd(now);
         return;
-    }
-}
-
-void CommandRunner::finishTimeCmd()
-{
-    _active = false;
-    _activeType = CMD_NONE;
-    _pathMode = PATH_NONE;
-    clearCmdpProtocol();
-    _cmdIndex++;
-
-    if (_cmdIndex >= _size())
-    {
-        stopAll();
-        _finished = true;
     }
 }
 
@@ -499,7 +417,6 @@ void CommandRunner::finishPathCmd(uint32_t now)
     stopAll();
 
     _active = false;
-    _activeType = CMD_NONE;
     _pathMode = PATH_NONE;
     clearCmdpProtocol();
     _cmdIndex++;
@@ -539,7 +456,6 @@ void CommandRunner::finishPathTimeoutCmd(uint32_t now)
     stopAll();
 
     _active = false;
-    _activeType = CMD_NONE;
     _pathMode = PATH_NONE;
     clearCmdpProtocol();
     _cmdIndex++;
@@ -612,7 +528,7 @@ bool CommandRunner::isFinished() const
 
 bool CommandRunner::hasActivePathCommand() const
 {
-    return _active && _activeType == CMD_PATH && _activeCmdpId != 0;
+    return _active && _activeCmdpId != 0;
 }
 
 bool CommandRunner::consumeStartFramePending()

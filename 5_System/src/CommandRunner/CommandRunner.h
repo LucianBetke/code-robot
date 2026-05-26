@@ -47,17 +47,14 @@ private:
         PATH_ROTATION = 2
     };
 
-    void startTimeCmd(const ParsedCommand& cmd, uint32_t now);
     bool startPathCmd(const ParsedCommand& cmd, uint32_t now);
 
     bool startTranslationPathCmd(const ParsedCommand& cmd, uint32_t now);
     bool startRotationPathCmd(const ParsedCommand& cmd, uint32_t now);
 
-    void updateActiveTimeCmd(uint32_t now);
     void updateActivePathCmd(uint32_t now);
     void updateSettlePhase(uint32_t now);
 
-    void finishTimeCmd();
     void finishPathCmd(uint32_t now);
     void finishPathTimeoutCmd(uint32_t now);
 
@@ -87,7 +84,6 @@ private:
     bool _settleActive;
     bool _startFramePending;
 
-    CmdType _activeType;
     PathMode _pathMode;
 
     uint32_t _startTime;
