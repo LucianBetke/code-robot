@@ -1,5 +1,6 @@
 // Rad.h
 #pragma once
+
 #include <Arduino.h>
 #include "src/ControlTypes.h"
 #include "src/Motor.h"
@@ -19,13 +20,11 @@ public:
 
     int16_t lastPwm() const { return _lastPwm; }
 
-    PIParam getPI() const;
     void reset();
     void stop();
 
     int16_t deadPwm() const { return _deadPwm; }
     void setDeadPwm(int16_t deadPwm);
-    long countsTotal() const;
 
 private:
     Motor& _motor;

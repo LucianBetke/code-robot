@@ -125,6 +125,13 @@ public:
 private:
     static const uint8_t STOP_SEND_MAX = 3;
 
+    enum WaitState : uint8_t
+    {
+        WAIT_NONE = 0,
+        WAIT_VSOL_OK = 1,
+        WAIT_VIST = 2
+    };
+
     void clearRearIst();
 
     uint16_t _nextFrameId;
@@ -133,8 +140,7 @@ private:
     uint32_t _requestMs;
     uint32_t _lastSendMs;
 
-    bool _waitingVsolOk;
-    bool _waitingVist;
+    WaitState _waitState;
 
     uint8_t _stopSendCount;
     bool _stopSequenceArmed;

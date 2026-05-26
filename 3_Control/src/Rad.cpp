@@ -232,11 +232,6 @@ void Rad::update(uint32_t nowMs)
     _lastPwm = pwm;
 }
 
-PIParam Rad::getPI() const
-{
-    return { _regler.Kp(), _regler.Ki() };
-}
-
 void Rad::reset()
 {
     _regler.reset();
@@ -249,9 +244,4 @@ void Rad::reset()
 void Rad::setDeadPwm(int16_t deadPwm)
 {
     _deadPwm = deadPwm;
-}
-
-long Rad::countsTotal() const
-{
-    return _speed.counts_total();
 }
