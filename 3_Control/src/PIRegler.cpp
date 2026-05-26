@@ -1,8 +1,14 @@
-﻿// PIRegler.cpp  (bidirektional)
+﻿// ============================================================
+// File: PIRegler.cpp
+// Beschreibung:
+//  - Bidirektionaler PI-Regler für Drehzahlregelung
+//  - Ausgang: signed PWM [-uMax .. +uMax]
+//  - Anti-Windup (Clamping)
+//  - Slew-Rate Begrenzung
+// ============================================================
 
 #include "PIRegler.h"
 #include <Arduino.h>
-#include <math.h> // fabsf
 
 PIRegler::PIRegler(float Kp, float Ki,
     int16_t uMin, int16_t uMax,
@@ -12,10 +18,7 @@ PIRegler::PIRegler(float Kp, float Ki,
     _slewLimit(slewLimit),
     _v_soll(0.0f),
     _integral(0.0f),
-    _uPrev(0),
-    _lastE(0.0f),
-    _lastP(0.0f),
-    _lastI(0.0f)
+    _uPrev(0)
 {
 }
 
@@ -24,7 +27,6 @@ int16_t PIRegler::update(float v_ist, uint16_t dt_ms) {
 
     // --- Fehler ---
     const float e = _v_soll - v_ist;
-    _lastE = e;
 
     // --- Zeit ---
     const float dt_s = (float)dt_ms * 0.001f;
@@ -49,9 +51,6 @@ int16_t PIRegler::update(float v_ist, uint16_t dt_ms) {
     // --- endgültiger PI-Ausgang ---
     float u = p_part + _integral;
     u = constrain(u, uMinNorm, uMaxNorm);
-
-    _lastP = p_part;
-    _lastI = _integral;
 
     // --- PWM signed in [-255..+255] ---
     float pwm_f = u * 255.0f;
@@ -103,23 +102,23 @@ void PIRegler::presetOutput(float u0_pwm) {
     float pwm_f = u0_pwm;
     if (pwm_f >= 0.0f) pwm_f += 0.5f;
     else               pwm_f -= 0.5f;
+
     _uPrev = (int16_t)pwm_f;
 }
 
-void PIRegler::setSoll(float v_soll) { _v_soll = v_soll; }
+void PIRegler::setSoll(float v_soll) {
+    _v_soll = v_soll;
+}
 
-float PIRegler::soll() const { return _v_soll; }
+float PIRegler::soll() const {
+    return _v_soll;
+}
 
 void PIRegler::reset() {
     _integral = 0.0f;
     _uPrev = 0;
-
-    _lastE = 0.0f;
-    _lastP = 0.0f;
-    _lastI = 0.0f;
 }
 
-// PI-Parameter zur Laufzeit neu setzen
 void PIRegler::setParams(float Kp, float Ki)
 {
     _Kp = Kp;

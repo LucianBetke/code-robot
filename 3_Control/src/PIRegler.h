@@ -7,6 +7,7 @@
 //  - Slew-Rate Begrenzung
 // ============================================================
 #pragma once
+
 #include <Arduino.h>
 
 class PIRegler {
@@ -32,11 +33,6 @@ public:
     // PI-Parameter zur Laufzeit neu setzen
     void setParams(float Kp, float Ki);
 
-    // --- Debug / Monitoring ---
-    float lastError() const { return _lastE; }
-    float lastP()     const { return _lastP; }
-    float lastI()     const { return _lastI; }
-
 private:
     int16_t applySlew(int16_t pwm);
 
@@ -51,9 +47,4 @@ private:
     float   _integral;
 
     int16_t _uPrev;
-
-    // Debug
-    float _lastE;
-    float _lastP;
-    float _lastI;
 };

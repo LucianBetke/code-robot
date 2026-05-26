@@ -6,7 +6,6 @@
 
 #include <Arduino.h>
 #include "src/Parser/CommandParser.h"
-#include "src/UartLink.h"
 #include "src/VehicleController.h"
 #include "src/MecanumOdometer.h"
 
@@ -19,8 +18,6 @@ public:
     CommandRunner(
         VehicleController& vehicle,
         MecanumOdometer& odometer,
-        UartLink& uart,
-        CommandParser& parser,
         GetCmdFn getCmd,
         SizeFn size);
 
@@ -81,8 +78,6 @@ private:
 
     VehicleController& _vehicle;
     MecanumOdometer& _odometer;
-    UartLink& _uart;
-    CommandParser& _parser;
     GetCmdFn _getCmd;
     SizeFn _size;
 

@@ -24,14 +24,10 @@ namespace
 CommandRunner::CommandRunner(
     VehicleController& vehicle,
     MecanumOdometer& odometer,
-    UartLink& uart,
-    CommandParser& parser,
     GetCmdFn getCmd,
     SizeFn size)
     : _vehicle(vehicle),
     _odometer(odometer),
-    _uart(uart),
-    _parser(parser),
     _getCmd(getCmd),
     _size(size),
     _cmdIndex(0),

@@ -1,4 +1,7 @@
-// FrontApp.cpp
+// ============================================================
+// File: FrontApp.cpp
+// ============================================================
+
 #include "FrontApp.h"
 
 #include <avr/wdt.h>
@@ -6,6 +9,7 @@
 #include "src/Hardware.h"
 #include "src/Control.h"
 #include "src/ControlConfig.h"
+#include "src/PrinterConfig.h"
 
 // ============================================================
 // Konstruktor
@@ -17,7 +21,7 @@ FrontApp::FrontApp()
     uart(Serial, true),
     conn(uart, 13),
     parser(),
-    commandRunner(vehicle, odometer, uart, parser, CommandScript::get, CommandScript::size),
+    commandRunner(vehicle, odometer, CommandScript::get, CommandScript::size),
     rearFrameClient(),
     frameScheduler(),
     printer(),
@@ -42,14 +46,20 @@ void FrontApp::updateConnectionSafety(uint32_t now)
     static bool prevConnected = false;
     const bool nowConnected = uart.isConnected();
 
-    if (prevConnected && !nowConnected) resetByWatchdog();
+    if (prevConnected && !nowConnected)
+    {
+        resetByWatchdog();
+    }
 
     prevConnected = nowConnected;
 }
 
 void FrontApp::handleIncomingLines(uint32_t now)
 {
-    if (!uart.availableLine()) return;
+    if (!uart.availableLine())
+    {
+        return;
+    }
 
     const char* line = uart.getLine();
 
@@ -73,22 +83,28 @@ void FrontApp::handleIncomingLines(uint32_t now)
             rearFrameClient.hiRePwm()
         );
 
-        // ODOM-Ausgabe nur fuer echte aktive CMDP-Pfadabschnitte.
-        // Settle-Frames zwischen zwei CMDP-Befehlen werden dadurch
-        // nicht mehr als #ODOM ausgegeben.
+        printer.printOdom(
+            rearFrameClient.frame().t,
+            odometer
+        );
+
+#if PRINTER_ENABLE_ODOM
         if (commandRunner.hasActivePathCommand())
         {
-            printer.printOdom(
-                rearFrameClient.frame().t,
-                odometer
-            );
-
-            printer.printOdom2(
-                commandRunner.activeCmdpId(),
-                rearFrameClient.frame().t,
-                odometer
-            );
+            Serial.print(F("#ODOM2,"));
+            Serial.print((unsigned int)commandRunner.activeCmdpId());
+            Serial.print(',');
+            Serial.print((unsigned long)rearFrameClient.frame().t);
+            Serial.print(',');
+            Serial.print(odometer.absCm(), 2);
+            Serial.print(',');
+            Serial.print(odometer.xCm(), 2);
+            Serial.print(',');
+            Serial.print(odometer.yCm(), 2);
+            Serial.print(',');
+            Serial.println(odometer.phiDeg(), 2);
         }
+#endif
     }
 }
 
@@ -103,8 +119,15 @@ void FrontApp::updateFrameTimeout(uint32_t now)
 
 void FrontApp::tryRequestFrame(uint32_t now)
 {
-    if (!commandRunner.isActive()) return;
-    if (rearFrameClient.isBusy()) return;
+    if (!commandRunner.isActive())
+    {
+        return;
+    }
+
+    if (rearFrameClient.isBusy())
+    {
+        return;
+    }
 
     uint32_t frameTime = 0;
 
@@ -120,8 +143,15 @@ void FrontApp::updateCommandRunner(uint32_t now)
     // nicht zum naechsten Befehl springen. Sonst geht der letzte Frame
     // eines Befehls verloren.
 
-    if (!uart.isConnected()) return;
-    if (rearFrameClient.isBusy()) return;
+    if (!uart.isConnected())
+    {
+        return;
+    }
+
+    if (rearFrameClient.isBusy())
+    {
+        return;
+    }
 
     const bool wasActive = commandRunner.isActive();
 
@@ -204,7 +234,10 @@ bool FrontApp::isConnected() const
 void FrontApp::resetByWatchdog()
 {
     wdt_enable(WDTO_15MS);
-    while (1) {}
+
+    while (1)
+    {
+    }
 }
 
 void FrontApp::applyFrontWheelSoll()
@@ -286,8 +319,15 @@ void FrontApp::requestRearFrame(uint32_t now, uint32_t frameTime, bool resetPi)
 
 void FrontApp::requestStartFrameForNewCommand(uint32_t now)
 {
-    if (!uart.isConnected()) return;
-    if (rearFrameClient.isBusy()) return;
+    if (!uart.isConnected())
+    {
+        return;
+    }
+
+    if (rearFrameClient.isBusy())
+    {
+        return;
+    }
 
     // Neuer Fahrabschnitt:
     // Odometrie wird beim ersten vollstaendigen Frame dieses Befehls
