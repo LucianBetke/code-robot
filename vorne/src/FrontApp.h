@@ -10,7 +10,6 @@
 #include "src/MecanumOdometer.h"
 #include "src/UartLink.h"
 #include "src/Connection/ConnectionMonitor.h"
-#include "src/Parser/CommandParser.h"
 #include "src/CommandRunner/CommandRunner.h"
 #include "src/RearFrameClient.h"
 #include "src/FrameScheduler.h"
@@ -44,7 +43,6 @@ public:
 
     UartLink uart;
     ConnectionMonitor conn;
-    CommandParser parser;
     CommandRunner commandRunner;
 
     RearFrameClient rearFrameClient;

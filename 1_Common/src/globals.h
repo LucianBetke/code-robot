@@ -8,7 +8,6 @@
 #ifndef GLOBALS_H
 #define GLOBALS_H
 
-
 #include <Arduino.h>
 
 // ============================================================
@@ -30,14 +29,6 @@ enum WheelVehicle : uint8_t
     WHEEL_VEHICLE_COUNT
 };
 
-constexpr const char* WHEEL_VEHICLE_NAME[WHEEL_VEHICLE_COUNT] =
-{
-    "VoRe",
-    "VoLi",
-    "HiLi",
-    "HiRe"
-};
-
 // ============================================================
 // Wheel Index – Lokal (pro Nano: links / rechts)
 // Für Motor, Encoder, PI, Rad
@@ -48,12 +39,6 @@ enum Wheel : uint8_t
     Li = 0,
     Re = 1,
     WHEEL_COUNT
-};
-
-constexpr const char* WHEEL_NAME[WHEEL_COUNT] =
-{
-    "Li",
-    "Re"
 };
 
 // ============================================================

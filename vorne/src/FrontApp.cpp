@@ -20,7 +20,6 @@ FrontApp::FrontApp()
     odometer(),
     uart(Serial, true),
     conn(uart, 13),
-    parser(),
     commandRunner(vehicle, odometer, CommandScript::get, CommandScript::size),
     rearFrameClient(),
     frameScheduler(),
