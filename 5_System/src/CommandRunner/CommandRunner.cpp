@@ -9,7 +9,7 @@
 
 namespace
 {
-    const float CMDP_TOLERANCE_CM = 1.0f;
+    const float CMDP_TOLERANCE_CM = 2.0f;
     const float CMDP_ANGLE_TOLERANCE_DEG = 2.0f;
 
     const float CMDP_SPEED_EPS = 0.001f;
