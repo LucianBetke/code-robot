@@ -73,6 +73,7 @@ void FrontApp::handleIncomingLines(uint32_t now)
         updateVehicleIst();
         updateOdometerFromCompletedFrame();
 
+#if PRINTER_ENABLE_WHEELS || PRINTER_ENABLE_CHASSIS || PRINTER_ENABLE_COUNTS
         printer.printCompletedFrame(
             vehicle,
             rearFrameClient.frame(),
@@ -81,24 +82,16 @@ void FrontApp::handleIncomingLines(uint32_t now)
             rearFrameClient.hiLiPwm(),
             rearFrameClient.hiRePwm()
         );
+#endif
 
-#if PRINTER_ENABLE_ODOM
         if (commandRunner.hasActivePathCommand())
         {
-            Serial.print(F("#ODOM2,"));
-            Serial.print((unsigned int)commandRunner.activeCmdpId());
-            Serial.print(',');
-            Serial.print((unsigned long)rearFrameClient.frame().t);
-            Serial.print(',');
-            Serial.print(odometer.absCm(), 2);
-            Serial.print(',');
-            Serial.print(odometer.xCm(), 2);
-            Serial.print(',');
-            Serial.print(odometer.yCm(), 2);
-            Serial.print(',');
-            Serial.println(odometer.phiDeg(), 2);
+            printer.printOdom2(
+                commandRunner.activeCmdpId(),
+                rearFrameClient.frame().t,
+                odometer
+            );
         }
-#endif
     }
 }
 

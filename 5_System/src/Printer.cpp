@@ -1,6 +1,8 @@
 // Printer.cpp
 #include "Printer.h"
 
+#include "src/MecanumOdometer.h"
+
 void Printer::printInfo(VehicleController& vehicle, const ControlConfig& cfg)
 {
 #if PRINTER_ENABLE_INFO
@@ -59,6 +61,31 @@ void Printer::printCompletedFrame(
         hiRe_i,
         hiRe_pwm
     );
+#endif
+}
+
+void Printer::printOdom2(
+    uint16_t cmdpId,
+    uint32_t t_ms,
+    const MecanumOdometer& odom)
+{
+#if PRINTER_ENABLE_ODOM
+    if (cmdpId == 0)
+    {
+        return;
+    }
+
+    Serial.print(F("#ODOM2,"));
+    Serial.print((unsigned int)cmdpId); Serial.print(',');
+    Serial.print((unsigned long)t_ms);  Serial.print(',');
+    Serial.print(odom.absCm(), 2);      Serial.print(',');
+    Serial.print(odom.xCm(), 2);        Serial.print(',');
+    Serial.print(odom.yCm(), 2);        Serial.print(',');
+    Serial.println(odom.phiDeg(), 2);
+#else
+    (void)cmdpId;
+    (void)t_ms;
+    (void)odom;
 #endif
 }
 
