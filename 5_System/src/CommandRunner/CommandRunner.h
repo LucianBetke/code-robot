@@ -31,10 +31,10 @@ public:
     bool consumeStartFramePending();
 
     float pathProgressCm() const { return _pathProgressCm; }
-    float pathTargetCm() const { return _pathTargetCm; }
+    float pathTargetCm() const { return (float)_pathTargetCm; }
 
     float angleProgressDeg() const { return _angleProgressDeg; }
-    float angleTargetDeg() const { return _angleTargetDeg; }
+    float angleTargetDeg() const { return (float)_angleTargetDeg; }
 
     uint16_t activeCmdpId() const { return _activeCmdpId; }
     bool hasActivePathCommand() const;
@@ -89,13 +89,13 @@ private:
     uint32_t _startTime;
     uint32_t _durationMs;
 
-    float _pathTargetCm;
+    uint16_t _pathTargetCm;
     float _pathUnitX;
     float _pathUnitY;
     float _pathProgressCm;
 
-    float _angleTargetDeg;
-    float _angleDirection;
+    uint16_t _angleTargetDeg;
+    int8_t _angleDirection;
     float _angleProgressDeg;
 
     uint16_t _nextCmdpId;
