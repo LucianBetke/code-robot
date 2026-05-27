@@ -41,10 +41,6 @@ public:
     float phiRad() const { return _phi_rad; }
     float phiDeg() const;
 
-    float lastDxBodyMm() const { return _last_dx_body_mm; }
-    float lastDyBodyMm() const { return _last_dy_body_mm; }
-    float lastDphiRad() const { return _last_dphi_rad; }
-
 private:
     float countsToMm(int32_t dCounts) const;
 
@@ -59,10 +55,6 @@ private:
     float _y_mm;
     float _abs_mm;
     float _phi_rad;
-
-    float _last_dx_body_mm;
-    float _last_dy_body_mm;
-    float _last_dphi_rad;
 };
 
 #endif // MECANUM_ODOMETER_H

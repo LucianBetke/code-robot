@@ -16,10 +16,7 @@ MecanumOdometer::MecanumOdometer()
     _x_mm(0.0f),
     _y_mm(0.0f),
     _abs_mm(0.0f),
-    _phi_rad(0.0f),
-    _last_dx_body_mm(0.0f),
-    _last_dy_body_mm(0.0f),
-    _last_dphi_rad(0.0f)
+    _phi_rad(0.0f)
 {
 }
 
@@ -40,10 +37,6 @@ void MecanumOdometer::reset(
     _y_mm = 0.0f;
     _abs_mm = 0.0f;
     _phi_rad = 0.0f;
-
-    _last_dx_body_mm = 0.0f;
-    _last_dy_body_mm = 0.0f;
-    _last_dphi_rad = 0.0f;
 }
 
 bool MecanumOdometer::update(
@@ -94,19 +87,11 @@ bool MecanumOdometer::update(
     const float dphi_rad =
         (dVoRe - dVoLi - dHiLi + dHiRe) / (4.0f * MECANUM_K_MM);
 
-    _last_dx_body_mm = dx_body_mm;
-    _last_dy_body_mm = dy_body_mm;
-    _last_dphi_rad = dphi_rad;
-
     // Speicheroptimierung:
     // Keine Weltkoordinaten-Transformation mehr auf dem Arduino.
     //
-    // Vorher:
-    //   dx_body/dy_body wurden mit sinf()/cosf() in Weltkoordinaten gedreht.
-    //
-    // Jetzt:
-    //   Der Arduino summiert nur die lokale Roboterbewegung.
-    //   Die Umrechnung in Weltkoordinaten uebernimmt spaeter Python.
+    // Der Arduino summiert nur die lokale Roboterbewegung.
+    // Die Umrechnung in Weltkoordinaten uebernimmt Python.
     //
     // Wichtig:
     //   _phi_rad bleibt erhalten, damit Python oder eine spaetere Regelung
@@ -116,10 +101,8 @@ bool MecanumOdometer::update(
     _y_mm += dy_body_mm;
     _phi_rad += dphi_rad;
 
-    // sqrtf bleibt in diesem ersten Schritt absichtlich erhalten.
-    // Dadurch bleiben absMm(), absCm() und die bestehende ODOM-Ausgabe stabil.
-    // Wenn sqrtf spaeter auch raus soll, muss CommandRunner.cpp ebenfalls
-    // geprueft werden, weil dort noch ein weiteres sqrtf() fuer CMDP steckt.
+    // sqrtf bleibt vorerst erhalten.
+    // absMm() / absCm() werden weiterhin fuer CMDP / ODOM2 gebraucht.
     _abs_mm = sqrtf(_x_mm * _x_mm + _y_mm * _y_mm);
 
     return true;
