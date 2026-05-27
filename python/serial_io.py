@@ -7,8 +7,17 @@
 #
 # Unterstuetzte Diagnosezeilen:
 #  - #CMDP_BEGIN,id,vx,vy,wz,target
-#  - #ODOM2,id,ms,path_cm,x_body_cm,y_body_cm,phi_deg
+#  - #ODOM2,id,ms,path_cm100,x_body_cm100,y_body_cm100,phi_deg100
 #  - #WHEELS,ms,...
+#
+# Wichtig:
+#  - Arduino sendet ODOM2 als Integerwerte mit Faktor 100.
+#  - Python wandelt diese Werte beim Einlesen wieder in cm bzw. Grad um.
+#  - Der Store und der Plot bleiben dadurch unverändert:
+#       path_cm
+#       x_body_cm
+#       y_body_cm
+#       phi_deg
 #
 # Alle anderen Zeilen werden ignoriert (gehen aber weiter in das CSV-Log
 # und in die Echo-Ausgabe). serial_thread bleibt mit identischer Signatur
@@ -28,6 +37,13 @@ try:
     import serial
 except ImportError:
     serial = None
+
+
+# ============================================================
+# Konstanten
+# ============================================================
+
+ODOM2_SCALE = 100.0
 
 
 # ============================================================
@@ -146,10 +162,10 @@ def parse_line(line: str, store: Store) -> bool:
             store.add_odom2(Odom2Sample(
                 cmd_id    = int(parts[1]),
                 ms        = float(parts[2]),
-                path_cm   = float(parts[3]),
-                x_body_cm = float(parts[4]),
-                y_body_cm = float(parts[5]),
-                phi_deg   = float(parts[6]),
+                path_cm   = int(parts[3]) / ODOM2_SCALE,
+                x_body_cm = int(parts[4]) / ODOM2_SCALE,
+                y_body_cm = int(parts[5]) / ODOM2_SCALE,
+                phi_deg   = int(parts[6]) / ODOM2_SCALE,
             ))
             return True
 

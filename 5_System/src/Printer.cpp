@@ -3,6 +3,18 @@
 
 #include "src/MecanumOdometer.h"
 
+#if PRINTER_ENABLE_ODOM
+static long valueToInt100(float value)
+{
+    if (value >= 0.0f)
+    {
+        return (long)(value * 100.0f + 0.5f);
+    }
+
+    return (long)(value * 100.0f - 0.5f);
+}
+#endif
+
 void Printer::printInfo(VehicleController& vehicle, const ControlConfig& cfg)
 {
 #if PRINTER_ENABLE_INFO
@@ -76,12 +88,12 @@ void Printer::printOdom2(
     }
 
     Serial.print(F("#ODOM2,"));
-    Serial.print((unsigned int)cmdpId); Serial.print(',');
-    Serial.print((unsigned long)t_ms);  Serial.print(',');
-    Serial.print(odom.absCm(), 2);      Serial.print(',');
-    Serial.print(odom.xCm(), 2);        Serial.print(',');
-    Serial.print(odom.yCm(), 2);        Serial.print(',');
-    Serial.println(odom.phiDeg(), 2);
+    Serial.print((unsigned int)cmdpId);              Serial.print(',');
+    Serial.print((unsigned long)t_ms);               Serial.print(',');
+    Serial.print(valueToInt100(odom.absCm()));       Serial.print(',');
+    Serial.print(valueToInt100(odom.xCm()));         Serial.print(',');
+    Serial.print(valueToInt100(odom.yCm()));         Serial.print(',');
+    Serial.println(valueToInt100(odom.phiDeg()));
 #else
     (void)cmdpId;
     (void)t_ms;
