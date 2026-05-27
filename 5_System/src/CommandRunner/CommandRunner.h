@@ -63,7 +63,7 @@ private:
     void updatePathProgress();
 
     uint32_t calcPathTimeoutMs(uint16_t targetCm, float speedCms) const;
-    uint32_t calcAngleTimeoutMs(uint16_t targetDeg, float speedDegS) const;
+    uint32_t calcAngleTimeoutMs(uint16_t targetDeg, uint16_t speedDegS) const;
 
     void stopAll();
 

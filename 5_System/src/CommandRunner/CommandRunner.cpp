@@ -13,7 +13,6 @@ namespace
     const uint8_t CMDP_ANGLE_TOLERANCE_DEG = 2;
 
     const float CMDP_SPEED_EPS = 0.001f;
-    const float CMDP_ROT_SPEED_EPS = 0.001f;
 
     // Timeout-Regel:
     // ideale Fahrzeit * 3 + 1000 ms Reserve
@@ -246,10 +245,20 @@ bool CommandRunner::startTranslationPathCmd(const ParsedCommand& cmd, uint32_t n
 
 bool CommandRunner::startRotationPathCmd(const ParsedCommand& cmd, uint32_t now)
 {
-    const float wz_deg_s = (float)cmd.wz;
-    const float wz_abs_deg_s = fabsf(wz_deg_s);
+    const int16_t wz_deg_s = cmd.wz;
 
-    if (wz_abs_deg_s <= CMDP_ROT_SPEED_EPS)
+    uint16_t wz_abs_deg_s = 0;
+
+    if (wz_deg_s < 0)
+    {
+        wz_abs_deg_s = (uint16_t)(-(int32_t)wz_deg_s);
+    }
+    else
+    {
+        wz_abs_deg_s = (uint16_t)wz_deg_s;
+    }
+
+    if (wz_abs_deg_s == 0)
     {
 #if PRINTER_ENABLE_ERRORS
         Serial.println(F("#ERROR,CMDP,wz_darf_nicht_0_sein"));
@@ -267,7 +276,7 @@ bool CommandRunner::startRotationPathCmd(const ParsedCommand& cmd, uint32_t now)
     _pathProgressCm = 0.0f;
 
     _angleTargetDeg = cmd.param;
-    _angleDirection = (cmd.wz >= 0) ? 1 : -1;
+    _angleDirection = (wz_deg_s >= 0) ? 1 : -1;
     _angleProgressDeg = 0.0f;
 
     _durationMs = calcAngleTimeoutMs(cmd.param, wz_abs_deg_s);
@@ -285,7 +294,7 @@ bool CommandRunner::startRotationPathCmd(const ParsedCommand& cmd, uint32_t now)
 
     const float vx = 0.0f;
     const float vy = 0.0f;
-    const float wz = wz_deg_s * DEG_TO_RAD;
+    const float wz = (float)wz_deg_s * DEG_TO_RAD;
 
     _vehicle.cmd(vx, vy, wz);
 
@@ -309,15 +318,16 @@ uint32_t CommandRunner::calcPathTimeoutMs(uint16_t targetCm, float speedCms) con
     return idealMs * CMDP_TIMEOUT_FACTOR + CMDP_TIMEOUT_RESERVE_MS;
 }
 
-uint32_t CommandRunner::calcAngleTimeoutMs(uint16_t targetDeg, float speedDegS) const
+uint32_t CommandRunner::calcAngleTimeoutMs(uint16_t targetDeg, uint16_t speedDegS) const
 {
-    if (speedDegS < 1.0f)
+    if (speedDegS == 0)
     {
-        speedDegS = 1.0f;
+        speedDegS = 1;
     }
 
-    const float idealMsF = ((float)targetDeg * 1000.0f) / speedDegS;
-    const uint32_t idealMs = (uint32_t)(idealMsF + 0.5f);
+    const uint32_t idealMs =
+        ((uint32_t)targetDeg * 1000UL + ((uint32_t)speedDegS / 2UL)) /
+        (uint32_t)speedDegS;
 
     return idealMs * CMDP_TIMEOUT_FACTOR + CMDP_TIMEOUT_RESERVE_MS;
 }
