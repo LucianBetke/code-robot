@@ -20,8 +20,10 @@
     <ClInclude Include="$(MSBuildThisFileDirectory)src\CommProtocol.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)src\ControlTypes.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)src\globals.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)src\ScaleUtils.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="$(MSBuildThisFileDirectory)src\CommProtocol.cpp" />
+    <ClCompile Include="$(MSBuildThisFileDirectory)src\ScaleUtils.cpp" />
   </ItemGroup>
 </Project>

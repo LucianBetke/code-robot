@@ -437,7 +437,7 @@ FILE: C:\Users\Acer\source\repos\robot\1_Common\src\globals.h
 // ============================================================
 // File: globals.h
 // Zweck:
-//  - Zentrale Definitionen für Logik, Geometrie und Zeit
+//  - Zentrale Definitionen fuer Logik, Geometrie und Zeit
 //  - KEINE Hardware-Pins!
 // ============================================================
 
@@ -447,8 +447,8 @@ FILE: C:\Users\Acer\source\repos\robot\1_Common\src\globals.h
 #include <Arduino.h>
 
 // ============================================================
-// Wheel Index – Fahrzeug (alle 4 Räder)
-// Für Vehicle Controller / Mecanum / Fahrzeuglogik
+// Wheel Index – Fahrzeug (alle 4 Raeder)
+// Fuer Vehicle Controller / Mecanum / Fahrzeuglogik
 // Feste Reihenfolge:
 //   0 = Vorne Rechts
 //   1 = Vorne Links
@@ -467,7 +467,7 @@ enum WheelVehicle : uint8_t
 
 // ============================================================
 // Wheel Index – Lokal (pro Nano: links / rechts)
-// Für Motor, Encoder, PI, Rad
+// Fuer Motor, Encoder, PI, Rad
 // ============================================================
 
 enum Wheel : uint8_t
@@ -481,88 +481,45 @@ enum Wheel : uint8_t
 // ==== Zeitkonstanten ====
 // ============================================================
 
-/** Stillstands-Timeout für Drehzahlmessung (ms) */
 constexpr uint16_t SPEED_TIMEOUT_MS = 60;
-
-/** Minimaler Messabstand für Drehzahl (ms) */
 constexpr uint32_t SPEED_MIN_DT_MS = 5;
-
-/** Regelperiode pro Rad (ms) */
 constexpr uint16_t RAD_REGEL_DT_MS = 20;
-
-/** Regelperiode Fahrzeug + UART VSOL/VIST (ms) */
 constexpr uint16_t VEHICLE_DT_MS = 80;
-
-/** Beruhigungszeit nach erreichtem CMDP-Ziel vor dem nächsten Fahrbefehl (ms) */
 constexpr uint16_t CMDP_SETTLE_MS = 100;
-
-/** Debug-Ausgabe Intervall */
 constexpr uint16_t DBG_INTERVAL_MS = 20;
 
 // ============================================================
 // ==== Encoder / Rad-Geometrie ====
 // ============================================================
 
-/** Encoder-Pulse pro Umdrehung (x1) */
 constexpr uint16_t ENC_PPR = 330;
-
-/** Encoder-Counts pro Umdrehung (4x) */
 constexpr int32_t COUNTS_PER_REV = int32_t(ENC_PPR) * 4;
 
-/** Raddurchmesser (mm) */
 constexpr float RAD_DURCHMESSER_MM = 60.0f;
-
-/** Radumfang (mm) */
 constexpr float RAD_UMFANG_MM = RAD_DURCHMESSER_MM * PI;
 
-/** Radumfang in Meter */
-constexpr float RAD_UMFANG_M = RAD_UMFANG_MM / 1000.0f;
-
-/** Meter pro Tick */
-constexpr float METER_PRO_TICK = RAD_UMFANG_M / float(COUNTS_PER_REV);
+// Hauptsystem fuer Geschwindigkeit:
+//   cm/s
+constexpr float RAD_UMFANG_CM = RAD_UMFANG_MM * 0.1f;
+constexpr float CM_PRO_TICK = RAD_UMFANG_CM / float(COUNTS_PER_REV);
 
 // ============================================================
 // ==== Fahrzeug-Geometrie ====
 // ============================================================
 
-/**
- * Lx = halber Radstand:
- * Abstand vom Fahrzeugmittelpunkt zur Vorder-/Hinterradlinie.
- */
 constexpr float MECANUM_LX_MM = 45.5f;
-
-/**
- * Ly = halbe Spurweite:
- * Abstand vom Fahrzeugmittelpunkt zur linken/rechten Radlinie.
- */
 constexpr float MECANUM_LY_MM = 104.5f;
 
-/** Radstand vorne ↔ hinten (mm), nur als abgeleiteter Kontrollwert */
 constexpr float WHEEL_BASE_MM = MECANUM_LX_MM * 2.0f;
-
-/** Spurweite links ↔ rechts (mm), nur als abgeleiteter Kontrollwert */
 constexpr float TRACK_WIDTH_MM = MECANUM_LY_MM * 2.0f;
 
-/** Mecanum-Faktor in mm */
+// Odometrie nutzt mm.
+// VehicleController nutzt cm/s und braucht k in cm.
 constexpr float MECANUM_K_MM = MECANUM_LX_MM + MECANUM_LY_MM;
 
-/** Lx in Meter */
-constexpr float MECANUM_LX_M = MECANUM_LX_MM / 1000.0f;
-
-/** Ly in Meter */
-constexpr float MECANUM_LY_M = MECANUM_LY_MM / 1000.0f;
-
-/**
- * Mecanum-Faktor:
- * k = Lx + Ly
- *
- * Einheit: Meter
- *
- * Wichtig:
- * vx, vy und Radgeschwindigkeiten sind aktuell intern in m/s.
- * wz muss hier in rad/s vorliegen.
- */
-constexpr float MECANUM_K = MECANUM_LX_M + MECANUM_LY_M;
+constexpr float MECANUM_LX_CM = MECANUM_LX_MM * 0.1f;
+constexpr float MECANUM_LY_CM = MECANUM_LY_MM * 0.1f;
+constexpr float MECANUM_K_CM = MECANUM_K_MM * 0.1f;
 
 // ============================================================
 // ==== PWM / Limits ====
@@ -574,14 +531,78 @@ constexpr int16_t SLEW_LIMIT_PWM = 255;
 // ============================================================
 // ==== Fahrzeug / Geschwindigkeit ====
 // ============================================================
+//
+// Einheit fuer Translation und Radgeschwindigkeit:
+//   cm/s
+//
+// Beispiel:
+//   30.0f bedeutet 30 cm/s.
+// ============================================================
 
-/** Minimale sinnvoll regelbare Radgeschwindigkeit (m/s) */
-constexpr float V_WHEEL_MIN = 0.17f;
-
-/** Maximale Radgeschwindigkeit (m/s) */
-constexpr float V_WHEEL_MAX = 0.50f;
+constexpr float V_WHEEL_MIN = 17.0f;
+constexpr float V_WHEEL_MAX = 50.0f;
 
 #endif // GLOBALS_H
+
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\1_Common\src\ScaleUtils.cpp
+============================================================
+// ============================================================
+// File: ScaleUtils.cpp
+// ============================================================
+
+#include "ScaleUtils.h"
+
+int16_t scaleRoundToInt16(float value)
+{
+    if (value >= 0.0f)
+    {
+        return (int16_t)(value + 0.5f);
+    }
+
+    return (int16_t)(value - 0.5f);
+}
+
+long scaleFloatToInt100(float value)
+{
+    if (value >= 0.0f)
+    {
+        return (long)(value * 100.0f + 0.5f);
+    }
+
+    return (long)(value * 100.0f - 0.5f);
+}
+
+long scaleFloatToInt1000(float value)
+{
+    if (value >= 0.0f)
+    {
+        return (long)(value * 1000.0f + 0.5f);
+    }
+
+    return (long)(value * 1000.0f - 0.5f);
+}
+
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\1_Common\src\ScaleUtils.h
+============================================================
+// ============================================================
+// File: ScaleUtils.h
+// Zweck:
+//  - Gemeinsame Rundungs- und Skalierfunktionen
+//  - Vermeidet doppelte lokale Hilfsfunktionen in mehreren .cpp-Dateien
+// ============================================================
+
+#ifndef SCALE_UTILS_H
+#define SCALE_UTILS_H
+
+#include <stdint.h>
+
+int16_t scaleRoundToInt16(float value);
+long scaleFloatToInt100(float value);
+long scaleFloatToInt1000(float value);
+
+#endif // SCALE_UTILS_H
 
 ============================================================
 FILE: C:\Users\Acer\source\repos\robot\2_Hardware\src\Encoder.cpp
@@ -1286,7 +1307,7 @@ FILE: C:\Users\Acer\source\repos\robot\3_Control\src\Control.h
 // File: Control.h (3_Control)
 // Zweck:
 //  - Gemeinsame Steuerungs-Schnittstelle fuer vorne und hinten
-//  - Apps geben ihre Konfiguration via control_begin(cfg) mit
+//  - Einheit fuer Radgeschwindigkeit: cm/s
 // ============================================================
 
 #ifndef CONTROL_H
@@ -1299,36 +1320,21 @@ FILE: C:\Users\Acer\source\repos\robot\3_Control\src\Control.h
 #include "src/Rad.h"
 #include "ControlConfig.h"
 
-// --- SpeedWeg (Geschwindigkeit / Counts pro Rad) ---
 extern SpeedWeg speed[WHEEL_COUNT];
 
-// --- Regler / Rad ---
 extern PIRegler regler[WHEEL_COUNT];
 extern Rad rad[WHEEL_COUNT];
 
-// ============================================================
-// Initialisierung
-//
-// Die App ruft control_begin(cfg) im setup() auf und uebergibt
-// ihre gewuenschte Konfiguration (z.B. ConfigFront::CONFIG
-// oder ConfigRear::CONFIG).
-// ============================================================
 void control_begin(const ControlConfig& cfg);
 
-// SpeedWeg fuer alle Raeder zuruecksetzen
 void speed_reset_all();
 
-// PI-Zustaende zuruecksetzen, ohne Sollwerte oder Motorzustand zu aendern.
-// Wichtig fuer neue Fahrabschnitte, z.B. neue CMDP-Kommandos.
 void control_resetPiStates();
 
-// Regelschleife pro Loop-Durchlauf aufrufen
 void control_update(uint32_t nowMs);
 
-// Sollwert eines bestimmten Rades setzen
-void control_setSoll(uint8_t wheel, float v);
+void control_setSoll(uint8_t wheel, float v_cms);
 
-// Alle Raeder stoppen
 void control_stopAll();
 
 #endif // CONTROL_H
@@ -1342,59 +1348,40 @@ FILE: C:\Users\Acer\source\repos\robot\3_Control\src\ControlConfig.h
 //  - Datentyp ControlConfig fuer PI-Parameter und DeadPWM
 //  - Vordefinierte Konfigurationen fuer vorne und hinten
 //
-//  Apps (vorne, hinten) waehlen ihre Konfiguration aus und
-//  uebergeben sie an control_begin().
-//  3_Control selbst kennt vorne/hinten nicht.
+// Wichtig:
+//  - Radgeschwindigkeiten werden jetzt in cm/s geregelt.
+//  - Alte PI-Werte aus m/s wurden durch 100 geteilt.
 // ============================================================
 
 #ifndef CONTROLCONFIG_H
 #define CONTROLCONFIG_H
 
-
 #include <Arduino.h>
 #include "src/globals.h"
-#include "src/ControlTypes.h"   // PIParam
+#include "src/ControlTypes.h"
 
-// ============================================================
-// Datentyp: enthaelt alles, was Control zur Initialisierung
-// braucht.
-// ============================================================
 struct ControlConfig
 {
-    int16_t deadPwm[WHEEL_COUNT];   // Mindest-PWM zum Anfahren
-    PIParam pi[WHEEL_COUNT];        // Kp und Ki je Rad
+    int16_t deadPwm[WHEEL_COUNT];
+    PIParam pi[WHEEL_COUNT];
 };
 
-// ============================================================
-// namespace ConfigFront
-//
-// Der namespace ist nur eine "Schublade" mit einem Namen.
-// Variablen darin spricht man mit "ConfigFront::CONFIG" an.
-// Damit koennen ConfigFront und ConfigRear je ein eigenes
-// CONFIG haben, ohne sich gegenseitig zu stoeren.
-// ============================================================
 namespace ConfigFront
 {
     constexpr ControlConfig CONFIG =
     {
         // deadPwm: Li, Re
         { 70, 70 },
- //       { 80, 60 }, alter wert
 
         // PI-Parameter: Li, Re
+        // Einheit Fehler: cm/s
         {
-            { 2.0f, 8.0f },   // Li: Kp, Ki
-            { 2.0f, 10.0f }    // Re: Kp, Ki
+            { 0.020f, 0.080f },   // Li: vorher 2.0 / 8.0 bei m/s
+            { 0.020f, 0.100f }    // Re: vorher 2.0 / 10.0 bei m/s
         }
     };
 }
 
-// ============================================================
-// namespace ConfigRear
-//
-// Aktuell identisch mit ConfigFront, aber als eigene
-// Schublade -> spaeter unabhaengig anpassbar.
-// ============================================================
 namespace ConfigRear
 {
     constexpr ControlConfig CONFIG =
@@ -1403,9 +1390,10 @@ namespace ConfigRear
         { 80, 60 },
 
         // PI-Parameter: Li, Re
+        // Einheit Fehler: cm/s
         {
-            { 2.0f, 6.0f },   // Li: Kp, Ki
-            { 2.0f, 5.5f }    // Re: Kp, Ki
+            { 0.020f, 0.060f },   // Li: vorher 2.0 / 6.0 bei m/s
+            { 0.020f, 0.055f }    // Re: vorher 2.0 / 5.5 bei m/s
         }
     };
 }
@@ -1548,28 +1536,29 @@ FILE: C:\Users\Acer\source\repos\robot\3_Control\src\PIRegler.h
 // ============================================================
 // File: PIRegler.h
 // Beschreibung:
-//  - Bidirektionaler PI-Regler für Drehzahlregelung
+//  - Bidirektionaler PI-Regler fuer Radgeschwindigkeit
+//  - Geschwindigkeitseinheit: cm/s
 //  - Ausgang: signed PWM [-uMax .. +uMax]
 //  - Anti-Windup (Clamping)
 //  - Slew-Rate Begrenzung
 // ============================================================
+
 #pragma once
 
 #include <Arduino.h>
 
-class PIRegler {
+class PIRegler
+{
 public:
     PIRegler(float Kp, float Ki,
         int16_t uMin, int16_t uMax,
         int16_t slewLimit);
 
-    // v_ist in m/s, dt_ms = Zeit seit letztem Aufruf
-    int16_t update(float v_ist, uint16_t dt_ms);
+    int16_t update(float v_ist_cms, uint16_t dt_ms);
 
-    // Start-PWM vorgeben (Feedforward / Arbeitspunkt-Vorbelegung)
     void presetOutput(float u0_pwm);
 
-    void setSoll(float v_soll);
+    void setSoll(float v_soll_cms);
     float soll() const;
 
     float Kp() const { return _Kp; }
@@ -1577,7 +1566,6 @@ public:
 
     void reset();
 
-    // PI-Parameter zur Laufzeit neu setzen
     void setParams(float Kp, float Ki);
 
 private:
@@ -1601,11 +1589,11 @@ FILE: C:\Users\Acer\source\repos\robot\3_Control\src\Rad.cpp
 ============================================================
 // Rad.cpp
 #include "Rad.h"
-#include <math.h>            // fabsf
+#include <math.h>
 
 namespace
 {
-    const float EPS = 1e-6f;
+    const float EPS = 0.001f;
 
     int16_t roundPwm(float pwm)
     {
@@ -1619,12 +1607,12 @@ namespace
     }
 
     float scaledWorkpointWithDeadPwm(
-        float v_alt,
-        float v_neu,
+        float v_alt_cms,
+        float v_neu_cms,
         int16_t oldPwm,
         int16_t deadPwm)
     {
-        const float sign = (v_neu >= 0.0f) ? 1.0f : -1.0f;
+        const float sign = (v_neu_cms >= 0.0f) ? 1.0f : -1.0f;
 
         int16_t deadAbs = (deadPwm >= 0) ? deadPwm : (int16_t)-deadPwm;
         if (deadAbs > MAX_PWM) deadAbs = MAX_PWM;
@@ -1633,15 +1621,15 @@ namespace
         if (oldAbs > MAX_PWM) oldAbs = MAX_PWM;
 
         const bool oldPwmInNewDirection =
-            ((v_neu > 0.0f) && (oldPwm > 0)) ||
-            ((v_neu < 0.0f) && (oldPwm < 0));
+            ((v_neu_cms > 0.0f) && (oldPwm > 0)) ||
+            ((v_neu_cms < 0.0f) && (oldPwm < 0));
 
         if (!oldPwmInNewDirection || oldAbs < deadAbs)
         {
             oldAbs = deadAbs;
         }
 
-        const float ratio = fabsf(v_neu) / fabsf(v_alt);
+        const float ratio = fabsf(v_neu_cms) / fabsf(v_alt_cms);
 
         float dynamicOld = (float)oldAbs - (float)deadAbs;
         if (dynamicOld < 0.0f) dynamicOld = 0.0f;
@@ -1664,16 +1652,16 @@ Rad::Rad(Motor& motor, SpeedWeg& speed, PIRegler& regler,
 {
 }
 
-void Rad::setSoll(float v_soll)
+void Rad::setSoll(float v_soll_cms)
 {
-    const float v_alt = _regler.soll();
+    const float v_alt_cms = _regler.soll();
 
-    const bool wasZero = (fabsf(v_alt) < EPS);
-    const bool nowZero = (fabsf(v_soll) < EPS);
-    const bool changed = (fabsf(v_soll - v_alt) >= EPS);
+    const bool wasZero = (fabsf(v_alt_cms) < EPS);
+    const bool nowZero = (fabsf(v_soll_cms) < EPS);
+    const bool changed = (fabsf(v_soll_cms - v_alt_cms) >= EPS);
 
-    // Harter Stop sofort beim Setzen des Sollwerts 0
-    if (nowZero) {
+    if (nowZero)
+    {
         _regler.reset();
         _regler.setSoll(0.0f);
         _motor.bremse(HIGH);
@@ -1682,27 +1670,22 @@ void Rad::setSoll(float v_soll)
         return;
     }
 
-    // Wenn der Sollwert unverändert ist:
-    // nichts am Integrator ändern.
-    // Wichtig, weil setSoll() im Hauptprogramm sehr häufig aufgerufen wird.
-    if (!changed) {
-        _regler.setSoll(v_soll);
+    if (!changed)
+    {
+        _regler.setSoll(v_soll_cms);
         return;
     }
 
     const bool dirFlip =
         (!wasZero) &&
-        ((v_alt > 0.0f && v_soll < 0.0f) ||
-            (v_alt < 0.0f && v_soll > 0.0f));
+        ((v_alt_cms > 0.0f && v_soll_cms < 0.0f) ||
+            (v_alt_cms < 0.0f && v_soll_cms > 0.0f));
 
-    // Neuer Sollwert zuerst setzen.
-    _regler.setSoll(v_soll);
+    _regler.setSoll(v_soll_cms);
 
-    // Fall 1:
-    // Start aus Stillstand oder Richtungswechsel.
-    // Hier wird nicht skaliert, sondern ein sauberer Startwert in neuer Richtung gesetzt.
-    if (wasZero || dirFlip) {
-        const float sign = (v_soll >= 0.0f) ? 1.0f : -1.0f;
+    if (wasZero || dirFlip)
+    {
+        const float sign = (v_soll_cms >= 0.0f) ? 1.0f : -1.0f;
         _regler.presetOutput(sign * (float)_deadPwm);
 
         _lastUpdateMs = 0;
@@ -1710,27 +1693,12 @@ void Rad::setSoll(float v_soll)
         return;
     }
 
-    // Fall 2:
-    // Gleiche Richtung, aber neue Geschwindigkeit.
-    //
-    // Beispiel:
-    // 30 -> 20 oder -30 -> -20
-    //
-    // Der alte Arbeitspunkt wird nicht komplett behalten.
-    // Er wird deadPWM-korrigiert auf die neue Geschwindigkeit skaliert:
-    //
-    // pwm_neu = deadPwm + (pwm_alt - deadPwm) * |v_neu| / |v_alt|
-    //
-    // Dadurch bleibt der Reibungs-/Anfahranteil erhalten,
-    // aber der dynamische Anteil wird an die neue Geschwindigkeit angepasst.
     {
         const float u0_pwm =
-            scaledWorkpointWithDeadPwm(v_alt, v_soll, _lastPwm, _deadPwm);
+            scaledWorkpointWithDeadPwm(v_alt_cms, v_soll_cms, _lastPwm, _deadPwm);
 
         _regler.presetOutput(u0_pwm);
 
-        // _lastUpdateMs absichtlich NICHT zurücksetzen.
-        // Die Regelung soll ohne künstliche Pause weiterlaufen.
         _lastPwm = roundPwm(u0_pwm);
     }
 }
@@ -1742,7 +1710,7 @@ float Rad::soll() const
 
 float Rad::vIst() const
 {
-    return _speed.mps();
+    return _speed.cms();
 }
 
 void Rad::stop()
@@ -1758,11 +1726,10 @@ void Rad::update(uint32_t nowMs)
 {
     _speed.update(nowMs);
 
-    const float v_soll = _regler.soll();
+    const float v_soll_cms = _regler.soll();
 
-    // STOP muss VOR der Zeitabfrage kommen.
-    // Sonst kann ein frisch gesetzter Stop-Befehl bis zum nächsten Regeltakt verzögert werden.
-    if (fabsf(v_soll) < EPS) {
+    if (fabsf(v_soll_cms) < EPS)
+    {
         _regler.reset();
         _motor.bremse(HIGH);
         _lastPwm = 0;
@@ -1770,32 +1737,33 @@ void Rad::update(uint32_t nowMs)
         return;
     }
 
-    if (_lastUpdateMs == 0) {
+    if (_lastUpdateMs == 0)
+    {
         _lastUpdateMs = nowMs;
         return;
     }
 
-    if ((uint32_t)(nowMs - _lastUpdateMs) < _dtMs) {
+    if ((uint32_t)(nowMs - _lastUpdateMs) < _dtMs)
+    {
         return;
     }
 
     const uint16_t dt_ms = (uint16_t)(nowMs - _lastUpdateMs);
     _lastUpdateMs = nowMs;
 
-    const float v_ist = _speed.mps();
+    const float v_ist_cms = _speed.cms();
 
-    int16_t pwm = _regler.update(v_ist, dt_ms);
+    int16_t pwm = _regler.update(v_ist_cms, dt_ms);
 
-    // Limit
     if (pwm > MAX_PWM)  pwm = MAX_PWM;
     if (pwm < -MAX_PWM) pwm = -MAX_PWM;
 
-    // Deadband
     int16_t apwm = (pwm >= 0) ? pwm : -pwm;
 
-    if (apwm > 0 && apwm < _deadPwm) {
-        const bool sollVor = (v_soll > EPS);
-        const bool sollRueck = (v_soll < -EPS);
+    if (apwm > 0 && apwm < _deadPwm)
+    {
+        const bool sollVor = (v_soll_cms > EPS);
+        const bool sollRueck = (v_soll_cms < -EPS);
         const bool pwmVor = (pwm > 0);
         const bool pwmRueck = (pwm < 0);
 
@@ -1803,30 +1771,33 @@ void Rad::update(uint32_t nowMs)
             (sollVor && pwmVor) ||
             (sollRueck && pwmRueck);
 
-        if (pwmInSollrichtung) {
+        if (pwmInSollrichtung)
+        {
             pwm = pwmVor ? _deadPwm : -_deadPwm;
             apwm = _deadPwm;
         }
-        else {
+        else
+        {
             pwm = 0;
             apwm = 0;
         }
     }
 
-    // Sicherheit: falls _deadPwm versehentlich groesser als MAX_PWM gesetzt wurde
     if (pwm > MAX_PWM)  pwm = MAX_PWM;
     if (pwm < -MAX_PWM) pwm = -MAX_PWM;
 
     apwm = (pwm >= 0) ? pwm : -pwm;
 
-    // Motor
-    if (pwm > 0) {
+    if (pwm > 0)
+    {
         _motor.vor((uint8_t)apwm);
     }
-    else if (pwm < 0) {
+    else if (pwm < 0)
+    {
         _motor.rueck((uint8_t)apwm);
     }
-    else {
+    else
+    {
         _motor.bremse(HIGH);
     }
 
@@ -1841,7 +1812,6 @@ void Rad::reset()
     _lastPwm = 0;
 }
 
-// DeadPWM zur Laufzeit neu setzen
 void Rad::setDeadPwm(int16_t deadPwm)
 {
     _deadPwm = deadPwm;
@@ -1859,12 +1829,13 @@ FILE: C:\Users\Acer\source\repos\robot\3_Control\src\Rad.h
 #include "SpeedWeg.h"
 #include "PIRegler.h"
 
-class Rad {
+class Rad
+{
 public:
     Rad(Motor& motor, SpeedWeg& speed, PIRegler& regler,
         uint16_t dtMs, int16_t deadPwm);
 
-    void  setSoll(float v_soll);
+    void  setSoll(float v_soll_cms);
     float soll() const;
     float vIst() const;
 
@@ -1899,18 +1870,13 @@ FILE: C:\Users\Acer\source\repos\robot\3_Control\src\SpeedWeg.cpp
 #include "SpeedWeg.h"
 #include "src/globals.h"
 #include "src/Encoder.h"
+#include "src/ScaleUtils.h"
 
-// ------------------------------------------------------------
-// Lokale Konstanten
-// ------------------------------------------------------------
 namespace
 {
     const float SPEED_ALPHA = 0.2f;
 }
 
-// ------------------------------------------------------------
-// Konstruktor
-// ------------------------------------------------------------
 SpeedWeg::SpeedWeg(Enc& enc)
     : _enc(enc)
 {
@@ -1923,7 +1889,6 @@ SpeedWeg::SpeedWeg(Enc& enc)
     _last_tick_ms = 0;
 }
 
-// ------------------------------------------------------------
 void SpeedWeg::reset()
 {
     _counts_total = 0;
@@ -1936,10 +1901,6 @@ void SpeedWeg::reset()
     _last_counts = _enc.getCounts();
 }
 
-// ------------------------------------------------------------
-// Encoder poll + Berechnung
-// Zeitbasis: ms
-// ------------------------------------------------------------
 void SpeedWeg::update(uint32_t now_ms)
 {
     long cur = _enc.getCounts();
@@ -1959,17 +1920,11 @@ void SpeedWeg::update(uint32_t now_ms)
     timeoutCheck(now_ms);
 }
 
-// ------------------------------------------------------------
 void SpeedWeg::updateFromTicks(int16_t dcounts, uint32_t now_ms)
 {
-    // 1) Counts immer summieren.
-    // Diese Gesamtcounts sind die Grundlage fuer Odometrie/Plot.
     _counts_total += dcounts;
-
-    // 2) Tick-Sammelpuffer fuer Geschwindigkeitsfenster
     _acc_counts += dcounts;
 
-    // 3) Zeit seit letzter Geschwindigkeitsmessung
     if (_last_time_ms == 0)
     {
         _last_time_ms = now_ms;
@@ -1978,28 +1933,22 @@ void SpeedWeg::updateFromTicks(int16_t dcounts, uint32_t now_ms)
 
     uint32_t dt_ms = now_ms - _last_time_ms;
 
-    // Noch nicht genug Zeit? Nichts tun.
     if (dt_ms < SPEED_MIN_DT_MS)
     {
         return;
     }
 
-    // Zeit aktualisieren: Fensterende
     _last_time_ms = now_ms;
 
-    // 4) Geschwindigkeit berechnen
     const float dt_s = (float)dt_ms * 0.001f;
     const float revs = (float)_acc_counts / (float)COUNTS_PER_REV;
     const float rps_i = revs / dt_s;
 
-    // 5) Tiefpass
     _rps_filt += SPEED_ALPHA * (rps_i - _rps_filt);
 
-    // 6) Fenster zuruecksetzen
     _acc_counts = 0;
 }
 
-// ------------------------------------------------------------
 void SpeedWeg::timeoutCheck(uint32_t now_ms)
 {
     if (_last_tick_ms == 0)
@@ -2013,10 +1962,14 @@ void SpeedWeg::timeoutCheck(uint32_t now_ms)
     }
 }
 
-// ------------------------------------------------------------
-float SpeedWeg::mps() const
+float SpeedWeg::cms() const
 {
-    return (_rps_filt * RAD_UMFANG_MM) / 1000.0f;
+    return _rps_filt * RAD_UMFANG_CM;
+}
+
+int16_t SpeedWeg::cmsInt() const
+{
+    return scaleRoundToInt16(cms());
 }
 
 ============================================================
@@ -2025,10 +1978,10 @@ FILE: C:\Users\Acer\source\repos\robot\3_Control\src\SpeedWeg.h
 // ============================================================
 // File: SpeedWeg.h
 // Zweck:
-//  - Geschwindigkeit (m/s) aus Encoder-Ticks
+//  - Geschwindigkeit in cm/s aus Encoder-Ticks
 //  - Encoder-Gesamtcounts fuer Odometrie/Plot
 //  - Tiefpass-Filter fuer stabile v_Ist-Werte
-//  - Zeitbasis: Millisekunden (ms)
+//  - Zeitbasis: Millisekunden
 // ============================================================
 
 #pragma once
@@ -2038,16 +1991,17 @@ FILE: C:\Users\Acer\source\repos\robot\3_Control\src\SpeedWeg.h
 
 class Enc;
 
-class SpeedWeg {
+class SpeedWeg
+{
 public:
     explicit SpeedWeg(Enc& enc);
 
     void reset();
 
-    // now_ms = millis()
     void update(uint32_t now_ms);
 
-    float mps() const;       // m/s
+    float cms() const;
+    int16_t cmsInt() const;
 
     long counts_total() const { return _counts_total; }
 
@@ -2058,17 +2012,14 @@ private:
 private:
     Enc& _enc;
 
-    // Encoder-Zaehler
     long _last_counts = 0;
     long _counts_total = 0;
 
-    // Tick-Sammelpuffer fuer das Geschwindigkeitsfenster
     int32_t _acc_counts = 0;
 
-    // Filter & Zeit
     float    _rps_filt = 0.0f;
-    uint32_t _last_time_ms = 0;    // Zeitpunkt der letzten Geschwindigkeitsmessung
-    uint32_t _last_tick_ms = 0;    // Zeitpunkt des letzten Ticks fuer Timeout
+    uint32_t _last_time_ms = 0;
+    uint32_t _last_tick_ms = 0;
 };
 
 ============================================================
@@ -2264,10 +2215,14 @@ FILE: C:\Users\Acer\source\repos\robot\4_Vehicle\src\VehicleController.cpp
 // ============================================================
 // VehicleController.cpp
 // Koordinatenkonvention:
-// +x  = vorwärts
+// +x  = vorwaerts
 // +y  = links
 // +z  = oben
 // +wz = Drehung gegen den Uhrzeigersinn, von oben betrachtet
+//
+// Einheiten:
+// vx, vy, Radgeschwindigkeiten: cm/s
+// wz: rad/s
 // ============================================================
 
 #include "VehicleController.h"
@@ -2285,36 +2240,36 @@ void VehicleController::begin(float Kp_vx, float Ki_vx,
     _turnOnly = false;
 }
 
-void VehicleController::cmd(float vx, float vy, float wz)
+void VehicleController::cmd(float vx_cms, float vy_cms, float wz_rad_s)
 {
-    applyDriveMode(vx, vy, wz);
+    applyDriveMode(vx_cms, vy_cms, wz_rad_s);
 
     if (!_turnOnly)
     {
-        limitTranslation(vx, vy);
+        limitTranslation(vx_cms, vy_cms);
     }
 
-    _vx = vx;
-    _vy = vy;
-    _wz = wz;
+    _vx = vx_cms;
+    _vy = vy_cms;
+    _wz = wz_rad_s;
 
     applyMixer(_vx, _vy, _wz);
 }
 
-void VehicleController::applyDriveMode(float& vx, float& vy, float wz)
+void VehicleController::applyDriveMode(float& vx_cms, float& vy_cms, float wz_rad_s)
 {
-    _turnOnly = (fabsf(wz) > VEHICLE_WZ_EPS);
+    _turnOnly = (fabsf(wz_rad_s) > VEHICLE_WZ_EPS);
 
     if (_turnOnly)
     {
-        vx = 0.0f;
-        vy = 0.0f;
+        vx_cms = 0.0f;
+        vy_cms = 0.0f;
     }
 }
 
-void VehicleController::limitTranslation(float& vx, float& vy)
+void VehicleController::limitTranslation(float& vx_cms, float& vy_cms)
 {
-    const float sum = fabsf(vx) + fabsf(vy);
+    const float sum = fabsf(vx_cms) + fabsf(vy_cms);
 
     if (sum <= V_WHEEL_MAX)
     {
@@ -2323,26 +2278,26 @@ void VehicleController::limitTranslation(float& vx, float& vy)
 
     if (sum <= 0.0001f)
     {
-        vx = 0.0f;
-        vy = 0.0f;
+        vx_cms = 0.0f;
+        vy_cms = 0.0f;
         return;
     }
 
     const float scale = V_WHEEL_MAX / sum;
 
-    vx *= scale;
-    vy *= scale;
+    vx_cms *= scale;
+    vy_cms *= scale;
 }
 
-void VehicleController::updateIst(float v0, float v1, float v2, float v3)
+void VehicleController::updateIst(float v0_cms, float v1_cms, float v2_cms, float v3_cms)
 {
-    _vx_ist = (v0 + v1 + v2 + v3) / 4.0f;
+    _vx_ist = (v0_cms + v1_cms + v2_cms + v3_cms) / 4.0f;
 
-    // +y = links
-    _vy_ist = (v0 - v1 + v2 - v3) / 4.0f;
+    _vy_ist = (v0_cms - v1_cms + v2_cms - v3_cms) / 4.0f;
 
-    // +wz = gegen Uhrzeigersinn, +z nach oben
-    _wz_ist = (v0 - v1 - v2 + v3) / (4.0f * MECANUM_K);
+    _wz_ist =
+        (v0_cms - v1_cms - v2_cms + v3_cms) /
+        (4.0f * MECANUM_K_CM);
 }
 
 void VehicleController::update(uint32_t now)
@@ -2381,24 +2336,14 @@ void VehicleController::update(uint32_t now)
     applyMixer(vx_korr, vy_korr, wz_korr);
 }
 
-void VehicleController::applyMixer(float vx, float vy, float wz)
+void VehicleController::applyMixer(float vx_cms, float vy_cms, float wz_rad_s)
 {
     float v[WHEEL_VEHICLE_COUNT];
 
-    // Inverse Kinematik:
-    // +x  = vorwärts
-    // +y  = links
-    // +wz = gegen Uhrzeigersinn
-    v[VoRe] = vx + vy + MECANUM_K * wz;
-    v[VoLi] = vx - vy - MECANUM_K * wz;
-    v[HiLi] = vx + vy - MECANUM_K * wz;
-    v[HiRe] = vx - vy + MECANUM_K * wz;
-
-    // --------------------------------------------------------
-    // 1. Maximalbegrenzung:
-    // Kein Rad darf schneller als V_WHEEL_MAX werden.
-    // Die Skalierung erhält das Verhältnis der Radwerte.
-    // --------------------------------------------------------
+    v[VoRe] = vx_cms + vy_cms + MECANUM_K_CM * wz_rad_s;
+    v[VoLi] = vx_cms - vy_cms - MECANUM_K_CM * wz_rad_s;
+    v[HiLi] = vx_cms + vy_cms - MECANUM_K_CM * wz_rad_s;
+    v[HiRe] = vx_cms - vy_cms + MECANUM_K_CM * wz_rad_s;
 
     float maxVal = 0.0f;
 
@@ -2418,18 +2363,6 @@ void VehicleController::applyMixer(float vx, float vy, float wz)
         }
     }
 
-    // --------------------------------------------------------
-    // 2. Mindestgeschwindigkeit / Totzone:
-    // Kleine Rad-Sollwerte im schlechten Bereich werden auf 0 gesetzt.
-    //
-    // Erlaubt:
-    //   vRad = 0.00
-    //   oder abs(vRad) >= V_WHEEL_MIN
-    //
-    // Nicht erlaubt:
-    //   0.00 < abs(vRad) < V_WHEEL_MIN
-    // --------------------------------------------------------
-
     for (int i = 0; i < WHEEL_VEHICLE_COUNT; i++)
     {
         if (fabsf(v[i]) < V_WHEEL_MIN)
@@ -2437,10 +2370,6 @@ void VehicleController::applyMixer(float vx, float vy, float wz)
             v[i] = 0.0f;
         }
     }
-
-    // --------------------------------------------------------
-    // 3. Speichern der finalen Rad-Sollwerte
-    // --------------------------------------------------------
 
     for (int i = 0; i < WHEEL_VEHICLE_COUNT; i++)
     {
@@ -2474,7 +2403,11 @@ FILE: C:\Users\Acer\source\repos\robot\4_Vehicle\src\VehicleController.h
 ============================================================
 // ============================================================
 // VehicleController.h
+// Einheit:
+//  - vx, vy, Radgeschwindigkeiten: cm/s
+//  - wz: rad/s
 // ============================================================
+
 #ifndef VEHICLE_CONTROLLER_H
 #define VEHICLE_CONTROLLER_H
 
@@ -2488,8 +2421,8 @@ public:
         float Kp_vy, float Ki_vy,
         float Kp_wz, float Ki_wz);
 
-    void cmd(float vx, float vy, float wz);
-    void updateIst(float v0, float v1, float v2, float v3);
+    void cmd(float vx_cms, float vy_cms, float wz_rad_s);
+    void updateIst(float v0_cms, float v1_cms, float v2_cms, float v3_cms);
     void update(uint32_t now);
     void stop();
 
@@ -2511,9 +2444,9 @@ public:
     float KiWz() const { return _regler.KiWz(); }
 
 private:
-    void applyDriveMode(float& vx, float& vy, float wz);
-    void limitTranslation(float& vx, float& vy);
-    void applyMixer(float vx, float vy, float wz);
+    void applyDriveMode(float& vx_cms, float& vy_cms, float wz_rad_s);
+    void limitTranslation(float& vx_cms, float& vy_cms);
+    void applyMixer(float vx_cms, float vy_cms, float wz_rad_s);
 
     float _vx = 0.0f;
     float _vy = 0.0f;
@@ -2646,9 +2579,12 @@ FILE: C:\Users\Acer\source\repos\robot\5_System\src\CommandRunner\CommandRunner.
 // ============================================================
 // CommandRunner.cpp
 // ============================================================
+
 #include "CommandRunner.h"
+
 #include "src/PrinterConfig.h"
 #include "src/globals.h"
+#include "src/ScaleUtils.h"
 
 #include <math.h>
 
@@ -2871,16 +2807,16 @@ bool CommandRunner::startTranslationPathCmd(const ParsedCommand& cmd, uint32_t n
     Serial.print(cmd.wz);
     Serial.print(F(",targetCm="));
     Serial.print(_pathTargetCm);
-    Serial.print(F(",unitX="));
-    Serial.print(_pathUnitX, 3);
-    Serial.print(F(",unitY="));
-    Serial.print(_pathUnitY, 3);
+    Serial.print(F(",unitX1000="));
+    Serial.print(scaleFloatToInt1000(_pathUnitX));
+    Serial.print(F(",unitY1000="));
+    Serial.print(scaleFloatToInt1000(_pathUnitY));
     Serial.print(F(",timeoutMs="));
     Serial.println(_durationMs);
 #endif
 
-    const float vx = (float)cmd.vx * 0.01f;
-    const float vy = (float)cmd.vy * 0.01f;
+    const float vx = (float)cmd.vx;
+    const float vy = (float)cmd.vy;
     const float wz = 0.0f;
 
     _vehicle.cmd(vx, vy, wz);
@@ -3061,15 +2997,15 @@ void CommandRunner::finishPathCmd(uint32_t now)
     {
         Serial.print(F("#EVENT,angleReached,targetDeg="));
         Serial.print(_angleTargetDeg);
-        Serial.print(F(",progressDeg="));
-        Serial.println(_angleProgressDeg, 2);
+        Serial.print(F(",progressDeg100="));
+        Serial.println(scaleFloatToInt100(_angleProgressDeg));
     }
     else
     {
         Serial.print(F("#EVENT,pathReached,targetCm="));
         Serial.print(_pathTargetCm);
-        Serial.print(F(",progressCm="));
-        Serial.println(_pathProgressCm, 2);
+        Serial.print(F(",progressCm100="));
+        Serial.println(scaleFloatToInt100(_pathProgressCm));
     }
 #endif
 
@@ -3096,8 +3032,8 @@ void CommandRunner::finishPathTimeoutCmd(uint32_t now)
     {
         Serial.print(F("#ERROR,CMDP,timeout,targetDeg="));
         Serial.print(_angleTargetDeg);
-        Serial.print(F(",progressDeg="));
-        Serial.print(_angleProgressDeg, 2);
+        Serial.print(F(",progressDeg100="));
+        Serial.print(scaleFloatToInt100(_angleProgressDeg));
         Serial.print(F(",timeoutMs="));
         Serial.println(_durationMs);
     }
@@ -3105,8 +3041,8 @@ void CommandRunner::finishPathTimeoutCmd(uint32_t now)
     {
         Serial.print(F("#ERROR,CMDP,timeout,targetCm="));
         Serial.print(_pathTargetCm);
-        Serial.print(F(",progressCm="));
-        Serial.print(_pathProgressCm, 2);
+        Serial.print(F(",progressCm100="));
+        Serial.print(scaleFloatToInt100(_pathProgressCm));
         Serial.print(F(",timeoutMs="));
         Serial.println(_durationMs);
     }
@@ -3209,6 +3145,7 @@ FILE: C:\Users\Acer\source\repos\robot\5_System\src\CommandRunner\CommandRunner.
 // ============================================================
 // CommandRunner.h
 // ============================================================
+
 #ifndef COMMAND_RUNNER_H
 #define COMMAND_RUNNER_H
 
@@ -3712,57 +3649,44 @@ public:
 ============================================================
 FILE: C:\Users\Acer\source\repos\robot\5_System\src\Printer.cpp
 ============================================================
-// Printer.cpp
+// ============================================================
+// File: Printer.cpp
+// ============================================================
+
 #include "Printer.h"
 
 #include "src/MecanumOdometer.h"
+#include "src/ScaleUtils.h"
 
 namespace
 {
-    long valueToInt100(float value)
+    void printSpeedCms(float valueCms)
     {
-        if (value >= 0.0f)
-        {
-            return (long)(value * 100.0f + 0.5f);
-        }
-
-        return (long)(value * 100.0f - 0.5f);
+        Serial.print((int)scaleRoundToInt16(valueCms));
     }
 
-    int16_t mpsToCmsRounded(float value_mps)
+    void printValue100(float value)
     {
-        const float value_cms = value_mps * 100.0f;
-
-        if (value_cms >= 0.0f)
-        {
-            return (int16_t)(value_cms + 0.5f);
-        }
-
-        return (int16_t)(value_cms - 0.5f);
-    }
-
-    void printSpeedCmsFromMps(float value_mps)
-    {
-        Serial.print((int)mpsToCmsRounded(value_mps));
+        Serial.print(scaleFloatToInt100(value));
     }
 }
 
 void Printer::printInfo(VehicleController& vehicle, const ControlConfig& cfg)
 {
 #if PRINTER_ENABLE_INFO
-    Serial.print(F("#INFO,Raeder,Li,Kp100=")); Serial.print(valueToInt100(cfg.pi[Li].Kp));
-    Serial.print(F(",Ki100="));                Serial.print(valueToInt100(cfg.pi[Li].Ki));
-    Serial.print(F(",dead="));                 Serial.print(cfg.deadPwm[Li]);
-    Serial.print(F(",Re,Kp100="));             Serial.print(valueToInt100(cfg.pi[Re].Kp));
-    Serial.print(F(",Ki100="));                Serial.print(valueToInt100(cfg.pi[Re].Ki));
-    Serial.print(F(",dead="));                 Serial.println(cfg.deadPwm[Re]);
+    Serial.print(F("#INFO,Raeder,Li,Kp100="));  Serial.print(scaleFloatToInt100(cfg.pi[Li].Kp));
+    Serial.print(F(",Ki100="));                 Serial.print(scaleFloatToInt100(cfg.pi[Li].Ki));
+    Serial.print(F(",dead="));                  Serial.print(cfg.deadPwm[Li]);
+    Serial.print(F(",Re,Kp100="));              Serial.print(scaleFloatToInt100(cfg.pi[Re].Kp));
+    Serial.print(F(",Ki100="));                 Serial.print(scaleFloatToInt100(cfg.pi[Re].Ki));
+    Serial.print(F(",dead="));                  Serial.println(cfg.deadPwm[Re]);
 
-    Serial.print(F("#INFO,Chassis,vx,Kp100=")); Serial.print(valueToInt100(vehicle.KpVx()));
-    Serial.print(F(",Ki100="));                  Serial.print(valueToInt100(vehicle.KiVx()));
-    Serial.print(F(",vy,Kp100="));               Serial.print(valueToInt100(vehicle.KpVy()));
-    Serial.print(F(",Ki100="));                  Serial.print(valueToInt100(vehicle.KiVy()));
-    Serial.print(F(",wz,Kp100="));               Serial.print(valueToInt100(vehicle.KpWz()));
-    Serial.print(F(",Ki100="));                  Serial.println(valueToInt100(vehicle.KiWz()));
+    Serial.print(F("#INFO,Chassis,vx,Kp100=")); Serial.print(scaleFloatToInt100(vehicle.KpVx()));
+    Serial.print(F(",Ki100="));                 Serial.print(scaleFloatToInt100(vehicle.KiVx()));
+    Serial.print(F(",vy,Kp100="));              Serial.print(scaleFloatToInt100(vehicle.KpVy()));
+    Serial.print(F(",Ki100="));                 Serial.print(scaleFloatToInt100(vehicle.KiVy()));
+    Serial.print(F(",wz,Kp100="));              Serial.print(scaleFloatToInt100(vehicle.KpWz()));
+    Serial.print(F(",Ki100="));                 Serial.println(scaleFloatToInt100(vehicle.KiWz()));
 #else
     (void)vehicle;
     (void)cfg;
@@ -3772,8 +3696,8 @@ void Printer::printInfo(VehicleController& vehicle, const ControlConfig& cfg)
 void Printer::printCompletedFrame(
     VehicleController& vehicle,
     const RearPendingFrame& frame,
-    float hiLi_i,
-    float hiRe_i,
+    float hiLi_i_cms,
+    float hiRe_i_cms,
     int16_t hiLi_pwm,
     int16_t hiRe_pwm)
 {
@@ -3781,10 +3705,10 @@ void Printer::printCompletedFrame(
     printFrame(
         vehicle,
         frame.t,
-        frame.voLi_i,
-        frame.voRe_i,
-        hiLi_i,
-        hiRe_i
+        speed[Li].cms(),
+        speed[Re].cms(),
+        hiLi_i_cms,
+        hiRe_i_cms
     );
 #endif
 
@@ -3792,20 +3716,20 @@ void Printer::printCompletedFrame(
     printFrame(
         frame.t,
 
-        frame.voLi_s,
-        frame.voLi_i,
+        vehicle.getWheelSoll(VoLi),
+        speed[Li].cms(),
         frame.voLi_pwm,
 
-        frame.voRe_s,
-        frame.voRe_i,
+        vehicle.getWheelSoll(VoRe),
+        speed[Re].cms(),
         frame.voRe_pwm,
 
-        frame.hiLi_s,
-        hiLi_i,
+        vehicle.getWheelSoll(HiLi),
+        hiLi_i_cms,
         hiLi_pwm,
 
-        frame.hiRe_s,
-        hiRe_i,
+        vehicle.getWheelSoll(HiRe),
+        hiRe_i_cms,
         hiRe_pwm
     );
 #endif
@@ -3825,10 +3749,10 @@ void Printer::printOdom2(
     Serial.print(F("#ODOM2,"));
     Serial.print((unsigned int)cmdpId);              Serial.print(',');
     Serial.print((unsigned long)t_ms);               Serial.print(',');
-    Serial.print(valueToInt100(odom.absCm()));       Serial.print(',');
-    Serial.print(valueToInt100(odom.xCm()));         Serial.print(',');
-    Serial.print(valueToInt100(odom.yCm()));         Serial.print(',');
-    Serial.println(valueToInt100(odom.phiDeg()));
+    Serial.print(scaleFloatToInt100(odom.absCm()));  Serial.print(',');
+    Serial.print(scaleFloatToInt100(odom.xCm()));    Serial.print(',');
+    Serial.print(scaleFloatToInt100(odom.yCm()));    Serial.print(',');
+    Serial.println(scaleFloatToInt100(odom.phiDeg()));
 #else
     (void)cmdpId;
     (void)t_ms;
@@ -3838,58 +3762,61 @@ void Printer::printOdom2(
 
 #ifdef PRINTER_MODE_CHASSIS
 
-void Printer::printWheels(VehicleController& vehicle,
-    float v2_ist, float v3_ist,
+void Printer::printWheels(
+    VehicleController& vehicle,
+    float v2_ist_cms,
+    float v3_ist_cms,
     uint32_t t_ms)
 {
 #if PRINTER_ENABLE_CHASSIS
     Serial.print(F("#CHASSIS,"));
-    Serial.print((unsigned long)t_ms); Serial.print(',');
+    Serial.print(t_ms);                  Serial.print(',');
 
-    printSpeedCmsFromMps(speed[Li].mps()); Serial.print(',');
-    printSpeedCmsFromMps(speed[Re].mps()); Serial.print(',');
-    printSpeedCmsFromMps(v2_ist);          Serial.print(',');
-    printSpeedCmsFromMps(v3_ist);          Serial.print(',');
+    printSpeedCms(speed[Li].cms());      Serial.print(',');
+    printSpeedCms(speed[Re].cms());      Serial.print(',');
+    printSpeedCms(v2_ist_cms);           Serial.print(',');
+    printSpeedCms(v3_ist_cms);           Serial.print(',');
 
-    printSpeedCmsFromMps(vehicle.vxIst()); Serial.print(',');
-    printSpeedCmsFromMps(vehicle.vyIst()); Serial.print(',');
-
-    Serial.println(valueToInt100(vehicle.wzIst()));
+    printSpeedCms(vehicle.vxIst());      Serial.print(',');
+    printSpeedCms(vehicle.vyIst());      Serial.print(',');
+    printValue100(vehicle.wzIst());
+    Serial.println();
 #else
     (void)vehicle;
-    (void)v2_ist;
-    (void)v3_ist;
+    (void)v2_ist_cms;
+    (void)v3_ist_cms;
     (void)t_ms;
 #endif
 }
 
-void Printer::printFrame(VehicleController& vehicle,
+void Printer::printFrame(
+    VehicleController& vehicle,
     uint32_t t_ms,
-    float voLi_i,
-    float voRe_i,
-    float hiLi_i,
-    float hiRe_i)
+    float voLi_i_cms,
+    float voRe_i_cms,
+    float hiLi_i_cms,
+    float hiRe_i_cms)
 {
 #if PRINTER_ENABLE_CHASSIS
     Serial.print(F("#CHASSIS,"));
-    Serial.print((unsigned long)t_ms); Serial.print(',');
+    Serial.print(t_ms);                  Serial.print(',');
 
-    printSpeedCmsFromMps(voLi_i);          Serial.print(',');
-    printSpeedCmsFromMps(voRe_i);          Serial.print(',');
-    printSpeedCmsFromMps(hiLi_i);          Serial.print(',');
-    printSpeedCmsFromMps(hiRe_i);          Serial.print(',');
+    printSpeedCms(voLi_i_cms);           Serial.print(',');
+    printSpeedCms(voRe_i_cms);           Serial.print(',');
+    printSpeedCms(hiLi_i_cms);           Serial.print(',');
+    printSpeedCms(hiRe_i_cms);           Serial.print(',');
 
-    printSpeedCmsFromMps(vehicle.vxIst()); Serial.print(',');
-    printSpeedCmsFromMps(vehicle.vyIst()); Serial.print(',');
-
-    Serial.println(valueToInt100(vehicle.wzIst()));
+    printSpeedCms(vehicle.vxIst());      Serial.print(',');
+    printSpeedCms(vehicle.vyIst());      Serial.print(',');
+    printValue100(vehicle.wzIst());
+    Serial.println();
 #else
     (void)vehicle;
     (void)t_ms;
-    (void)voLi_i;
-    (void)voRe_i;
-    (void)hiLi_i;
-    (void)hiRe_i;
+    (void)voLi_i_cms;
+    (void)voRe_i_cms;
+    (void)hiLi_i_cms;
+    (void)hiRe_i_cms;
 #endif
 }
 
@@ -3897,34 +3824,37 @@ void Printer::printFrame(VehicleController& vehicle,
 
 #ifdef PRINTER_MODE_RAEDER
 
-void Printer::printWheels(VehicleController& vehicle,
-    float v2_ist, float v3_ist,
-    int16_t pwm2, int16_t pwm3,
+void Printer::printWheels(
+    VehicleController& vehicle,
+    float v2_ist_cms,
+    float v3_ist_cms,
+    int16_t pwm2,
+    int16_t pwm3,
     uint32_t t_ms)
 {
 #if PRINTER_ENABLE_WHEELS
     Serial.print(F("#WHEELS,"));
-    Serial.print((unsigned long)t_ms);             Serial.print(',');
+    Serial.print(t_ms);                             Serial.print(',');
 
-    printSpeedCmsFromMps(vehicle.getWheelSoll(VoLi)); Serial.print(',');
-    printSpeedCmsFromMps(speed[Li].mps());            Serial.print(',');
-    Serial.print(rad[Li].lastPwm());                  Serial.print(',');
+    printSpeedCms(vehicle.getWheelSoll(VoLi));      Serial.print(',');
+    printSpeedCms(speed[Li].cms());                 Serial.print(',');
+    Serial.print(rad[Li].lastPwm());                Serial.print(',');
 
-    printSpeedCmsFromMps(vehicle.getWheelSoll(VoRe)); Serial.print(',');
-    printSpeedCmsFromMps(speed[Re].mps());            Serial.print(',');
-    Serial.print(rad[Re].lastPwm());                  Serial.print(',');
+    printSpeedCms(vehicle.getWheelSoll(VoRe));      Serial.print(',');
+    printSpeedCms(speed[Re].cms());                 Serial.print(',');
+    Serial.print(rad[Re].lastPwm());                Serial.print(',');
 
-    printSpeedCmsFromMps(vehicle.getWheelSoll(HiLi)); Serial.print(',');
-    printSpeedCmsFromMps(v2_ist);                     Serial.print(',');
-    Serial.print(pwm2);                               Serial.print(',');
+    printSpeedCms(vehicle.getWheelSoll(HiLi));      Serial.print(',');
+    printSpeedCms(v2_ist_cms);                      Serial.print(',');
+    Serial.print(pwm2);                             Serial.print(',');
 
-    printSpeedCmsFromMps(vehicle.getWheelSoll(HiRe)); Serial.print(',');
-    printSpeedCmsFromMps(v3_ist);                     Serial.print(',');
+    printSpeedCms(vehicle.getWheelSoll(HiRe));      Serial.print(',');
+    printSpeedCms(v3_ist_cms);                      Serial.print(',');
     Serial.println(pwm3);
 #else
     (void)vehicle;
-    (void)v2_ist;
-    (void)v3_ist;
+    (void)v2_ist_cms;
+    (void)v3_ist_cms;
     (void)pwm2;
     (void)pwm3;
     (void)t_ms;
@@ -3932,65 +3862,65 @@ void Printer::printWheels(VehicleController& vehicle,
 
 #if PRINTER_ENABLE_COUNTS
     Serial.print(F("#CNTF,"));
-    Serial.print((unsigned long)t_ms);           Serial.print(',');
-    Serial.print(speed[Li].counts_total());      Serial.print(',');
+    Serial.print(t_ms);                     Serial.print(',');
+    Serial.print(speed[Li].counts_total()); Serial.print(',');
     Serial.println(speed[Re].counts_total());
 #endif
 }
 
 void Printer::printFrame(
     uint32_t t_ms,
-    float voLi_s,
-    float voLi_i,
+    float voLi_s_cms,
+    float voLi_i_cms,
     int16_t voLi_pwm,
-    float voRe_s,
-    float voRe_i,
+    float voRe_s_cms,
+    float voRe_i_cms,
     int16_t voRe_pwm,
-    float hiLi_s,
-    float hiLi_i,
+    float hiLi_s_cms,
+    float hiLi_i_cms,
     int16_t hiLi_pwm,
-    float hiRe_s,
-    float hiRe_i,
+    float hiRe_s_cms,
+    float hiRe_i_cms,
     int16_t hiRe_pwm)
 {
 #if PRINTER_ENABLE_WHEELS
     Serial.print(F("#WHEELS,"));
-    Serial.print((unsigned long)t_ms); Serial.print(',');
+    Serial.print(t_ms);             Serial.print(',');
 
-    printSpeedCmsFromMps(voLi_s);      Serial.print(',');
-    printSpeedCmsFromMps(voLi_i);      Serial.print(',');
-    Serial.print(voLi_pwm);            Serial.print(',');
+    printSpeedCms(voLi_s_cms);      Serial.print(',');
+    printSpeedCms(voLi_i_cms);      Serial.print(',');
+    Serial.print(voLi_pwm);         Serial.print(',');
 
-    printSpeedCmsFromMps(voRe_s);      Serial.print(',');
-    printSpeedCmsFromMps(voRe_i);      Serial.print(',');
-    Serial.print(voRe_pwm);            Serial.print(',');
+    printSpeedCms(voRe_s_cms);      Serial.print(',');
+    printSpeedCms(voRe_i_cms);      Serial.print(',');
+    Serial.print(voRe_pwm);         Serial.print(',');
 
-    printSpeedCmsFromMps(hiLi_s);      Serial.print(',');
-    printSpeedCmsFromMps(hiLi_i);      Serial.print(',');
-    Serial.print(hiLi_pwm);            Serial.print(',');
+    printSpeedCms(hiLi_s_cms);      Serial.print(',');
+    printSpeedCms(hiLi_i_cms);      Serial.print(',');
+    Serial.print(hiLi_pwm);         Serial.print(',');
 
-    printSpeedCmsFromMps(hiRe_s);      Serial.print(',');
-    printSpeedCmsFromMps(hiRe_i);      Serial.print(',');
+    printSpeedCms(hiRe_s_cms);      Serial.print(',');
+    printSpeedCms(hiRe_i_cms);      Serial.print(',');
     Serial.println(hiRe_pwm);
 #else
     (void)t_ms;
-    (void)voLi_s;
-    (void)voLi_i;
+    (void)voLi_s_cms;
+    (void)voLi_i_cms;
     (void)voLi_pwm;
-    (void)voRe_s;
-    (void)voRe_i;
+    (void)voRe_s_cms;
+    (void)voRe_i_cms;
     (void)voRe_pwm;
-    (void)hiLi_s;
-    (void)hiLi_i;
+    (void)hiLi_s_cms;
+    (void)hiLi_i_cms;
     (void)hiLi_pwm;
-    (void)hiRe_s;
-    (void)hiRe_i;
+    (void)hiRe_s_cms;
+    (void)hiRe_i_cms;
     (void)hiRe_pwm;
 #endif
 
 #if PRINTER_ENABLE_COUNTS
     Serial.print(F("#CNTF,"));
-    Serial.print((unsigned long)t_ms);      Serial.print(',');
+    Serial.print(t_ms);                     Serial.print(',');
     Serial.print(speed[Li].counts_total()); Serial.print(',');
     Serial.println(speed[Re].counts_total());
 #endif
@@ -4022,8 +3952,8 @@ public:
     void printCompletedFrame(
         VehicleController& vehicle,
         const RearPendingFrame& frame,
-        float hiLi_i,
-        float hiRe_i,
+        float hiLi_i_cms,
+        float hiRe_i_cms,
         int16_t hiLi_pwm,
         int16_t hiRe_pwm);
 
@@ -4033,37 +3963,43 @@ public:
         const MecanumOdometer& odom);
 
 #ifdef PRINTER_MODE_CHASSIS
-    void printWheels(VehicleController& vehicle,
-        float v2_ist, float v3_ist,
+    void printWheels(
+        VehicleController& vehicle,
+        float v2_ist_cms,
+        float v3_ist_cms,
         uint32_t t_ms);
 
-    void printFrame(VehicleController& vehicle,
+    void printFrame(
+        VehicleController& vehicle,
         uint32_t t_ms,
-        float voLi_i,
-        float voRe_i,
-        float hiLi_i,
-        float hiRe_i);
+        float voLi_i_cms,
+        float voRe_i_cms,
+        float hiLi_i_cms,
+        float hiRe_i_cms);
 #endif
 
 #ifdef PRINTER_MODE_RAEDER
-    void printWheels(VehicleController& vehicle,
-        float v2_ist, float v3_ist,
-        int16_t pwm2, int16_t pwm3,
+    void printWheels(
+        VehicleController& vehicle,
+        float v2_ist_cms,
+        float v3_ist_cms,
+        int16_t pwm2,
+        int16_t pwm3,
         uint32_t t_ms);
 
     void printFrame(
         uint32_t t_ms,
-        float voLi_s,
-        float voLi_i,
+        float voLi_s_cms,
+        float voLi_i_cms,
         int16_t voLi_pwm,
-        float voRe_s,
-        float voRe_i,
+        float voRe_s_cms,
+        float voRe_i_cms,
         int16_t voRe_pwm,
-        float hiLi_s,
-        float hiLi_i,
+        float hiLi_s_cms,
+        float hiLi_i_cms,
         int16_t hiLi_pwm,
-        float hiRe_s,
-        float hiRe_i,
+        float hiRe_s_cms,
+        float hiRe_i_cms,
         int16_t hiRe_pwm);
 #endif
 };
@@ -4094,10 +4030,10 @@ FILE: C:\Users\Acer\source\repos\robot\5_System\src\PrinterConfig.h
 #define PRINTER_ENABLE_INFO     0
 #define PRINTER_ENABLE_ERRORS   0
 #define PRINTER_ENABLE_EVENTS   0
-#define PRINTER_ENABLE_ODOM     1
+#define PRINTER_ENABLE_ODOM     0
 #define PRINTER_ENABLE_COUNTS   0
 
-#define PRINTER_ENABLE_WHEELS   1
+#define PRINTER_ENABLE_WHEELS   0
 #define PRINTER_ENABLE_CHASSIS  0
 
 #endif // PRINTER_CONFIG_H
@@ -4110,14 +4046,6 @@ FILE: C:\Users\Acer\source\repos\robot\5_System\src\RearFrameClient.cpp
 
 #include <Arduino.h>
 #include "src/CommProtocol.h"
-
-namespace
-{
-    float cmsToMps(int16_t value_cms)
-    {
-        return (float)value_cms * 0.01f;
-    }
-}
 
 RearFrameClient::RearFrameClient()
     : _nextFrameId(1),
@@ -4172,18 +4100,18 @@ void RearFrameClient::clearFrame()
     _frame.frameId = 0;
     _frame.t = 0;
 
-    _frame.voLi_s = 0.0f;
-    _frame.voLi_i = 0.0f;
+    _frame.voLi_s_cms = 0;
+    _frame.voLi_i_cms = 0;
     _frame.voLi_pwm = 0;
     _frame.voLiCnt = 0;
 
-    _frame.voRe_s = 0.0f;
-    _frame.voRe_i = 0.0f;
+    _frame.voRe_s_cms = 0;
+    _frame.voRe_i_cms = 0;
     _frame.voRe_pwm = 0;
     _frame.voReCnt = 0;
 
-    _frame.hiLi_s = 0.0f;
-    _frame.hiRe_s = 0.0f;
+    _frame.hiLi_s_cms = 0;
+    _frame.hiRe_s_cms = 0;
 
     _frame.hiLiCnt = 0;
     _frame.hiReCnt = 0;
@@ -4224,16 +4152,6 @@ uint32_t RearFrameClient::requestMs() const
 uint32_t RearFrameClient::lastSendMs() const
 {
     return _lastSendMs;
-}
-
-float RearFrameClient::hiLiIst() const
-{
-    return cmsToMps(_hiLiIstCms);
-}
-
-float RearFrameClient::hiReIst() const
-{
-    return cmsToMps(_hiReIstCms);
 }
 
 int16_t RearFrameClient::hiLiIstCms() const
@@ -4278,21 +4196,18 @@ bool RearFrameClient::requestFrame(
     _frame.frameId = frameId;
     _frame.t = request.frameTimeMs;
 
-    // Uebergang fuer den alten Printer:
-    // RearFrameRequest ist bereits cm/s-Integer,
-    // RearPendingFrame bleibt bis zum Printer-Umbau float/m/s.
-    _frame.voLi_s = cmsToMps(request.voLi_s_cms);
-    _frame.voLi_i = cmsToMps(request.voLi_i_cms);
+    _frame.voLi_s_cms = request.voLi_s_cms;
+    _frame.voLi_i_cms = request.voLi_i_cms;
     _frame.voLi_pwm = request.voLi_pwm;
     _frame.voLiCnt = request.voLiCnt;
 
-    _frame.voRe_s = cmsToMps(request.voRe_s_cms);
-    _frame.voRe_i = cmsToMps(request.voRe_i_cms);
+    _frame.voRe_s_cms = request.voRe_s_cms;
+    _frame.voRe_i_cms = request.voRe_i_cms;
     _frame.voRe_pwm = request.voRe_pwm;
     _frame.voReCnt = request.voReCnt;
 
-    _frame.hiLi_s = cmsToMps(request.hiLi_s_cms);
-    _frame.hiRe_s = cmsToMps(request.hiRe_s_cms);
+    _frame.hiLi_s_cms = request.hiLi_s_cms;
+    _frame.hiRe_s_cms = request.hiRe_s_cms;
 
     _frame.hiLiCnt = 0;
     _frame.hiReCnt = 0;
@@ -4453,35 +4368,28 @@ struct VistMessage;
 
 // ============================================================
 // Gemeinsamer Log-Datensatz fuer einen Zeitpunkt
+//
+// Geschwindigkeiten:
+//   int16_t in cm/s
 // ============================================================
-//
-// WICHTIG:
-// Dieser Datensatz bleibt in diesem Zwischenschritt noch float/m/s,
-// weil Printer.cpp die Felder noch direkt mit Serial.print(x, 2)
-// ausgibt.
-//
-// Wenn diese Felder sofort auf int16_t geaendert wuerden,
-// wuerde Serial.print(int, 2) nicht "2 Nachkommastellen" bedeuten,
-// sondern Ausgabe zur Basis 2.
-// Der Printer wird im naechsten Block separat umgebaut.
 
 struct RearPendingFrame
 {
     uint16_t frameId;
     uint32_t t;
 
-    float voLi_s;
-    float voLi_i;
+    int16_t voLi_s_cms;
+    int16_t voLi_i_cms;
     int16_t voLi_pwm;
     int32_t voLiCnt;
 
-    float voRe_s;
-    float voRe_i;
+    int16_t voRe_s_cms;
+    int16_t voRe_i_cms;
     int16_t voRe_pwm;
     int32_t voReCnt;
 
-    float hiLi_s;
-    float hiRe_s;
+    int16_t hiLi_s_cms;
+    int16_t hiRe_s_cms;
 
     int32_t hiLiCnt;
     int32_t hiReCnt;
@@ -4491,10 +4399,10 @@ struct RearPendingFrame
 
 // ============================================================
 // Anfrage-Datensatz fuer einen neuen RearFrame
-// ============================================================
 //
-// Diese Struktur fuehrt die Geschwindigkeiten bereits als Integer
-// in cm/s. Die Regelung bleibt intern vorerst float in m/s.
+// Geschwindigkeiten:
+//   int16_t in cm/s
+// ============================================================
 
 struct RearFrameRequest
 {
@@ -4515,17 +4423,6 @@ struct RearFrameRequest
     int16_t hiRe_s_cms;
 };
 
-// ============================================================
-// RearFrameClient
-// Verwaltet:
-//  - aktuellen Hinterachs-Messframe
-//  - Frame-ID
-//  - Wartezustand auf VSOL_OK / VIST
-//  - Stop-Sequenz fuer hinten
-//  - letzte gueltige Rear-Istwerte
-//  - hintere Encoder-Counts fuer Odometrie
-// ============================================================
-
 class RearFrameClient
 {
 public:
@@ -4545,9 +4442,6 @@ public:
     bool isBusy() const;
     uint32_t requestMs() const;
     uint32_t lastSendMs() const;
-
-    float hiLiIst() const;
-    float hiReIst() const;
 
     int16_t hiLiIstCms() const;
     int16_t hiReIstCms() const;
@@ -4704,26 +4598,6 @@ FILE: C:\Users\Acer\source\repos\robot\hinten\src\RearApp.cpp
 #include "src/Control.h"
 #include "src/ControlConfig.h"
 
-namespace
-{
-    float cmsToMps(int16_t value_cms)
-    {
-        return (float)value_cms * 0.01f;
-    }
-
-    int16_t mpsToCmsRounded(float value_mps)
-    {
-        const float value_cms = value_mps * 100.0f;
-
-        if (value_cms >= 0.0f)
-        {
-            return (int16_t)(value_cms + 0.5f);
-        }
-
-        return (int16_t)(value_cms - 0.5f);
-    }
-}
-
 RearApp::RearApp()
     : uart(Serial, false),
     conn(uart, 13),
@@ -4785,20 +4659,17 @@ void RearApp::handleIncomingVsol(uint32_t now)
     {
         lastVsolFrameId = vsol.frameId;
 
-        const float vSollLi = cmsToMps(vsol.hiLiSoll);
-        const float vSollRe = cmsToMps(vsol.hiReSoll);
+        const float vSollLiCms = (float)vsol.hiLiSoll;
+        const float vSollReCms = (float)vsol.hiReSoll;
 
         if (vsol.resetPi)
         {
-            // Neuer CMDP-Fahrabschnitt:
-            // PI-Zustaende und SpeedWeg-Filter muessen beide zurueckgesetzt werden,
-            // damit alte Istgeschwindigkeiten nicht in den neuen Abschnitt laufen.
             control_resetPiStates();
             speed_reset_all();
         }
 
-        rad[Li].setSoll(vSollLi);
-        rad[Re].setSoll(vSollRe);
+        rad[Li].setSoll(vSollLiCms);
+        rad[Re].setSoll(vSollReCms);
 
         lastVsolMs = now;
         rearSollActive = (vsol.hiLiSoll != 0 || vsol.hiReSoll != 0);
@@ -4821,8 +4692,8 @@ void RearApp::handleSyncVist()
 
     syncFlag = false;
 
-    const int16_t vIstLi = mpsToCmsRounded(speed[Li].mps());
-    const int16_t vIstRe = mpsToCmsRounded(speed[Re].mps());
+    const int16_t vIstLiCms = speed[Li].cmsInt();
+    const int16_t vIstReCms = speed[Re].cmsInt();
 
     const int16_t pwmLi = rad[Li].lastPwm();
     const int16_t pwmRe = rad[Re].lastPwm();
@@ -4835,8 +4706,8 @@ void RearApp::handleSyncVist()
         printVist(
             Serial,
             lastVsolFrameId,
-            vIstLi,
-            vIstRe,
+            vIstLiCms,
+            vIstReCms,
             pwmLi,
             pwmRe,
             cntLi,
@@ -4953,380 +4824,112 @@ public:
 FILE: C:\Users\Acer\source\repos\robot\vorne\src\FrontApp.cpp
 ============================================================
 // ============================================================
-// File: FrontApp.cpp
+// File: SpeedWeg.cpp
 // ============================================================
 
-#include "FrontApp.h"
-
-#include <avr/wdt.h>
-
-#include "src/Hardware.h"
-#include "src/Control.h"
-#include "src/ControlConfig.h"
-#include "src/PrinterConfig.h"
+#include "src/SpeedWeg.h"
+#include "src/globals.h"
+#include "src/Encoder.h"
+#include "src/ScaleUtils.h"
 
 namespace
 {
-    int16_t mpsToCmsRounded(float value_mps)
+    const float SPEED_ALPHA = 0.2f;
+}
+
+SpeedWeg::SpeedWeg(Enc& enc)
+    : _enc(enc)
+{
+    _last_counts = _enc.getCounts();
+    _counts_total = 0;
+
+    _acc_counts = 0;
+    _rps_filt = 0.0f;
+    _last_time_ms = 0;
+    _last_tick_ms = 0;
+}
+
+void SpeedWeg::reset()
+{
+    _counts_total = 0;
+
+    _acc_counts = 0;
+    _rps_filt = 0.0f;
+    _last_time_ms = 0;
+    _last_tick_ms = 0;
+
+    _last_counts = _enc.getCounts();
+}
+
+void SpeedWeg::update(uint32_t now_ms)
+{
+    long cur = _enc.getCounts();
+    long d = cur - _last_counts;
+
+    if (d != 0)
     {
-        const float value_cms = value_mps * 100.0f;
+        if (d > 32767) d = 32767;
+        if (d < -32768) d = -32768;
 
-        if (value_cms >= 0.0f)
-        {
-            return (int16_t)(value_cms + 0.5f);
-        }
+        updateFromTicks((int16_t)d, now_ms);
 
-        return (int16_t)(value_cms - 0.5f);
-    }
-}
-
-// ============================================================
-// Konstruktor
-// ============================================================
-
-FrontApp::FrontApp()
-    : vehicle(),
-    odometer(),
-    uart(Serial, true),
-    conn(uart, 13),
-    commandRunner(vehicle, odometer, CommandScript::get, CommandScript::size),
-    rearFrameClient(),
-    frameScheduler(),
-    printer(),
-    _odomResetPending(true)
-{
-}
-
-// ============================================================
-// Sichtbare loop()-Schritte
-// ============================================================
-
-void FrontApp::updateCommunication()
-{
-    uart.update();
-    conn.update();
-}
-
-void FrontApp::updateConnectionSafety(uint32_t now)
-{
-    (void)now;
-
-    static bool prevConnected = false;
-    const bool nowConnected = uart.isConnected();
-
-    if (prevConnected && !nowConnected)
-    {
-        resetByWatchdog();
+        _last_counts = cur;
+        _last_tick_ms = now_ms;
     }
 
-    prevConnected = nowConnected;
+    timeoutCheck(now_ms);
 }
 
-void FrontApp::handleIncomingLines(uint32_t now)
+void SpeedWeg::updateFromTicks(int16_t dcounts, uint32_t now_ms)
 {
-    if (!uart.availableLine())
+    _counts_total += dcounts;
+    _acc_counts += dcounts;
+
+    if (_last_time_ms == 0)
+    {
+        _last_time_ms = now_ms;
+        return;
+    }
+
+    uint32_t dt_ms = now_ms - _last_time_ms;
+
+    if (dt_ms < SPEED_MIN_DT_MS)
     {
         return;
     }
 
-    const char* line = uart.getLine();
+    _last_time_ms = now_ms;
 
-    if (rearFrameClient.handleVsolOkLine(line, now))
-    {
-        hardware_requestVist();
-        return;
-    }
+    const float dt_s = (float)dt_ms * 0.001f;
+    const float revs = (float)_acc_counts / (float)COUNTS_PER_REV;
+    const float rps_i = revs / dt_s;
 
-    if (rearFrameClient.handleVistLine(line))
-    {
-        updateVehicleIst();
-        updateOdometerFromCompletedFrame();
+    _rps_filt += SPEED_ALPHA * (rps_i - _rps_filt);
 
-#if PRINTER_ENABLE_WHEELS || PRINTER_ENABLE_CHASSIS || PRINTER_ENABLE_COUNTS
-        printer.printCompletedFrame(
-            vehicle,
-            rearFrameClient.frame(),
-            rearFrameClient.hiLiIst(),
-            rearFrameClient.hiReIst(),
-            rearFrameClient.hiLiPwm(),
-            rearFrameClient.hiRePwm()
-        );
-#endif
-
-        if (commandRunner.hasActivePathCommand())
-        {
-            printer.printOdom2(
-                commandRunner.activeCmdpId(),
-                rearFrameClient.frame().t,
-                odometer
-            );
-        }
-    }
+    _acc_counts = 0;
 }
 
-void FrontApp::updateFrameTimeout(uint32_t now)
+void SpeedWeg::timeoutCheck(uint32_t now_ms)
 {
-    if (rearFrameClient.isBusy() &&
-        now - rearFrameClient.requestMs() > 2 * VEHICLE_DT_MS)
-    {
-        resetByWatchdog();
-    }
-}
-
-void FrontApp::tryRequestFrame(uint32_t now)
-{
-    // Nur echte CMDP-Fahrabschnitte bekommen Messframes.
-    // Die Settle-Phase zwischen zwei CMDP-Befehlen darf keine WHEELS-Frames erzeugen.
-    if (!commandRunner.hasActivePathCommand())
+    if (_last_tick_ms == 0)
     {
         return;
     }
 
-    if (rearFrameClient.isBusy())
+    if ((uint32_t)(now_ms - _last_tick_ms) > SPEED_TIMEOUT_MS)
     {
-        return;
-    }
-
-    uint32_t frameTime = 0;
-
-    if (frameScheduler.due(now, frameTime))
-    {
-        requestRearFrame(now, frameTime, false);
+        _rps_filt = 0.0f;
     }
 }
 
-void FrontApp::updateCommandRunner(uint32_t now)
+float SpeedWeg::cms() const
 {
-    // Solange noch VSOL_OK oder VIST offen ist, darf der CommandRunner
-    // nicht zum naechsten Befehl springen. Sonst geht der letzte Frame
-    // eines Befehls verloren.
-
-    if (!uart.isConnected())
-    {
-        return;
-    }
-
-    if (rearFrameClient.isBusy())
-    {
-        return;
-    }
-
-    const bool wasActive = commandRunner.isActive();
-    const bool pathWasActive = commandRunner.hasActivePathCommand();
-
-    commandRunner.update(now);
-
-    const bool isActive = commandRunner.isActive();
-    const bool pathIsActive = commandRunner.hasActivePathCommand();
-
-    // Ein echter CMDP-Fahrabschnitt ist gerade beendet worden.
-    // Dann muss die Hinterachse sofort auf 0 gesetzt werden.
-    // Wichtig: sendStop() erzeugt keinen normalen Messframe.
-    if (pathWasActive && !pathIsActive)
-    {
-        applyFrontWheelSoll();
-        rearFrameClient.sendStop(Serial, now);
-    }
-
-    // Startframe nur fuer echte CMDP-Fahrabschnitte, nicht fuer Settle.
-    if (pathIsActive &&
-        commandRunner.consumeStartFramePending())
-    {
-        requestStartFrameForNewCommand(now);
-    }
-
-    if (wasActive && !isActive && commandRunner.isFinished())
-    {
-        rearFrameClient.armStopSequence();
-    }
+    return _rps_filt * RAD_UMFANG_CM;
 }
 
-void FrontApp::updateLogRaster(uint32_t now)
+int16_t SpeedWeg::cmsInt() const
 {
-    RearPendingFrame& frame = rearFrameClient.frame();
-
-    const bool pathActive = commandRunner.hasActivePathCommand();
-
-    if (!pathActive)
-    {
-        frameScheduler.stop();
-
-        if (!rearFrameClient.isBusy())
-        {
-            frame.hasFrontSnapshot = false;
-        }
-    }
-
-    if (pathActive)
-    {
-        rearFrameClient.cancelStopSequence();
-
-        // Fallback, falls ein aktiver Befehl ohne Startframe laufen sollte.
-        if (!frameScheduler.isRunning())
-        {
-            frameScheduler.start(now);
-        }
-    }
-}
-
-void FrontApp::updateVehicleAndFrontControl(uint32_t now)
-{
-    updateVehicleIst();
-
-    vehicle.update(now);
-
-    applyFrontWheelSoll();
-
-    control_update(now);
-}
-
-void FrontApp::updateRearStopSequence(uint32_t now)
-{
-    const bool ready =
-        uart.isConnected() &&
-        !commandRunner.isActive() &&
-        commandRunner.isFinished();
-
-    rearFrameClient.updateStopSequence(
-        Serial,
-        now,
-        ready,
-        VEHICLE_DT_MS
-    );
-}
-
-bool FrontApp::isConnected() const
-{
-    return uart.isConnected();
-}
-
-// ============================================================
-// Private Hilfsfunktionen
-// ============================================================
-
-void FrontApp::resetByWatchdog()
-{
-    wdt_enable(WDTO_15MS);
-
-    while (1)
-    {
-    }
-}
-
-void FrontApp::applyFrontWheelSoll()
-{
-    rad[Li].setSoll(commandRunner.getWheelSoll(VoLi));
-    rad[Re].setSoll(commandRunner.getWheelSoll(VoRe));
-}
-
-void FrontApp::updateVehicleIst()
-{
-    vehicle.updateIst(
-        speed[Re].mps(),
-        speed[Li].mps(),
-        rearFrameClient.hiLiIst(),
-        rearFrameClient.hiReIst()
-    );
-}
-
-void FrontApp::updateOdometerFromCompletedFrame()
-{
-    const RearPendingFrame& frame = rearFrameClient.frame();
-
-    if (_odomResetPending || !odometer.isPrimed())
-    {
-        odometer.reset(
-            frame.voReCnt,
-            frame.voLiCnt,
-            frame.hiLiCnt,
-            frame.hiReCnt
-        );
-
-        _odomResetPending = false;
-        return;
-    }
-
-    odometer.update(
-        frame.voReCnt,
-        frame.voLiCnt,
-        frame.hiLiCnt,
-        frame.hiReCnt
-    );
-}
-
-RearFrameRequest FrontApp::makeRearFrameRequest(uint32_t frameTime, bool resetPi)
-{
-    RearFrameRequest request = {};
-
-    request.frameTimeMs = frameTime;
-    request.resetPi = resetPi;
-
-    request.voLi_s_cms = mpsToCmsRounded(commandRunner.getWheelSoll(VoLi));
-    request.voLi_i_cms = mpsToCmsRounded(speed[Li].mps());
-    request.voLi_pwm = rad[Li].lastPwm();
-    request.voLiCnt = (int32_t)speed[Li].counts_total();
-
-    request.voRe_s_cms = mpsToCmsRounded(commandRunner.getWheelSoll(VoRe));
-    request.voRe_i_cms = mpsToCmsRounded(speed[Re].mps());
-    request.voRe_pwm = rad[Re].lastPwm();
-    request.voReCnt = (int32_t)speed[Re].counts_total();
-
-    request.hiLi_s_cms = mpsToCmsRounded(commandRunner.getWheelSoll(HiLi));
-    request.hiRe_s_cms = mpsToCmsRounded(commandRunner.getWheelSoll(HiRe));
-
-    return request;
-}
-
-void FrontApp::requestRearFrame(uint32_t now, uint32_t frameTime, bool resetPi)
-{
-    const RearFrameRequest request = makeRearFrameRequest(frameTime, resetPi);
-
-    rearFrameClient.requestFrame(
-        Serial,
-        now,
-        request
-    );
-
-    // VIST wird erst nach VSOL_OK,<frameId> angefordert.
-}
-
-void FrontApp::requestStartFrameForNewCommand(uint32_t now)
-{
-    if (!uart.isConnected())
-    {
-        return;
-    }
-
-    if (rearFrameClient.isBusy())
-    {
-        return;
-    }
-
-    // Neuer Fahrabschnitt:
-    // Odometrie wird beim ersten vollstaendigen Frame dieses Befehls
-    // auf die dann vorhandenen vier Encoderstaende genullt.
-    _odomResetPending = true;
-
-    // Neuer echter Fahrabschnitt:
-    // SpeedWeg zuruecksetzen, damit alte Tiefpasswerte nicht
-    // in den neuen CMDP-Abschnitt laufen.
-    speed_reset_all();
-
-    // Front-PI einmalig zuruecksetzen.
-    // Rear-PI und Rear-SpeedWeg werden ueber resetPi=true im VSOL-Startframe
-    // zurueckgesetzt.
-    control_resetPiStates();
-
-    applyFrontWheelSoll();
-
-    rearFrameClient.clearWaiting();
-    rearFrameClient.clearFrame();
-
-    frameScheduler.start(now);
-
-    // Startframe:
-    // t = 0, neue Sollwerte, resetPi=true fuer Rear.
-    requestRearFrame(now, 0, true);
+    return scaleRoundToInt16(cms());
 }
 
 ============================================================

@@ -5,20 +5,11 @@
 #include "SpeedWeg.h"
 #include "src/globals.h"
 #include "src/Encoder.h"
+#include "src/ScaleUtils.h"
 
 namespace
 {
     const float SPEED_ALPHA = 0.2f;
-
-    int16_t roundToInt16(float value)
-    {
-        if (value >= 0.0f)
-        {
-            return (int16_t)(value + 0.5f);
-        }
-
-        return (int16_t)(value - 0.5f);
-    }
 }
 
 SpeedWeg::SpeedWeg(Enc& enc)
@@ -113,5 +104,5 @@ float SpeedWeg::cms() const
 
 int16_t SpeedWeg::cmsInt() const
 {
-    return roundToInt16(cms());
+    return scaleRoundToInt16(cms());
 }
