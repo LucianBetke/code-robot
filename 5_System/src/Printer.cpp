@@ -3,34 +3,55 @@
 
 #include "src/MecanumOdometer.h"
 
-#if PRINTER_ENABLE_ODOM
-static long valueToInt100(float value)
+namespace
 {
-    if (value >= 0.0f)
+    long valueToInt100(float value)
     {
-        return (long)(value * 100.0f + 0.5f);
+        if (value >= 0.0f)
+        {
+            return (long)(value * 100.0f + 0.5f);
+        }
+
+        return (long)(value * 100.0f - 0.5f);
     }
 
-    return (long)(value * 100.0f - 0.5f);
+    int16_t mpsToCmsRounded(float value_mps)
+    {
+        const float value_cms = value_mps * 100.0f;
+
+        if (value_cms >= 0.0f)
+        {
+            return (int16_t)(value_cms + 0.5f);
+        }
+
+        return (int16_t)(value_cms - 0.5f);
+    }
+
+    void printSpeedCmsFromMps(float value_mps)
+    {
+        Serial.print((int)mpsToCmsRounded(value_mps));
+    }
 }
-#endif
 
 void Printer::printInfo(VehicleController& vehicle, const ControlConfig& cfg)
 {
 #if PRINTER_ENABLE_INFO
-    Serial.print(F("#INFO,Raeder,Li,Kp=")); Serial.print(cfg.pi[Li].Kp, 2);
-    Serial.print(F(",Ki="));                Serial.print(cfg.pi[Li].Ki, 2);
-    Serial.print(F(",dead="));              Serial.print(cfg.deadPwm[Li]);
-    Serial.print(F(",Re,Kp="));             Serial.print(cfg.pi[Re].Kp, 2);
-    Serial.print(F(",Ki="));                Serial.print(cfg.pi[Re].Ki, 2);
-    Serial.print(F(",dead="));              Serial.println(cfg.deadPwm[Re]);
+    Serial.print(F("#INFO,Raeder,Li,Kp100=")); Serial.print(valueToInt100(cfg.pi[Li].Kp));
+    Serial.print(F(",Ki100="));                Serial.print(valueToInt100(cfg.pi[Li].Ki));
+    Serial.print(F(",dead="));                 Serial.print(cfg.deadPwm[Li]);
+    Serial.print(F(",Re,Kp100="));             Serial.print(valueToInt100(cfg.pi[Re].Kp));
+    Serial.print(F(",Ki100="));                Serial.print(valueToInt100(cfg.pi[Re].Ki));
+    Serial.print(F(",dead="));                 Serial.println(cfg.deadPwm[Re]);
 
-    Serial.print(F("#INFO,Chassis,vx,Kp=")); Serial.print(vehicle.KpVx(), 2);
-    Serial.print(F(",Ki="));                  Serial.print(vehicle.KiVx(), 2);
-    Serial.print(F(",vy,Kp="));               Serial.print(vehicle.KpVy(), 2);
-    Serial.print(F(",Ki="));                  Serial.print(vehicle.KiVy(), 2);
-    Serial.print(F(",wz,Kp="));               Serial.print(vehicle.KpWz(), 2);
-    Serial.print(F(",Ki="));                  Serial.println(vehicle.KiWz(), 2);
+    Serial.print(F("#INFO,Chassis,vx,Kp100=")); Serial.print(valueToInt100(vehicle.KpVx()));
+    Serial.print(F(",Ki100="));                  Serial.print(valueToInt100(vehicle.KiVx()));
+    Serial.print(F(",vy,Kp100="));               Serial.print(valueToInt100(vehicle.KpVy()));
+    Serial.print(F(",Ki100="));                  Serial.print(valueToInt100(vehicle.KiVy()));
+    Serial.print(F(",wz,Kp100="));               Serial.print(valueToInt100(vehicle.KpWz()));
+    Serial.print(F(",Ki100="));                  Serial.println(valueToInt100(vehicle.KiWz()));
+#else
+    (void)vehicle;
+    (void)cfg;
 #endif
 }
 
@@ -109,14 +130,22 @@ void Printer::printWheels(VehicleController& vehicle,
 {
 #if PRINTER_ENABLE_CHASSIS
     Serial.print(F("#CHASSIS,"));
-    Serial.print(t_ms);               Serial.print(',');
-    Serial.print(speed[Li].mps(), 2); Serial.print(',');
-    Serial.print(speed[Re].mps(), 2); Serial.print(',');
-    Serial.print(v2_ist, 2);          Serial.print(',');
-    Serial.print(v3_ist, 2);          Serial.print(',');
-    Serial.print(vehicle.vxIst(), 2); Serial.print(',');
-    Serial.print(vehicle.vyIst(), 2); Serial.print(',');
-    Serial.println(vehicle.wzIst(), 2);
+    Serial.print((unsigned long)t_ms); Serial.print(',');
+
+    printSpeedCmsFromMps(speed[Li].mps()); Serial.print(',');
+    printSpeedCmsFromMps(speed[Re].mps()); Serial.print(',');
+    printSpeedCmsFromMps(v2_ist);          Serial.print(',');
+    printSpeedCmsFromMps(v3_ist);          Serial.print(',');
+
+    printSpeedCmsFromMps(vehicle.vxIst()); Serial.print(',');
+    printSpeedCmsFromMps(vehicle.vyIst()); Serial.print(',');
+
+    Serial.println(valueToInt100(vehicle.wzIst()));
+#else
+    (void)vehicle;
+    (void)v2_ist;
+    (void)v3_ist;
+    (void)t_ms;
 #endif
 }
 
@@ -129,14 +158,24 @@ void Printer::printFrame(VehicleController& vehicle,
 {
 #if PRINTER_ENABLE_CHASSIS
     Serial.print(F("#CHASSIS,"));
-    Serial.print(t_ms);               Serial.print(',');
-    Serial.print(voLi_i, 2);          Serial.print(',');
-    Serial.print(voRe_i, 2);          Serial.print(',');
-    Serial.print(hiLi_i, 2);          Serial.print(',');
-    Serial.print(hiRe_i, 2);          Serial.print(',');
-    Serial.print(vehicle.vxIst(), 2); Serial.print(',');
-    Serial.print(vehicle.vyIst(), 2); Serial.print(',');
-    Serial.println(vehicle.wzIst(), 2);
+    Serial.print((unsigned long)t_ms); Serial.print(',');
+
+    printSpeedCmsFromMps(voLi_i);          Serial.print(',');
+    printSpeedCmsFromMps(voRe_i);          Serial.print(',');
+    printSpeedCmsFromMps(hiLi_i);          Serial.print(',');
+    printSpeedCmsFromMps(hiRe_i);          Serial.print(',');
+
+    printSpeedCmsFromMps(vehicle.vxIst()); Serial.print(',');
+    printSpeedCmsFromMps(vehicle.vyIst()); Serial.print(',');
+
+    Serial.println(valueToInt100(vehicle.wzIst()));
+#else
+    (void)vehicle;
+    (void)t_ms;
+    (void)voLi_i;
+    (void)voRe_i;
+    (void)hiLi_i;
+    (void)hiRe_i;
 #endif
 }
 
@@ -151,28 +190,35 @@ void Printer::printWheels(VehicleController& vehicle,
 {
 #if PRINTER_ENABLE_WHEELS
     Serial.print(F("#WHEELS,"));
-    Serial.print(t_ms);                          Serial.print(',');
+    Serial.print((unsigned long)t_ms);             Serial.print(',');
 
-    Serial.print(vehicle.getWheelSoll(VoLi), 2); Serial.print(',');
-    Serial.print(speed[Li].mps(), 2);            Serial.print(',');
-    Serial.print(rad[Li].lastPwm());             Serial.print(',');
+    printSpeedCmsFromMps(vehicle.getWheelSoll(VoLi)); Serial.print(',');
+    printSpeedCmsFromMps(speed[Li].mps());            Serial.print(',');
+    Serial.print(rad[Li].lastPwm());                  Serial.print(',');
 
-    Serial.print(vehicle.getWheelSoll(VoRe), 2); Serial.print(',');
-    Serial.print(speed[Re].mps(), 2);            Serial.print(',');
-    Serial.print(rad[Re].lastPwm());             Serial.print(',');
+    printSpeedCmsFromMps(vehicle.getWheelSoll(VoRe)); Serial.print(',');
+    printSpeedCmsFromMps(speed[Re].mps());            Serial.print(',');
+    Serial.print(rad[Re].lastPwm());                  Serial.print(',');
 
-    Serial.print(vehicle.getWheelSoll(HiLi), 2); Serial.print(',');
-    Serial.print(v2_ist, 2);                     Serial.print(',');
-    Serial.print(pwm2);                          Serial.print(',');
+    printSpeedCmsFromMps(vehicle.getWheelSoll(HiLi)); Serial.print(',');
+    printSpeedCmsFromMps(v2_ist);                     Serial.print(',');
+    Serial.print(pwm2);                               Serial.print(',');
 
-    Serial.print(vehicle.getWheelSoll(HiRe), 2); Serial.print(',');
-    Serial.print(v3_ist, 2);                     Serial.print(',');
+    printSpeedCmsFromMps(vehicle.getWheelSoll(HiRe)); Serial.print(',');
+    printSpeedCmsFromMps(v3_ist);                     Serial.print(',');
     Serial.println(pwm3);
+#else
+    (void)vehicle;
+    (void)v2_ist;
+    (void)v3_ist;
+    (void)pwm2;
+    (void)pwm3;
+    (void)t_ms;
 #endif
 
 #if PRINTER_ENABLE_COUNTS
     Serial.print(F("#CNTF,"));
-    Serial.print(t_ms);                          Serial.print(',');
+    Serial.print((unsigned long)t_ms);           Serial.print(',');
     Serial.print(speed[Li].counts_total());      Serial.print(',');
     Serial.println(speed[Re].counts_total());
 #endif
@@ -195,28 +241,42 @@ void Printer::printFrame(
 {
 #if PRINTER_ENABLE_WHEELS
     Serial.print(F("#WHEELS,"));
-    Serial.print(t_ms);      Serial.print(',');
+    Serial.print((unsigned long)t_ms); Serial.print(',');
 
-    Serial.print(voLi_s, 2); Serial.print(',');
-    Serial.print(voLi_i, 2); Serial.print(',');
-    Serial.print(voLi_pwm);  Serial.print(',');
+    printSpeedCmsFromMps(voLi_s);      Serial.print(',');
+    printSpeedCmsFromMps(voLi_i);      Serial.print(',');
+    Serial.print(voLi_pwm);            Serial.print(',');
 
-    Serial.print(voRe_s, 2); Serial.print(',');
-    Serial.print(voRe_i, 2); Serial.print(',');
-    Serial.print(voRe_pwm);  Serial.print(',');
+    printSpeedCmsFromMps(voRe_s);      Serial.print(',');
+    printSpeedCmsFromMps(voRe_i);      Serial.print(',');
+    Serial.print(voRe_pwm);            Serial.print(',');
 
-    Serial.print(hiLi_s, 2); Serial.print(',');
-    Serial.print(hiLi_i, 2); Serial.print(',');
-    Serial.print(hiLi_pwm);  Serial.print(',');
+    printSpeedCmsFromMps(hiLi_s);      Serial.print(',');
+    printSpeedCmsFromMps(hiLi_i);      Serial.print(',');
+    Serial.print(hiLi_pwm);            Serial.print(',');
 
-    Serial.print(hiRe_s, 2); Serial.print(',');
-    Serial.print(hiRe_i, 2); Serial.print(',');
+    printSpeedCmsFromMps(hiRe_s);      Serial.print(',');
+    printSpeedCmsFromMps(hiRe_i);      Serial.print(',');
     Serial.println(hiRe_pwm);
+#else
+    (void)t_ms;
+    (void)voLi_s;
+    (void)voLi_i;
+    (void)voLi_pwm;
+    (void)voRe_s;
+    (void)voRe_i;
+    (void)voRe_pwm;
+    (void)hiLi_s;
+    (void)hiLi_i;
+    (void)hiLi_pwm;
+    (void)hiRe_s;
+    (void)hiRe_i;
+    (void)hiRe_pwm;
 #endif
 
 #if PRINTER_ENABLE_COUNTS
     Serial.print(F("#CNTF,"));
-    Serial.print(t_ms);                     Serial.print(',');
+    Serial.print((unsigned long)t_ms);      Serial.print(',');
     Serial.print(speed[Li].counts_total()); Serial.print(',');
     Serial.println(speed[Re].counts_total());
 #endif

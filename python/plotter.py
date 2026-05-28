@@ -386,7 +386,7 @@ def _update_wheels_plot(axes, store) -> None:
     fig = ax_speed.figure
 
     if not wheels_rows:
-        _format_wheels_axis(ax_speed, "v [m/s]")
+        _format_wheels_axis(ax_speed, "v [cm/s]")
         _format_wheels_axis(ax_pwm, "PWM", "Weg [cm]")
         _update_wheels_status(fig, 0, [])
         ax_speed.text(
@@ -402,7 +402,7 @@ def _update_wheels_plot(axes, store) -> None:
     _update_wheels_status(fig, len(wheels_rows), s_cm)
 
     if not s_cm:
-        _format_wheels_axis(ax_speed, "v [m/s]")
+        _format_wheels_axis(ax_speed, "v [cm/s]")
         _format_wheels_axis(ax_pwm, "PWM", "Weg [cm]")
         ax_speed.text(
             0.5, 0.5, "warte auf passende #ODOM2 ...",
@@ -421,7 +421,7 @@ def _update_wheels_plot(axes, store) -> None:
         ax_speed.plot(s_cm, ist,  label=f"{name}_i", linewidth=1.7)
         ax_pwm.plot(s_cm,   pwm,  label=f"{name}_pwm", linewidth=1.7)
 
-    _format_wheels_axis(ax_speed, "v [m/s]")
+    _format_wheels_axis(ax_speed, "v [cm/s]")
     _format_wheels_axis(ax_pwm, "PWM", "Weg [cm]")
 
     ax_speed.legend(loc="upper right", fontsize=11)
