@@ -5,26 +5,6 @@
 #include "src/Control.h"
 #include "src/ControlConfig.h"
 
-namespace
-{
-    float cmsToMps(int16_t value_cms)
-    {
-        return (float)value_cms * 0.01f;
-    }
-
-    int16_t mpsToCmsRounded(float value_mps)
-    {
-        const float value_cms = value_mps * 100.0f;
-
-        if (value_cms >= 0.0f)
-        {
-            return (int16_t)(value_cms + 0.5f);
-        }
-
-        return (int16_t)(value_cms - 0.5f);
-    }
-}
-
 RearApp::RearApp()
     : uart(Serial, false),
     conn(uart, 13),
@@ -86,20 +66,17 @@ void RearApp::handleIncomingVsol(uint32_t now)
     {
         lastVsolFrameId = vsol.frameId;
 
-        const float vSollLi = cmsToMps(vsol.hiLiSoll);
-        const float vSollRe = cmsToMps(vsol.hiReSoll);
+        const float vSollLiCms = (float)vsol.hiLiSoll;
+        const float vSollReCms = (float)vsol.hiReSoll;
 
         if (vsol.resetPi)
         {
-            // Neuer CMDP-Fahrabschnitt:
-            // PI-Zustaende und SpeedWeg-Filter muessen beide zurueckgesetzt werden,
-            // damit alte Istgeschwindigkeiten nicht in den neuen Abschnitt laufen.
             control_resetPiStates();
             speed_reset_all();
         }
 
-        rad[Li].setSoll(vSollLi);
-        rad[Re].setSoll(vSollRe);
+        rad[Li].setSoll(vSollLiCms);
+        rad[Re].setSoll(vSollReCms);
 
         lastVsolMs = now;
         rearSollActive = (vsol.hiLiSoll != 0 || vsol.hiReSoll != 0);
@@ -122,8 +99,8 @@ void RearApp::handleSyncVist()
 
     syncFlag = false;
 
-    const int16_t vIstLi = mpsToCmsRounded(speed[Li].mps());
-    const int16_t vIstRe = mpsToCmsRounded(speed[Re].mps());
+    const int16_t vIstLiCms = speed[Li].cmsInt();
+    const int16_t vIstReCms = speed[Re].cmsInt();
 
     const int16_t pwmLi = rad[Li].lastPwm();
     const int16_t pwmRe = rad[Re].lastPwm();
@@ -136,8 +113,8 @@ void RearApp::handleSyncVist()
         printVist(
             Serial,
             lastVsolFrameId,
-            vIstLi,
-            vIstRe,
+            vIstLiCms,
+            vIstReCms,
             pwmLi,
             pwmRe,
             cntLi,

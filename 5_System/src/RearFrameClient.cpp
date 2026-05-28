@@ -4,14 +4,6 @@
 #include <Arduino.h>
 #include "src/CommProtocol.h"
 
-namespace
-{
-    float cmsToMps(int16_t value_cms)
-    {
-        return (float)value_cms * 0.01f;
-    }
-}
-
 RearFrameClient::RearFrameClient()
     : _nextFrameId(1),
     _frame(),
@@ -65,18 +57,18 @@ void RearFrameClient::clearFrame()
     _frame.frameId = 0;
     _frame.t = 0;
 
-    _frame.voLi_s = 0.0f;
-    _frame.voLi_i = 0.0f;
+    _frame.voLi_s_cms = 0;
+    _frame.voLi_i_cms = 0;
     _frame.voLi_pwm = 0;
     _frame.voLiCnt = 0;
 
-    _frame.voRe_s = 0.0f;
-    _frame.voRe_i = 0.0f;
+    _frame.voRe_s_cms = 0;
+    _frame.voRe_i_cms = 0;
     _frame.voRe_pwm = 0;
     _frame.voReCnt = 0;
 
-    _frame.hiLi_s = 0.0f;
-    _frame.hiRe_s = 0.0f;
+    _frame.hiLi_s_cms = 0;
+    _frame.hiRe_s_cms = 0;
 
     _frame.hiLiCnt = 0;
     _frame.hiReCnt = 0;
@@ -117,16 +109,6 @@ uint32_t RearFrameClient::requestMs() const
 uint32_t RearFrameClient::lastSendMs() const
 {
     return _lastSendMs;
-}
-
-float RearFrameClient::hiLiIst() const
-{
-    return cmsToMps(_hiLiIstCms);
-}
-
-float RearFrameClient::hiReIst() const
-{
-    return cmsToMps(_hiReIstCms);
 }
 
 int16_t RearFrameClient::hiLiIstCms() const
@@ -171,21 +153,18 @@ bool RearFrameClient::requestFrame(
     _frame.frameId = frameId;
     _frame.t = request.frameTimeMs;
 
-    // Uebergang fuer den alten Printer:
-    // RearFrameRequest ist bereits cm/s-Integer,
-    // RearPendingFrame bleibt bis zum Printer-Umbau float/m/s.
-    _frame.voLi_s = cmsToMps(request.voLi_s_cms);
-    _frame.voLi_i = cmsToMps(request.voLi_i_cms);
+    _frame.voLi_s_cms = request.voLi_s_cms;
+    _frame.voLi_i_cms = request.voLi_i_cms;
     _frame.voLi_pwm = request.voLi_pwm;
     _frame.voLiCnt = request.voLiCnt;
 
-    _frame.voRe_s = cmsToMps(request.voRe_s_cms);
-    _frame.voRe_i = cmsToMps(request.voRe_i_cms);
+    _frame.voRe_s_cms = request.voRe_s_cms;
+    _frame.voRe_i_cms = request.voRe_i_cms;
     _frame.voRe_pwm = request.voRe_pwm;
     _frame.voReCnt = request.voReCnt;
 
-    _frame.hiLi_s = cmsToMps(request.hiLi_s_cms);
-    _frame.hiRe_s = cmsToMps(request.hiRe_s_cms);
+    _frame.hiLi_s_cms = request.hiLi_s_cms;
+    _frame.hiRe_s_cms = request.hiRe_s_cms;
 
     _frame.hiLiCnt = 0;
     _frame.hiReCnt = 0;

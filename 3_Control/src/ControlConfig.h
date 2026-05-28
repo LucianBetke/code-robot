@@ -4,59 +4,40 @@
 //  - Datentyp ControlConfig fuer PI-Parameter und DeadPWM
 //  - Vordefinierte Konfigurationen fuer vorne und hinten
 //
-//  Apps (vorne, hinten) waehlen ihre Konfiguration aus und
-//  uebergeben sie an control_begin().
-//  3_Control selbst kennt vorne/hinten nicht.
+// Wichtig:
+//  - Radgeschwindigkeiten werden jetzt in cm/s geregelt.
+//  - Alte PI-Werte aus m/s wurden durch 100 geteilt.
 // ============================================================
 
 #ifndef CONTROLCONFIG_H
 #define CONTROLCONFIG_H
 
-
 #include <Arduino.h>
 #include "src/globals.h"
-#include "src/ControlTypes.h"   // PIParam
+#include "src/ControlTypes.h"
 
-// ============================================================
-// Datentyp: enthaelt alles, was Control zur Initialisierung
-// braucht.
-// ============================================================
 struct ControlConfig
 {
-    int16_t deadPwm[WHEEL_COUNT];   // Mindest-PWM zum Anfahren
-    PIParam pi[WHEEL_COUNT];        // Kp und Ki je Rad
+    int16_t deadPwm[WHEEL_COUNT];
+    PIParam pi[WHEEL_COUNT];
 };
 
-// ============================================================
-// namespace ConfigFront
-//
-// Der namespace ist nur eine "Schublade" mit einem Namen.
-// Variablen darin spricht man mit "ConfigFront::CONFIG" an.
-// Damit koennen ConfigFront und ConfigRear je ein eigenes
-// CONFIG haben, ohne sich gegenseitig zu stoeren.
-// ============================================================
 namespace ConfigFront
 {
     constexpr ControlConfig CONFIG =
     {
         // deadPwm: Li, Re
         { 70, 70 },
- //       { 80, 60 }, alter wert
 
         // PI-Parameter: Li, Re
+        // Einheit Fehler: cm/s
         {
-            { 2.0f, 8.0f },   // Li: Kp, Ki
-            { 2.0f, 10.0f }    // Re: Kp, Ki
+            { 0.020f, 0.080f },   // Li: vorher 2.0 / 8.0 bei m/s
+            { 0.020f, 0.100f }    // Re: vorher 2.0 / 10.0 bei m/s
         }
     };
 }
 
-// ============================================================
-// namespace ConfigRear
-//
-// Aktuell identisch mit ConfigFront, aber als eigene
-// Schublade -> spaeter unabhaengig anpassbar.
-// ============================================================
 namespace ConfigRear
 {
     constexpr ControlConfig CONFIG =
@@ -65,9 +46,10 @@ namespace ConfigRear
         { 80, 60 },
 
         // PI-Parameter: Li, Re
+        // Einheit Fehler: cm/s
         {
-            { 2.0f, 6.0f },   // Li: Kp, Ki
-            { 2.0f, 5.5f }    // Re: Kp, Ki
+            { 0.020f, 0.060f },   // Li: vorher 2.0 / 6.0 bei m/s
+            { 0.020f, 0.055f }    // Re: vorher 2.0 / 5.5 bei m/s
         }
     };
 }

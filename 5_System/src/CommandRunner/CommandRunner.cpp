@@ -1,6 +1,7 @@
 // ============================================================
 // CommandRunner.cpp
 // ============================================================
+
 #include "CommandRunner.h"
 #include "src/PrinterConfig.h"
 #include "src/globals.h"
@@ -14,10 +15,28 @@ namespace
 
     const float CMDP_SPEED_EPS = 0.001f;
 
-    // Timeout-Regel:
-    // ideale Fahrzeit * 3 + 1000 ms Reserve
     const uint32_t CMDP_TIMEOUT_FACTOR = 3UL;
     const uint32_t CMDP_TIMEOUT_RESERVE_MS = 1000UL;
+
+    long valueToInt100(float value)
+    {
+        if (value >= 0.0f)
+        {
+            return (long)(value * 100.0f + 0.5f);
+        }
+
+        return (long)(value * 100.0f - 0.5f);
+    }
+
+    long unitToInt1000(float value)
+    {
+        if (value >= 0.0f)
+        {
+            return (long)(value * 1000.0f + 0.5f);
+        }
+
+        return (long)(value * 1000.0f - 0.5f);
+    }
 }
 
 CommandRunner::CommandRunner(
@@ -97,10 +116,6 @@ void CommandRunner::startSettlePhase(uint32_t now)
     _durationMs = CMDP_SETTLE_MS;
 
     _settleActive = true;
-
-    // Wichtig:
-    // Die Settle-Phase ist KEIN neuer CMDP-Fahrabschnitt.
-    // Deshalb darf sie keinen Startframe und keinen Messframe erzeugen.
     _startFramePending = false;
 }
 
@@ -218,27 +233,23 @@ bool CommandRunner::startTranslationPathCmd(const ParsedCommand& cmd, uint32_t n
     _durationMs = calcPathTimeoutMs(cmd.param, v_abs_cms);
 
 #if PRINTER_ENABLE_EVENTS
-    Serial.print(F("#EVENT,startCmdp,vx="));
+    Serial.print(F("#EVENT,startCmdp,vxCms="));
     Serial.print(cmd.vx);
-    Serial.print(F(",vy="));
+    Serial.print(F(",vyCms="));
     Serial.print(cmd.vy);
-    Serial.print(F(",wz="));
+    Serial.print(F(",wzDegS="));
     Serial.print(cmd.wz);
     Serial.print(F(",targetCm="));
     Serial.print(_pathTargetCm);
-    Serial.print(F(",unitX="));
-    Serial.print(_pathUnitX, 3);
-    Serial.print(F(",unitY="));
-    Serial.print(_pathUnitY, 3);
+    Serial.print(F(",unitX1000="));
+    Serial.print(unitToInt1000(_pathUnitX));
+    Serial.print(F(",unitY1000="));
+    Serial.print(unitToInt1000(_pathUnitY));
     Serial.print(F(",timeoutMs="));
     Serial.println(_durationMs);
 #endif
 
-    const float vx = (float)cmd.vx * 0.01f;
-    const float vy = (float)cmd.vy * 0.01f;
-    const float wz = 0.0f;
-
-    _vehicle.cmd(vx, vy, wz);
+    _vehicle.cmd(vx_cms, vy_cms, 0.0f);
 
     _startTime = now;
     _active = true;
@@ -286,7 +297,7 @@ bool CommandRunner::startRotationPathCmd(const ParsedCommand& cmd, uint32_t now)
     _durationMs = calcAngleTimeoutMs(cmd.param, wz_abs_deg_s);
 
 #if PRINTER_ENABLE_EVENTS
-    Serial.print(F("#EVENT,startCmdpTurn,wz="));
+    Serial.print(F("#EVENT,startCmdpTurn,wzDegS="));
     Serial.print(cmd.wz);
     Serial.print(F(",targetDeg="));
     Serial.print(_angleTargetDeg);
@@ -296,11 +307,9 @@ bool CommandRunner::startRotationPathCmd(const ParsedCommand& cmd, uint32_t now)
     Serial.println(_durationMs);
 #endif
 
-    const float vx = 0.0f;
-    const float vy = 0.0f;
-    const float wz = (float)wz_deg_s * DEG_TO_RAD;
+    const float wz_rad_s = (float)wz_deg_s * DEG_TO_RAD;
 
-    _vehicle.cmd(vx, vy, wz);
+    _vehicle.cmd(0.0f, 0.0f, wz_rad_s);
 
     _startTime = now;
     _active = true;
@@ -416,15 +425,15 @@ void CommandRunner::finishPathCmd(uint32_t now)
     {
         Serial.print(F("#EVENT,angleReached,targetDeg="));
         Serial.print(_angleTargetDeg);
-        Serial.print(F(",progressDeg="));
-        Serial.println(_angleProgressDeg, 2);
+        Serial.print(F(",progressDeg100="));
+        Serial.println(valueToInt100(_angleProgressDeg));
     }
     else
     {
         Serial.print(F("#EVENT,pathReached,targetCm="));
         Serial.print(_pathTargetCm);
-        Serial.print(F(",progressCm="));
-        Serial.println(_pathProgressCm, 2);
+        Serial.print(F(",progressCm100="));
+        Serial.println(valueToInt100(_pathProgressCm));
     }
 #endif
 
@@ -451,8 +460,8 @@ void CommandRunner::finishPathTimeoutCmd(uint32_t now)
     {
         Serial.print(F("#ERROR,CMDP,timeout,targetDeg="));
         Serial.print(_angleTargetDeg);
-        Serial.print(F(",progressDeg="));
-        Serial.print(_angleProgressDeg, 2);
+        Serial.print(F(",progressDeg100="));
+        Serial.print(valueToInt100(_angleProgressDeg));
         Serial.print(F(",timeoutMs="));
         Serial.println(_durationMs);
     }
@@ -460,8 +469,8 @@ void CommandRunner::finishPathTimeoutCmd(uint32_t now)
     {
         Serial.print(F("#ERROR,CMDP,timeout,targetCm="));
         Serial.print(_pathTargetCm);
-        Serial.print(F(",progressCm="));
-        Serial.print(_pathProgressCm, 2);
+        Serial.print(F(",progressCm100="));
+        Serial.print(valueToInt100(_pathProgressCm));
         Serial.print(F(",timeoutMs="));
         Serial.println(_durationMs);
     }

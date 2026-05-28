@@ -7,12 +7,13 @@
 #include "SpeedWeg.h"
 #include "PIRegler.h"
 
-class Rad {
+class Rad
+{
 public:
     Rad(Motor& motor, SpeedWeg& speed, PIRegler& regler,
         uint16_t dtMs, int16_t deadPwm);
 
-    void  setSoll(float v_soll);
+    void  setSoll(float v_soll_cms);
     float soll() const;
     float vIst() const;
 

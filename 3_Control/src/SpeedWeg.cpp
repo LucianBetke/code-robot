@@ -6,17 +6,21 @@
 #include "src/globals.h"
 #include "src/Encoder.h"
 
-// ------------------------------------------------------------
-// Lokale Konstanten
-// ------------------------------------------------------------
 namespace
 {
     const float SPEED_ALPHA = 0.2f;
+
+    int16_t roundToInt16(float value)
+    {
+        if (value >= 0.0f)
+        {
+            return (int16_t)(value + 0.5f);
+        }
+
+        return (int16_t)(value - 0.5f);
+    }
 }
 
-// ------------------------------------------------------------
-// Konstruktor
-// ------------------------------------------------------------
 SpeedWeg::SpeedWeg(Enc& enc)
     : _enc(enc)
 {
@@ -29,7 +33,6 @@ SpeedWeg::SpeedWeg(Enc& enc)
     _last_tick_ms = 0;
 }
 
-// ------------------------------------------------------------
 void SpeedWeg::reset()
 {
     _counts_total = 0;
@@ -42,10 +45,6 @@ void SpeedWeg::reset()
     _last_counts = _enc.getCounts();
 }
 
-// ------------------------------------------------------------
-// Encoder poll + Berechnung
-// Zeitbasis: ms
-// ------------------------------------------------------------
 void SpeedWeg::update(uint32_t now_ms)
 {
     long cur = _enc.getCounts();
@@ -65,17 +64,11 @@ void SpeedWeg::update(uint32_t now_ms)
     timeoutCheck(now_ms);
 }
 
-// ------------------------------------------------------------
 void SpeedWeg::updateFromTicks(int16_t dcounts, uint32_t now_ms)
 {
-    // 1) Counts immer summieren.
-    // Diese Gesamtcounts sind die Grundlage fuer Odometrie/Plot.
     _counts_total += dcounts;
-
-    // 2) Tick-Sammelpuffer fuer Geschwindigkeitsfenster
     _acc_counts += dcounts;
 
-    // 3) Zeit seit letzter Geschwindigkeitsmessung
     if (_last_time_ms == 0)
     {
         _last_time_ms = now_ms;
@@ -84,28 +77,22 @@ void SpeedWeg::updateFromTicks(int16_t dcounts, uint32_t now_ms)
 
     uint32_t dt_ms = now_ms - _last_time_ms;
 
-    // Noch nicht genug Zeit? Nichts tun.
     if (dt_ms < SPEED_MIN_DT_MS)
     {
         return;
     }
 
-    // Zeit aktualisieren: Fensterende
     _last_time_ms = now_ms;
 
-    // 4) Geschwindigkeit berechnen
     const float dt_s = (float)dt_ms * 0.001f;
     const float revs = (float)_acc_counts / (float)COUNTS_PER_REV;
     const float rps_i = revs / dt_s;
 
-    // 5) Tiefpass
     _rps_filt += SPEED_ALPHA * (rps_i - _rps_filt);
 
-    // 6) Fenster zuruecksetzen
     _acc_counts = 0;
 }
 
-// ------------------------------------------------------------
 void SpeedWeg::timeoutCheck(uint32_t now_ms)
 {
     if (_last_tick_ms == 0)
@@ -119,8 +106,12 @@ void SpeedWeg::timeoutCheck(uint32_t now_ms)
     }
 }
 
-// ------------------------------------------------------------
-float SpeedWeg::mps() const
+float SpeedWeg::cms() const
 {
-    return (_rps_filt * RAD_UMFANG_MM) / 1000.0f;
+    return _rps_filt * RAD_UMFANG_CM;
+}
+
+int16_t SpeedWeg::cmsInt() const
+{
+    return roundToInt16(cms());
 }

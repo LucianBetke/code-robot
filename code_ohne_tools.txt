@@ -359,12 +359,15 @@ class Stream;
 //   Rear -> Front
 //   VIST,<frameId>,<hiLiIst>,<hiReIst>,<hiLiPwm>,<hiRePwm>,<hiLiCnt>,<hiReCnt>
 //
-// Geschwindigkeiten werden als int16_t im Format:
-//   Wert = m/s * 100
-// uebertragen.
+// Geschwindigkeiten werden als int16_t in cm/s uebertragen.
 // Beispiel:
-//   0.30 m/s  ->  30
-//  -0.20 m/s  -> -20
+//    30 cm/s  ->  30
+//   -20 cm/s  -> -20
+//
+// Wichtig:
+// Die Feldnamen hiLiSoll, hiReSoll, hiLiIst, hiReIst bleiben vorerst gleich,
+// aber ihre Bedeutung ist jetzt direkt cm/s.
+// Es ist nicht mehr "m/s * 100" als Denkmodell.
 //
 // Encoder-Counts werden als int32_t Rohwerte uebertragen.
 // ============================================================
@@ -417,24 +420,6 @@ void printVist(
     int16_t hiRePwm,
     int32_t hiLiCnt,
     int32_t hiReCnt);
-
-============================================================
-FILE: C:\Users\Acer\source\repos\robot\1_Common\src\CommUtils.h
-============================================================
-// CommUtils.h
-// brauche ich die noch?????
-#pragma once
-#include <stdint.h>
-
-inline int16_t floatToInt100(float v)
-{
-    return (int16_t)(v * 100.0f + (v >= 0.0f ? 0.5f : -0.5f));
-}
-
-inline float int100ToFloat(int16_t v)
-{
-    return (float)v / 100.0f;
-}
 
 ============================================================
 FILE: C:\Users\Acer\source\repos\robot\1_Common\src\ControlTypes.h
@@ -2757,7 +2742,11 @@ void CommandRunner::startSettlePhase(uint32_t now)
     _durationMs = CMDP_SETTLE_MS;
 
     _settleActive = true;
-    _startFramePending = true;
+
+    // Wichtig:
+    // Die Settle-Phase ist KEIN neuer CMDP-Fahrabschnitt.
+    // Deshalb darf sie keinen Startframe und keinen Messframe erzeugen.
+    _startFramePending = false;
 }
 
 void CommandRunner::updateSettlePhase(uint32_t now)
@@ -3728,34 +3717,55 @@ FILE: C:\Users\Acer\source\repos\robot\5_System\src\Printer.cpp
 
 #include "src/MecanumOdometer.h"
 
-#if PRINTER_ENABLE_ODOM
-static long valueToInt100(float value)
+namespace
 {
-    if (value >= 0.0f)
+    long valueToInt100(float value)
     {
-        return (long)(value * 100.0f + 0.5f);
+        if (value >= 0.0f)
+        {
+            return (long)(value * 100.0f + 0.5f);
+        }
+
+        return (long)(value * 100.0f - 0.5f);
     }
 
-    return (long)(value * 100.0f - 0.5f);
+    int16_t mpsToCmsRounded(float value_mps)
+    {
+        const float value_cms = value_mps * 100.0f;
+
+        if (value_cms >= 0.0f)
+        {
+            return (int16_t)(value_cms + 0.5f);
+        }
+
+        return (int16_t)(value_cms - 0.5f);
+    }
+
+    void printSpeedCmsFromMps(float value_mps)
+    {
+        Serial.print((int)mpsToCmsRounded(value_mps));
+    }
 }
-#endif
 
 void Printer::printInfo(VehicleController& vehicle, const ControlConfig& cfg)
 {
 #if PRINTER_ENABLE_INFO
-    Serial.print(F("#INFO,Raeder,Li,Kp=")); Serial.print(cfg.pi[Li].Kp, 2);
-    Serial.print(F(",Ki="));                Serial.print(cfg.pi[Li].Ki, 2);
-    Serial.print(F(",dead="));              Serial.print(cfg.deadPwm[Li]);
-    Serial.print(F(",Re,Kp="));             Serial.print(cfg.pi[Re].Kp, 2);
-    Serial.print(F(",Ki="));                Serial.print(cfg.pi[Re].Ki, 2);
-    Serial.print(F(",dead="));              Serial.println(cfg.deadPwm[Re]);
+    Serial.print(F("#INFO,Raeder,Li,Kp100=")); Serial.print(valueToInt100(cfg.pi[Li].Kp));
+    Serial.print(F(",Ki100="));                Serial.print(valueToInt100(cfg.pi[Li].Ki));
+    Serial.print(F(",dead="));                 Serial.print(cfg.deadPwm[Li]);
+    Serial.print(F(",Re,Kp100="));             Serial.print(valueToInt100(cfg.pi[Re].Kp));
+    Serial.print(F(",Ki100="));                Serial.print(valueToInt100(cfg.pi[Re].Ki));
+    Serial.print(F(",dead="));                 Serial.println(cfg.deadPwm[Re]);
 
-    Serial.print(F("#INFO,Chassis,vx,Kp=")); Serial.print(vehicle.KpVx(), 2);
-    Serial.print(F(",Ki="));                  Serial.print(vehicle.KiVx(), 2);
-    Serial.print(F(",vy,Kp="));               Serial.print(vehicle.KpVy(), 2);
-    Serial.print(F(",Ki="));                  Serial.print(vehicle.KiVy(), 2);
-    Serial.print(F(",wz,Kp="));               Serial.print(vehicle.KpWz(), 2);
-    Serial.print(F(",Ki="));                  Serial.println(vehicle.KiWz(), 2);
+    Serial.print(F("#INFO,Chassis,vx,Kp100=")); Serial.print(valueToInt100(vehicle.KpVx()));
+    Serial.print(F(",Ki100="));                  Serial.print(valueToInt100(vehicle.KiVx()));
+    Serial.print(F(",vy,Kp100="));               Serial.print(valueToInt100(vehicle.KpVy()));
+    Serial.print(F(",Ki100="));                  Serial.print(valueToInt100(vehicle.KiVy()));
+    Serial.print(F(",wz,Kp100="));               Serial.print(valueToInt100(vehicle.KpWz()));
+    Serial.print(F(",Ki100="));                  Serial.println(valueToInt100(vehicle.KiWz()));
+#else
+    (void)vehicle;
+    (void)cfg;
 #endif
 }
 
@@ -3834,14 +3844,22 @@ void Printer::printWheels(VehicleController& vehicle,
 {
 #if PRINTER_ENABLE_CHASSIS
     Serial.print(F("#CHASSIS,"));
-    Serial.print(t_ms);               Serial.print(',');
-    Serial.print(speed[Li].mps(), 2); Serial.print(',');
-    Serial.print(speed[Re].mps(), 2); Serial.print(',');
-    Serial.print(v2_ist, 2);          Serial.print(',');
-    Serial.print(v3_ist, 2);          Serial.print(',');
-    Serial.print(vehicle.vxIst(), 2); Serial.print(',');
-    Serial.print(vehicle.vyIst(), 2); Serial.print(',');
-    Serial.println(vehicle.wzIst(), 2);
+    Serial.print((unsigned long)t_ms); Serial.print(',');
+
+    printSpeedCmsFromMps(speed[Li].mps()); Serial.print(',');
+    printSpeedCmsFromMps(speed[Re].mps()); Serial.print(',');
+    printSpeedCmsFromMps(v2_ist);          Serial.print(',');
+    printSpeedCmsFromMps(v3_ist);          Serial.print(',');
+
+    printSpeedCmsFromMps(vehicle.vxIst()); Serial.print(',');
+    printSpeedCmsFromMps(vehicle.vyIst()); Serial.print(',');
+
+    Serial.println(valueToInt100(vehicle.wzIst()));
+#else
+    (void)vehicle;
+    (void)v2_ist;
+    (void)v3_ist;
+    (void)t_ms;
 #endif
 }
 
@@ -3854,14 +3872,24 @@ void Printer::printFrame(VehicleController& vehicle,
 {
 #if PRINTER_ENABLE_CHASSIS
     Serial.print(F("#CHASSIS,"));
-    Serial.print(t_ms);               Serial.print(',');
-    Serial.print(voLi_i, 2);          Serial.print(',');
-    Serial.print(voRe_i, 2);          Serial.print(',');
-    Serial.print(hiLi_i, 2);          Serial.print(',');
-    Serial.print(hiRe_i, 2);          Serial.print(',');
-    Serial.print(vehicle.vxIst(), 2); Serial.print(',');
-    Serial.print(vehicle.vyIst(), 2); Serial.print(',');
-    Serial.println(vehicle.wzIst(), 2);
+    Serial.print((unsigned long)t_ms); Serial.print(',');
+
+    printSpeedCmsFromMps(voLi_i);          Serial.print(',');
+    printSpeedCmsFromMps(voRe_i);          Serial.print(',');
+    printSpeedCmsFromMps(hiLi_i);          Serial.print(',');
+    printSpeedCmsFromMps(hiRe_i);          Serial.print(',');
+
+    printSpeedCmsFromMps(vehicle.vxIst()); Serial.print(',');
+    printSpeedCmsFromMps(vehicle.vyIst()); Serial.print(',');
+
+    Serial.println(valueToInt100(vehicle.wzIst()));
+#else
+    (void)vehicle;
+    (void)t_ms;
+    (void)voLi_i;
+    (void)voRe_i;
+    (void)hiLi_i;
+    (void)hiRe_i;
 #endif
 }
 
@@ -3876,28 +3904,35 @@ void Printer::printWheels(VehicleController& vehicle,
 {
 #if PRINTER_ENABLE_WHEELS
     Serial.print(F("#WHEELS,"));
-    Serial.print(t_ms);                          Serial.print(',');
+    Serial.print((unsigned long)t_ms);             Serial.print(',');
 
-    Serial.print(vehicle.getWheelSoll(VoLi), 2); Serial.print(',');
-    Serial.print(speed[Li].mps(), 2);            Serial.print(',');
-    Serial.print(rad[Li].lastPwm());             Serial.print(',');
+    printSpeedCmsFromMps(vehicle.getWheelSoll(VoLi)); Serial.print(',');
+    printSpeedCmsFromMps(speed[Li].mps());            Serial.print(',');
+    Serial.print(rad[Li].lastPwm());                  Serial.print(',');
 
-    Serial.print(vehicle.getWheelSoll(VoRe), 2); Serial.print(',');
-    Serial.print(speed[Re].mps(), 2);            Serial.print(',');
-    Serial.print(rad[Re].lastPwm());             Serial.print(',');
+    printSpeedCmsFromMps(vehicle.getWheelSoll(VoRe)); Serial.print(',');
+    printSpeedCmsFromMps(speed[Re].mps());            Serial.print(',');
+    Serial.print(rad[Re].lastPwm());                  Serial.print(',');
 
-    Serial.print(vehicle.getWheelSoll(HiLi), 2); Serial.print(',');
-    Serial.print(v2_ist, 2);                     Serial.print(',');
-    Serial.print(pwm2);                          Serial.print(',');
+    printSpeedCmsFromMps(vehicle.getWheelSoll(HiLi)); Serial.print(',');
+    printSpeedCmsFromMps(v2_ist);                     Serial.print(',');
+    Serial.print(pwm2);                               Serial.print(',');
 
-    Serial.print(vehicle.getWheelSoll(HiRe), 2); Serial.print(',');
-    Serial.print(v3_ist, 2);                     Serial.print(',');
+    printSpeedCmsFromMps(vehicle.getWheelSoll(HiRe)); Serial.print(',');
+    printSpeedCmsFromMps(v3_ist);                     Serial.print(',');
     Serial.println(pwm3);
+#else
+    (void)vehicle;
+    (void)v2_ist;
+    (void)v3_ist;
+    (void)pwm2;
+    (void)pwm3;
+    (void)t_ms;
 #endif
 
 #if PRINTER_ENABLE_COUNTS
     Serial.print(F("#CNTF,"));
-    Serial.print(t_ms);                          Serial.print(',');
+    Serial.print((unsigned long)t_ms);           Serial.print(',');
     Serial.print(speed[Li].counts_total());      Serial.print(',');
     Serial.println(speed[Re].counts_total());
 #endif
@@ -3920,28 +3955,42 @@ void Printer::printFrame(
 {
 #if PRINTER_ENABLE_WHEELS
     Serial.print(F("#WHEELS,"));
-    Serial.print(t_ms);      Serial.print(',');
+    Serial.print((unsigned long)t_ms); Serial.print(',');
 
-    Serial.print(voLi_s, 2); Serial.print(',');
-    Serial.print(voLi_i, 2); Serial.print(',');
-    Serial.print(voLi_pwm);  Serial.print(',');
+    printSpeedCmsFromMps(voLi_s);      Serial.print(',');
+    printSpeedCmsFromMps(voLi_i);      Serial.print(',');
+    Serial.print(voLi_pwm);            Serial.print(',');
 
-    Serial.print(voRe_s, 2); Serial.print(',');
-    Serial.print(voRe_i, 2); Serial.print(',');
-    Serial.print(voRe_pwm);  Serial.print(',');
+    printSpeedCmsFromMps(voRe_s);      Serial.print(',');
+    printSpeedCmsFromMps(voRe_i);      Serial.print(',');
+    Serial.print(voRe_pwm);            Serial.print(',');
 
-    Serial.print(hiLi_s, 2); Serial.print(',');
-    Serial.print(hiLi_i, 2); Serial.print(',');
-    Serial.print(hiLi_pwm);  Serial.print(',');
+    printSpeedCmsFromMps(hiLi_s);      Serial.print(',');
+    printSpeedCmsFromMps(hiLi_i);      Serial.print(',');
+    Serial.print(hiLi_pwm);            Serial.print(',');
 
-    Serial.print(hiRe_s, 2); Serial.print(',');
-    Serial.print(hiRe_i, 2); Serial.print(',');
+    printSpeedCmsFromMps(hiRe_s);      Serial.print(',');
+    printSpeedCmsFromMps(hiRe_i);      Serial.print(',');
     Serial.println(hiRe_pwm);
+#else
+    (void)t_ms;
+    (void)voLi_s;
+    (void)voLi_i;
+    (void)voLi_pwm;
+    (void)voRe_s;
+    (void)voRe_i;
+    (void)voRe_pwm;
+    (void)hiLi_s;
+    (void)hiLi_i;
+    (void)hiLi_pwm;
+    (void)hiRe_s;
+    (void)hiRe_i;
+    (void)hiRe_pwm;
 #endif
 
 #if PRINTER_ENABLE_COUNTS
     Serial.print(F("#CNTF,"));
-    Serial.print(t_ms);                     Serial.print(',');
+    Serial.print((unsigned long)t_ms);      Serial.print(',');
     Serial.print(speed[Li].counts_total()); Serial.print(',');
     Serial.println(speed[Re].counts_total());
 #endif
@@ -4061,7 +4110,14 @@ FILE: C:\Users\Acer\source\repos\robot\5_System\src\RearFrameClient.cpp
 
 #include <Arduino.h>
 #include "src/CommProtocol.h"
-#include "src/CommUtils.h"
+
+namespace
+{
+    float cmsToMps(int16_t value_cms)
+    {
+        return (float)value_cms * 0.01f;
+    }
+}
 
 RearFrameClient::RearFrameClient()
     : _nextFrameId(1),
@@ -4071,8 +4127,8 @@ RearFrameClient::RearFrameClient()
     _waitState(WAIT_NONE),
     _stopSendCount(0),
     _stopSequenceArmed(false),
-    _hiLiIst(0.0f),
-    _hiReIst(0.0f),
+    _hiLiIstCms(0),
+    _hiReIstCms(0),
     _hiLiPwm(0),
     _hiRePwm(0),
     _hiLiCnt(0),
@@ -4137,8 +4193,8 @@ void RearFrameClient::clearFrame()
 
 void RearFrameClient::clearRearIst()
 {
-    _hiLiIst = 0.0f;
-    _hiReIst = 0.0f;
+    _hiLiIstCms = 0;
+    _hiReIstCms = 0;
     _hiLiPwm = 0;
     _hiRePwm = 0;
     _hiLiCnt = 0;
@@ -4172,12 +4228,22 @@ uint32_t RearFrameClient::lastSendMs() const
 
 float RearFrameClient::hiLiIst() const
 {
-    return _hiLiIst;
+    return cmsToMps(_hiLiIstCms);
 }
 
 float RearFrameClient::hiReIst() const
 {
-    return _hiReIst;
+    return cmsToMps(_hiReIstCms);
+}
+
+int16_t RearFrameClient::hiLiIstCms() const
+{
+    return _hiLiIstCms;
+}
+
+int16_t RearFrameClient::hiReIstCms() const
+{
+    return _hiReIstCms;
 }
 
 int16_t RearFrameClient::hiLiPwm() const
@@ -4212,18 +4278,21 @@ bool RearFrameClient::requestFrame(
     _frame.frameId = frameId;
     _frame.t = request.frameTimeMs;
 
-    _frame.voLi_s = request.voLi_s;
-    _frame.voLi_i = request.voLi_i;
+    // Uebergang fuer den alten Printer:
+    // RearFrameRequest ist bereits cm/s-Integer,
+    // RearPendingFrame bleibt bis zum Printer-Umbau float/m/s.
+    _frame.voLi_s = cmsToMps(request.voLi_s_cms);
+    _frame.voLi_i = cmsToMps(request.voLi_i_cms);
     _frame.voLi_pwm = request.voLi_pwm;
     _frame.voLiCnt = request.voLiCnt;
 
-    _frame.voRe_s = request.voRe_s;
-    _frame.voRe_i = request.voRe_i;
+    _frame.voRe_s = cmsToMps(request.voRe_s_cms);
+    _frame.voRe_i = cmsToMps(request.voRe_i_cms);
     _frame.voRe_pwm = request.voRe_pwm;
     _frame.voReCnt = request.voReCnt;
 
-    _frame.hiLi_s = request.hiLi_s;
-    _frame.hiRe_s = request.hiRe_s;
+    _frame.hiLi_s = cmsToMps(request.hiLi_s_cms);
+    _frame.hiRe_s = cmsToMps(request.hiRe_s_cms);
 
     _frame.hiLiCnt = 0;
     _frame.hiReCnt = 0;
@@ -4232,10 +4301,13 @@ bool RearFrameClient::requestFrame(
 
     startWaitingForVsolOk(nowMs);
 
-    const int16_t hiLi_i100 = floatToInt100(request.hiLi_s);
-    const int16_t hiRe_i100 = floatToInt100(request.hiRe_s);
-
-    printVsol(out, frameId, request.resetPi, hiLi_i100, hiRe_i100);
+    printVsol(
+        out,
+        frameId,
+        request.resetPi,
+        request.hiLi_s_cms,
+        request.hiRe_s_cms
+    );
 
     _lastSendMs = nowMs;
     return true;
@@ -4288,8 +4360,8 @@ bool RearFrameClient::handleVistLine(const char* line, VistMessage& msg)
 
     msg = vist;
 
-    _hiLiIst = int100ToFloat(vist.hiLiIst);
-    _hiReIst = int100ToFloat(vist.hiReIst);
+    _hiLiIstCms = vist.hiLiIst;
+    _hiReIstCms = vist.hiReIst;
     _hiLiPwm = vist.hiLiPwm;
     _hiRePwm = vist.hiRePwm;
     _hiLiCnt = vist.hiLiCnt;
@@ -4382,6 +4454,16 @@ struct VistMessage;
 // ============================================================
 // Gemeinsamer Log-Datensatz fuer einen Zeitpunkt
 // ============================================================
+//
+// WICHTIG:
+// Dieser Datensatz bleibt in diesem Zwischenschritt noch float/m/s,
+// weil Printer.cpp die Felder noch direkt mit Serial.print(x, 2)
+// ausgibt.
+//
+// Wenn diese Felder sofort auf int16_t geaendert wuerden,
+// wuerde Serial.print(int, 2) nicht "2 Nachkommastellen" bedeuten,
+// sondern Ausgabe zur Basis 2.
+// Der Printer wird im naechsten Block separat umgebaut.
 
 struct RearPendingFrame
 {
@@ -4410,24 +4492,27 @@ struct RearPendingFrame
 // ============================================================
 // Anfrage-Datensatz fuer einen neuen RearFrame
 // ============================================================
+//
+// Diese Struktur fuehrt die Geschwindigkeiten bereits als Integer
+// in cm/s. Die Regelung bleibt intern vorerst float in m/s.
 
 struct RearFrameRequest
 {
     uint32_t frameTimeMs;
     bool resetPi;
 
-    float voLi_s;
-    float voLi_i;
+    int16_t voLi_s_cms;
+    int16_t voLi_i_cms;
     int16_t voLi_pwm;
     int32_t voLiCnt;
 
-    float voRe_s;
-    float voRe_i;
+    int16_t voRe_s_cms;
+    int16_t voRe_i_cms;
     int16_t voRe_pwm;
     int32_t voReCnt;
 
-    float hiLi_s;
-    float hiRe_s;
+    int16_t hiLi_s_cms;
+    int16_t hiRe_s_cms;
 };
 
 // ============================================================
@@ -4463,6 +4548,10 @@ public:
 
     float hiLiIst() const;
     float hiReIst() const;
+
+    int16_t hiLiIstCms() const;
+    int16_t hiReIstCms() const;
+
     int16_t hiLiPwm() const;
     int16_t hiRePwm() const;
     int32_t hiLiCnt() const;
@@ -4517,8 +4606,8 @@ private:
     uint8_t _stopSendCount;
     bool _stopSequenceArmed;
 
-    float _hiLiIst;
-    float _hiReIst;
+    int16_t _hiLiIstCms;
+    int16_t _hiReIstCms;
     int16_t _hiLiPwm;
     int16_t _hiRePwm;
     int32_t _hiLiCnt;
@@ -4612,9 +4701,28 @@ FILE: C:\Users\Acer\source\repos\robot\hinten\src\RearApp.cpp
 #include "RearApp.h"
 
 #include "src/CommProtocol.h"
-#include "src/CommUtils.h"
 #include "src/Control.h"
 #include "src/ControlConfig.h"
+
+namespace
+{
+    float cmsToMps(int16_t value_cms)
+    {
+        return (float)value_cms * 0.01f;
+    }
+
+    int16_t mpsToCmsRounded(float value_mps)
+    {
+        const float value_cms = value_mps * 100.0f;
+
+        if (value_cms >= 0.0f)
+        {
+            return (int16_t)(value_cms + 0.5f);
+        }
+
+        return (int16_t)(value_cms - 0.5f);
+    }
+}
 
 RearApp::RearApp()
     : uart(Serial, false),
@@ -4677,12 +4785,16 @@ void RearApp::handleIncomingVsol(uint32_t now)
     {
         lastVsolFrameId = vsol.frameId;
 
-        float vSollLi = int100ToFloat(vsol.hiLiSoll);
-        float vSollRe = int100ToFloat(vsol.hiReSoll);
+        const float vSollLi = cmsToMps(vsol.hiLiSoll);
+        const float vSollRe = cmsToMps(vsol.hiReSoll);
 
         if (vsol.resetPi)
         {
+            // Neuer CMDP-Fahrabschnitt:
+            // PI-Zustaende und SpeedWeg-Filter muessen beide zurueckgesetzt werden,
+            // damit alte Istgeschwindigkeiten nicht in den neuen Abschnitt laufen.
             control_resetPiStates();
+            speed_reset_all();
         }
 
         rad[Li].setSoll(vSollLi);
@@ -4709,8 +4821,8 @@ void RearApp::handleSyncVist()
 
     syncFlag = false;
 
-    const int16_t vIstLi = floatToInt100(speed[Li].mps());
-    const int16_t vIstRe = floatToInt100(speed[Re].mps());
+    const int16_t vIstLi = mpsToCmsRounded(speed[Li].mps());
+    const int16_t vIstRe = mpsToCmsRounded(speed[Re].mps());
 
     const int16_t pwmLi = rad[Li].lastPwm();
     const int16_t pwmRe = rad[Re].lastPwm();
@@ -4853,6 +4965,21 @@ FILE: C:\Users\Acer\source\repos\robot\vorne\src\FrontApp.cpp
 #include "src/ControlConfig.h"
 #include "src/PrinterConfig.h"
 
+namespace
+{
+    int16_t mpsToCmsRounded(float value_mps)
+    {
+        const float value_cms = value_mps * 100.0f;
+
+        if (value_cms >= 0.0f)
+        {
+            return (int16_t)(value_cms + 0.5f);
+        }
+
+        return (int16_t)(value_cms - 0.5f);
+    }
+}
+
 // ============================================================
 // Konstruktor
 // ============================================================
@@ -4948,7 +5075,9 @@ void FrontApp::updateFrameTimeout(uint32_t now)
 
 void FrontApp::tryRequestFrame(uint32_t now)
 {
-    if (!commandRunner.isActive())
+    // Nur echte CMDP-Fahrabschnitte bekommen Messframes.
+    // Die Settle-Phase zwischen zwei CMDP-Befehlen darf keine WHEELS-Frames erzeugen.
+    if (!commandRunner.hasActivePathCommand())
     {
         return;
     }
@@ -4983,12 +5112,25 @@ void FrontApp::updateCommandRunner(uint32_t now)
     }
 
     const bool wasActive = commandRunner.isActive();
+    const bool pathWasActive = commandRunner.hasActivePathCommand();
 
     commandRunner.update(now);
 
     const bool isActive = commandRunner.isActive();
+    const bool pathIsActive = commandRunner.hasActivePathCommand();
 
-    if (isActive && commandRunner.consumeStartFramePending())
+    // Ein echter CMDP-Fahrabschnitt ist gerade beendet worden.
+    // Dann muss die Hinterachse sofort auf 0 gesetzt werden.
+    // Wichtig: sendStop() erzeugt keinen normalen Messframe.
+    if (pathWasActive && !pathIsActive)
+    {
+        applyFrontWheelSoll();
+        rearFrameClient.sendStop(Serial, now);
+    }
+
+    // Startframe nur fuer echte CMDP-Fahrabschnitte, nicht fuer Settle.
+    if (pathIsActive &&
+        commandRunner.consumeStartFramePending())
     {
         requestStartFrameForNewCommand(now);
     }
@@ -5003,7 +5145,9 @@ void FrontApp::updateLogRaster(uint32_t now)
 {
     RearPendingFrame& frame = rearFrameClient.frame();
 
-    if (!commandRunner.isActive())
+    const bool pathActive = commandRunner.hasActivePathCommand();
+
+    if (!pathActive)
     {
         frameScheduler.stop();
 
@@ -5013,7 +5157,7 @@ void FrontApp::updateLogRaster(uint32_t now)
         }
     }
 
-    if (commandRunner.isActive())
+    if (pathActive)
     {
         rearFrameClient.cancelStopSequence();
 
@@ -5117,18 +5261,18 @@ RearFrameRequest FrontApp::makeRearFrameRequest(uint32_t frameTime, bool resetPi
     request.frameTimeMs = frameTime;
     request.resetPi = resetPi;
 
-    request.voLi_s = commandRunner.getWheelSoll(VoLi);
-    request.voLi_i = speed[Li].mps();
+    request.voLi_s_cms = mpsToCmsRounded(commandRunner.getWheelSoll(VoLi));
+    request.voLi_i_cms = mpsToCmsRounded(speed[Li].mps());
     request.voLi_pwm = rad[Li].lastPwm();
     request.voLiCnt = (int32_t)speed[Li].counts_total();
 
-    request.voRe_s = commandRunner.getWheelSoll(VoRe);
-    request.voRe_i = speed[Re].mps();
+    request.voRe_s_cms = mpsToCmsRounded(commandRunner.getWheelSoll(VoRe));
+    request.voRe_i_cms = mpsToCmsRounded(speed[Re].mps());
     request.voRe_pwm = rad[Re].lastPwm();
     request.voReCnt = (int32_t)speed[Re].counts_total();
 
-    request.hiLi_s = commandRunner.getWheelSoll(HiLi);
-    request.hiRe_s = commandRunner.getWheelSoll(HiRe);
+    request.hiLi_s_cms = mpsToCmsRounded(commandRunner.getWheelSoll(HiLi));
+    request.hiRe_s_cms = mpsToCmsRounded(commandRunner.getWheelSoll(HiRe));
 
     return request;
 }
@@ -5164,8 +5308,13 @@ void FrontApp::requestStartFrameForNewCommand(uint32_t now)
     _odomResetPending = true;
 
     // Neuer echter Fahrabschnitt:
+    // SpeedWeg zuruecksetzen, damit alte Tiefpasswerte nicht
+    // in den neuen CMDP-Abschnitt laufen.
+    speed_reset_all();
+
     // Front-PI einmalig zuruecksetzen.
-    // Rear-PI wird ueber resetPi=true im VSOL-Startframe zurueckgesetzt.
+    // Rear-PI und Rear-SpeedWeg werden ueber resetPi=true im VSOL-Startframe
+    // zurueckgesetzt.
     control_resetPiStates();
 
     applyFrontWheelSoll();

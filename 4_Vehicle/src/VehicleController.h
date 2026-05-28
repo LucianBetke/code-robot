@@ -1,6 +1,10 @@
 // ============================================================
 // VehicleController.h
+// Einheit:
+//  - vx, vy, Radgeschwindigkeiten: cm/s
+//  - wz: rad/s
 // ============================================================
+
 #ifndef VEHICLE_CONTROLLER_H
 #define VEHICLE_CONTROLLER_H
 
@@ -14,8 +18,8 @@ public:
         float Kp_vy, float Ki_vy,
         float Kp_wz, float Ki_wz);
 
-    void cmd(float vx, float vy, float wz);
-    void updateIst(float v0, float v1, float v2, float v3);
+    void cmd(float vx_cms, float vy_cms, float wz_rad_s);
+    void updateIst(float v0_cms, float v1_cms, float v2_cms, float v3_cms);
     void update(uint32_t now);
     void stop();
 
@@ -37,9 +41,9 @@ public:
     float KiWz() const { return _regler.KiWz(); }
 
 private:
-    void applyDriveMode(float& vx, float& vy, float wz);
-    void limitTranslation(float& vx, float& vy);
-    void applyMixer(float vx, float vy, float wz);
+    void applyDriveMode(float& vx_cms, float& vy_cms, float wz_rad_s);
+    void limitTranslation(float& vx_cms, float& vy_cms);
+    void applyMixer(float vx_cms, float vy_cms, float wz_rad_s);
 
     float _vx = 0.0f;
     float _vy = 0.0f;

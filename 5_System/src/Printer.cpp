@@ -15,10 +15,8 @@ namespace
         return (long)(value * 100.0f - 0.5f);
     }
 
-    int16_t mpsToCmsRounded(float value_mps)
+    int16_t cmsToInt16Rounded(float value_cms)
     {
-        const float value_cms = value_mps * 100.0f;
-
         if (value_cms >= 0.0f)
         {
             return (int16_t)(value_cms + 0.5f);
@@ -27,9 +25,14 @@ namespace
         return (int16_t)(value_cms - 0.5f);
     }
 
-    void printSpeedCmsFromMps(float value_mps)
+    void printSpeedCms(float value_cms)
     {
-        Serial.print((int)mpsToCmsRounded(value_mps));
+        Serial.print((int)cmsToInt16Rounded(value_cms));
+    }
+
+    void printSpeedCmsInt(int16_t value_cms)
+    {
+        Serial.print((int)value_cms);
     }
 }
 
@@ -58,8 +61,8 @@ void Printer::printInfo(VehicleController& vehicle, const ControlConfig& cfg)
 void Printer::printCompletedFrame(
     VehicleController& vehicle,
     const RearPendingFrame& frame,
-    float hiLi_i,
-    float hiRe_i,
+    int16_t hiLi_i_cms,
+    int16_t hiRe_i_cms,
     int16_t hiLi_pwm,
     int16_t hiRe_pwm)
 {
@@ -67,10 +70,10 @@ void Printer::printCompletedFrame(
     printFrame(
         vehicle,
         frame.t,
-        frame.voLi_i,
-        frame.voRe_i,
-        hiLi_i,
-        hiRe_i
+        frame.voLi_i_cms,
+        frame.voRe_i_cms,
+        hiLi_i_cms,
+        hiRe_i_cms
     );
 #endif
 
@@ -78,20 +81,20 @@ void Printer::printCompletedFrame(
     printFrame(
         frame.t,
 
-        frame.voLi_s,
-        frame.voLi_i,
+        frame.voLi_s_cms,
+        frame.voLi_i_cms,
         frame.voLi_pwm,
 
-        frame.voRe_s,
-        frame.voRe_i,
+        frame.voRe_s_cms,
+        frame.voRe_i_cms,
         frame.voRe_pwm,
 
-        frame.hiLi_s,
-        hiLi_i,
+        frame.hiLi_s_cms,
+        hiLi_i_cms,
         hiLi_pwm,
 
-        frame.hiRe_s,
-        hiRe_i,
+        frame.hiRe_s_cms,
+        hiRe_i_cms,
         hiRe_pwm
     );
 #endif
@@ -125,57 +128,57 @@ void Printer::printOdom2(
 #ifdef PRINTER_MODE_CHASSIS
 
 void Printer::printWheels(VehicleController& vehicle,
-    float v2_ist, float v3_ist,
+    float v2_ist_cms, float v3_ist_cms,
     uint32_t t_ms)
 {
 #if PRINTER_ENABLE_CHASSIS
     Serial.print(F("#CHASSIS,"));
     Serial.print((unsigned long)t_ms); Serial.print(',');
 
-    printSpeedCmsFromMps(speed[Li].mps()); Serial.print(',');
-    printSpeedCmsFromMps(speed[Re].mps()); Serial.print(',');
-    printSpeedCmsFromMps(v2_ist);          Serial.print(',');
-    printSpeedCmsFromMps(v3_ist);          Serial.print(',');
+    printSpeedCms(speed[Li].cms());     Serial.print(',');
+    printSpeedCms(speed[Re].cms());     Serial.print(',');
+    printSpeedCms(v2_ist_cms);          Serial.print(',');
+    printSpeedCms(v3_ist_cms);          Serial.print(',');
 
-    printSpeedCmsFromMps(vehicle.vxIst()); Serial.print(',');
-    printSpeedCmsFromMps(vehicle.vyIst()); Serial.print(',');
+    printSpeedCms(vehicle.vxIst());     Serial.print(',');
+    printSpeedCms(vehicle.vyIst());     Serial.print(',');
 
     Serial.println(valueToInt100(vehicle.wzIst()));
 #else
     (void)vehicle;
-    (void)v2_ist;
-    (void)v3_ist;
+    (void)v2_ist_cms;
+    (void)v3_ist_cms;
     (void)t_ms;
 #endif
 }
 
 void Printer::printFrame(VehicleController& vehicle,
     uint32_t t_ms,
-    float voLi_i,
-    float voRe_i,
-    float hiLi_i,
-    float hiRe_i)
+    int16_t voLi_i_cms,
+    int16_t voRe_i_cms,
+    int16_t hiLi_i_cms,
+    int16_t hiRe_i_cms)
 {
 #if PRINTER_ENABLE_CHASSIS
     Serial.print(F("#CHASSIS,"));
     Serial.print((unsigned long)t_ms); Serial.print(',');
 
-    printSpeedCmsFromMps(voLi_i);          Serial.print(',');
-    printSpeedCmsFromMps(voRe_i);          Serial.print(',');
-    printSpeedCmsFromMps(hiLi_i);          Serial.print(',');
-    printSpeedCmsFromMps(hiRe_i);          Serial.print(',');
+    printSpeedCmsInt(voLi_i_cms);       Serial.print(',');
+    printSpeedCmsInt(voRe_i_cms);       Serial.print(',');
+    printSpeedCmsInt(hiLi_i_cms);       Serial.print(',');
+    printSpeedCmsInt(hiRe_i_cms);       Serial.print(',');
 
-    printSpeedCmsFromMps(vehicle.vxIst()); Serial.print(',');
-    printSpeedCmsFromMps(vehicle.vyIst()); Serial.print(',');
+    printSpeedCms(vehicle.vxIst());     Serial.print(',');
+    printSpeedCms(vehicle.vyIst());     Serial.print(',');
 
     Serial.println(valueToInt100(vehicle.wzIst()));
 #else
     (void)vehicle;
     (void)t_ms;
-    (void)voLi_i;
-    (void)voRe_i;
-    (void)hiLi_i;
-    (void)hiRe_i;
+    (void)voLi_i_cms;
+    (void)voRe_i_cms;
+    (void)hiLi_i_cms;
+    (void)hiRe_i_cms;
 #endif
 }
 
@@ -184,33 +187,33 @@ void Printer::printFrame(VehicleController& vehicle,
 #ifdef PRINTER_MODE_RAEDER
 
 void Printer::printWheels(VehicleController& vehicle,
-    float v2_ist, float v3_ist,
+    float v2_ist_cms, float v3_ist_cms,
     int16_t pwm2, int16_t pwm3,
     uint32_t t_ms)
 {
 #if PRINTER_ENABLE_WHEELS
     Serial.print(F("#WHEELS,"));
-    Serial.print((unsigned long)t_ms);             Serial.print(',');
+    Serial.print((unsigned long)t_ms);                 Serial.print(',');
 
-    printSpeedCmsFromMps(vehicle.getWheelSoll(VoLi)); Serial.print(',');
-    printSpeedCmsFromMps(speed[Li].mps());            Serial.print(',');
-    Serial.print(rad[Li].lastPwm());                  Serial.print(',');
+    printSpeedCms(vehicle.getWheelSoll(VoLi));         Serial.print(',');
+    printSpeedCms(speed[Li].cms());                    Serial.print(',');
+    Serial.print(rad[Li].lastPwm());                   Serial.print(',');
 
-    printSpeedCmsFromMps(vehicle.getWheelSoll(VoRe)); Serial.print(',');
-    printSpeedCmsFromMps(speed[Re].mps());            Serial.print(',');
-    Serial.print(rad[Re].lastPwm());                  Serial.print(',');
+    printSpeedCms(vehicle.getWheelSoll(VoRe));         Serial.print(',');
+    printSpeedCms(speed[Re].cms());                    Serial.print(',');
+    Serial.print(rad[Re].lastPwm());                   Serial.print(',');
 
-    printSpeedCmsFromMps(vehicle.getWheelSoll(HiLi)); Serial.print(',');
-    printSpeedCmsFromMps(v2_ist);                     Serial.print(',');
-    Serial.print(pwm2);                               Serial.print(',');
+    printSpeedCms(vehicle.getWheelSoll(HiLi));         Serial.print(',');
+    printSpeedCms(v2_ist_cms);                         Serial.print(',');
+    Serial.print(pwm2);                                Serial.print(',');
 
-    printSpeedCmsFromMps(vehicle.getWheelSoll(HiRe)); Serial.print(',');
-    printSpeedCmsFromMps(v3_ist);                     Serial.print(',');
+    printSpeedCms(vehicle.getWheelSoll(HiRe));         Serial.print(',');
+    printSpeedCms(v3_ist_cms);                         Serial.print(',');
     Serial.println(pwm3);
 #else
     (void)vehicle;
-    (void)v2_ist;
-    (void)v3_ist;
+    (void)v2_ist_cms;
+    (void)v3_ist_cms;
     (void)pwm2;
     (void)pwm3;
     (void)t_ms;
@@ -226,51 +229,51 @@ void Printer::printWheels(VehicleController& vehicle,
 
 void Printer::printFrame(
     uint32_t t_ms,
-    float voLi_s,
-    float voLi_i,
+    int16_t voLi_s_cms,
+    int16_t voLi_i_cms,
     int16_t voLi_pwm,
-    float voRe_s,
-    float voRe_i,
+    int16_t voRe_s_cms,
+    int16_t voRe_i_cms,
     int16_t voRe_pwm,
-    float hiLi_s,
-    float hiLi_i,
+    int16_t hiLi_s_cms,
+    int16_t hiLi_i_cms,
     int16_t hiLi_pwm,
-    float hiRe_s,
-    float hiRe_i,
+    int16_t hiRe_s_cms,
+    int16_t hiRe_i_cms,
     int16_t hiRe_pwm)
 {
 #if PRINTER_ENABLE_WHEELS
     Serial.print(F("#WHEELS,"));
     Serial.print((unsigned long)t_ms); Serial.print(',');
 
-    printSpeedCmsFromMps(voLi_s);      Serial.print(',');
-    printSpeedCmsFromMps(voLi_i);      Serial.print(',');
+    printSpeedCmsInt(voLi_s_cms);      Serial.print(',');
+    printSpeedCmsInt(voLi_i_cms);      Serial.print(',');
     Serial.print(voLi_pwm);            Serial.print(',');
 
-    printSpeedCmsFromMps(voRe_s);      Serial.print(',');
-    printSpeedCmsFromMps(voRe_i);      Serial.print(',');
+    printSpeedCmsInt(voRe_s_cms);      Serial.print(',');
+    printSpeedCmsInt(voRe_i_cms);      Serial.print(',');
     Serial.print(voRe_pwm);            Serial.print(',');
 
-    printSpeedCmsFromMps(hiLi_s);      Serial.print(',');
-    printSpeedCmsFromMps(hiLi_i);      Serial.print(',');
+    printSpeedCmsInt(hiLi_s_cms);      Serial.print(',');
+    printSpeedCmsInt(hiLi_i_cms);      Serial.print(',');
     Serial.print(hiLi_pwm);            Serial.print(',');
 
-    printSpeedCmsFromMps(hiRe_s);      Serial.print(',');
-    printSpeedCmsFromMps(hiRe_i);      Serial.print(',');
+    printSpeedCmsInt(hiRe_s_cms);      Serial.print(',');
+    printSpeedCmsInt(hiRe_i_cms);      Serial.print(',');
     Serial.println(hiRe_pwm);
 #else
     (void)t_ms;
-    (void)voLi_s;
-    (void)voLi_i;
+    (void)voLi_s_cms;
+    (void)voLi_i_cms;
     (void)voLi_pwm;
-    (void)voRe_s;
-    (void)voRe_i;
+    (void)voRe_s_cms;
+    (void)voRe_i_cms;
     (void)voRe_pwm;
-    (void)hiLi_s;
-    (void)hiLi_i;
+    (void)hiLi_s_cms;
+    (void)hiLi_i_cms;
     (void)hiLi_pwm;
-    (void)hiRe_s;
-    (void)hiRe_i;
+    (void)hiRe_s_cms;
+    (void)hiRe_i_cms;
     (void)hiRe_pwm;
 #endif
 

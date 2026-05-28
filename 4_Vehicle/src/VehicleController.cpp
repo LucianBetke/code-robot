@@ -1,10 +1,14 @@
 // ============================================================
 // VehicleController.cpp
 // Koordinatenkonvention:
-// +x  = vorwärts
+// +x  = vorwaerts
 // +y  = links
 // +z  = oben
 // +wz = Drehung gegen den Uhrzeigersinn, von oben betrachtet
+//
+// Einheiten:
+// vx, vy, Radgeschwindigkeiten: cm/s
+// wz: rad/s
 // ============================================================
 
 #include "VehicleController.h"
@@ -22,36 +26,36 @@ void VehicleController::begin(float Kp_vx, float Ki_vx,
     _turnOnly = false;
 }
 
-void VehicleController::cmd(float vx, float vy, float wz)
+void VehicleController::cmd(float vx_cms, float vy_cms, float wz_rad_s)
 {
-    applyDriveMode(vx, vy, wz);
+    applyDriveMode(vx_cms, vy_cms, wz_rad_s);
 
     if (!_turnOnly)
     {
-        limitTranslation(vx, vy);
+        limitTranslation(vx_cms, vy_cms);
     }
 
-    _vx = vx;
-    _vy = vy;
-    _wz = wz;
+    _vx = vx_cms;
+    _vy = vy_cms;
+    _wz = wz_rad_s;
 
     applyMixer(_vx, _vy, _wz);
 }
 
-void VehicleController::applyDriveMode(float& vx, float& vy, float wz)
+void VehicleController::applyDriveMode(float& vx_cms, float& vy_cms, float wz_rad_s)
 {
-    _turnOnly = (fabsf(wz) > VEHICLE_WZ_EPS);
+    _turnOnly = (fabsf(wz_rad_s) > VEHICLE_WZ_EPS);
 
     if (_turnOnly)
     {
-        vx = 0.0f;
-        vy = 0.0f;
+        vx_cms = 0.0f;
+        vy_cms = 0.0f;
     }
 }
 
-void VehicleController::limitTranslation(float& vx, float& vy)
+void VehicleController::limitTranslation(float& vx_cms, float& vy_cms)
 {
-    const float sum = fabsf(vx) + fabsf(vy);
+    const float sum = fabsf(vx_cms) + fabsf(vy_cms);
 
     if (sum <= V_WHEEL_MAX)
     {
@@ -60,26 +64,26 @@ void VehicleController::limitTranslation(float& vx, float& vy)
 
     if (sum <= 0.0001f)
     {
-        vx = 0.0f;
-        vy = 0.0f;
+        vx_cms = 0.0f;
+        vy_cms = 0.0f;
         return;
     }
 
     const float scale = V_WHEEL_MAX / sum;
 
-    vx *= scale;
-    vy *= scale;
+    vx_cms *= scale;
+    vy_cms *= scale;
 }
 
-void VehicleController::updateIst(float v0, float v1, float v2, float v3)
+void VehicleController::updateIst(float v0_cms, float v1_cms, float v2_cms, float v3_cms)
 {
-    _vx_ist = (v0 + v1 + v2 + v3) / 4.0f;
+    _vx_ist = (v0_cms + v1_cms + v2_cms + v3_cms) / 4.0f;
 
-    // +y = links
-    _vy_ist = (v0 - v1 + v2 - v3) / 4.0f;
+    _vy_ist = (v0_cms - v1_cms + v2_cms - v3_cms) / 4.0f;
 
-    // +wz = gegen Uhrzeigersinn, +z nach oben
-    _wz_ist = (v0 - v1 - v2 + v3) / (4.0f * MECANUM_K);
+    _wz_ist =
+        (v0_cms - v1_cms - v2_cms + v3_cms) /
+        (4.0f * MECANUM_K_CM);
 }
 
 void VehicleController::update(uint32_t now)
@@ -118,24 +122,14 @@ void VehicleController::update(uint32_t now)
     applyMixer(vx_korr, vy_korr, wz_korr);
 }
 
-void VehicleController::applyMixer(float vx, float vy, float wz)
+void VehicleController::applyMixer(float vx_cms, float vy_cms, float wz_rad_s)
 {
     float v[WHEEL_VEHICLE_COUNT];
 
-    // Inverse Kinematik:
-    // +x  = vorwärts
-    // +y  = links
-    // +wz = gegen Uhrzeigersinn
-    v[VoRe] = vx + vy + MECANUM_K * wz;
-    v[VoLi] = vx - vy - MECANUM_K * wz;
-    v[HiLi] = vx + vy - MECANUM_K * wz;
-    v[HiRe] = vx - vy + MECANUM_K * wz;
-
-    // --------------------------------------------------------
-    // 1. Maximalbegrenzung:
-    // Kein Rad darf schneller als V_WHEEL_MAX werden.
-    // Die Skalierung erhält das Verhältnis der Radwerte.
-    // --------------------------------------------------------
+    v[VoRe] = vx_cms + vy_cms + MECANUM_K_CM * wz_rad_s;
+    v[VoLi] = vx_cms - vy_cms - MECANUM_K_CM * wz_rad_s;
+    v[HiLi] = vx_cms + vy_cms - MECANUM_K_CM * wz_rad_s;
+    v[HiRe] = vx_cms - vy_cms + MECANUM_K_CM * wz_rad_s;
 
     float maxVal = 0.0f;
 
@@ -155,18 +149,6 @@ void VehicleController::applyMixer(float vx, float vy, float wz)
         }
     }
 
-    // --------------------------------------------------------
-    // 2. Mindestgeschwindigkeit / Totzone:
-    // Kleine Rad-Sollwerte im schlechten Bereich werden auf 0 gesetzt.
-    //
-    // Erlaubt:
-    //   vRad = 0.00
-    //   oder abs(vRad) >= V_WHEEL_MIN
-    //
-    // Nicht erlaubt:
-    //   0.00 < abs(vRad) < V_WHEEL_MIN
-    // --------------------------------------------------------
-
     for (int i = 0; i < WHEEL_VEHICLE_COUNT; i++)
     {
         if (fabsf(v[i]) < V_WHEEL_MIN)
@@ -174,10 +156,6 @@ void VehicleController::applyMixer(float vx, float vy, float wz)
             v[i] = 0.0f;
         }
     }
-
-    // --------------------------------------------------------
-    // 3. Speichern der finalen Rad-Sollwerte
-    // --------------------------------------------------------
 
     for (int i = 0; i < WHEEL_VEHICLE_COUNT; i++)
     {

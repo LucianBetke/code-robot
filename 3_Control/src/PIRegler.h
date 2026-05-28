@@ -1,28 +1,29 @@
 // ============================================================
 // File: PIRegler.h
 // Beschreibung:
-//  - Bidirektionaler PI-Regler für Drehzahlregelung
+//  - Bidirektionaler PI-Regler fuer Radgeschwindigkeit
+//  - Geschwindigkeitseinheit: cm/s
 //  - Ausgang: signed PWM [-uMax .. +uMax]
 //  - Anti-Windup (Clamping)
 //  - Slew-Rate Begrenzung
 // ============================================================
+
 #pragma once
 
 #include <Arduino.h>
 
-class PIRegler {
+class PIRegler
+{
 public:
     PIRegler(float Kp, float Ki,
         int16_t uMin, int16_t uMax,
         int16_t slewLimit);
 
-    // v_ist in m/s, dt_ms = Zeit seit letztem Aufruf
-    int16_t update(float v_ist, uint16_t dt_ms);
+    int16_t update(float v_ist_cms, uint16_t dt_ms);
 
-    // Start-PWM vorgeben (Feedforward / Arbeitspunkt-Vorbelegung)
     void presetOutput(float u0_pwm);
 
-    void setSoll(float v_soll);
+    void setSoll(float v_soll_cms);
     float soll() const;
 
     float Kp() const { return _Kp; }
@@ -30,7 +31,6 @@ public:
 
     void reset();
 
-    // PI-Parameter zur Laufzeit neu setzen
     void setParams(float Kp, float Ki);
 
 private:
