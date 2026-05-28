@@ -3,7 +3,14 @@
 
 #include <Arduino.h>
 #include "src/CommProtocol.h"
-#include "src/CommUtils.h"
+
+namespace
+{
+    float cmsToMps(int16_t value_cms)
+    {
+        return (float)value_cms * 0.01f;
+    }
+}
 
 RearFrameClient::RearFrameClient()
     : _nextFrameId(1),
@@ -13,8 +20,8 @@ RearFrameClient::RearFrameClient()
     _waitState(WAIT_NONE),
     _stopSendCount(0),
     _stopSequenceArmed(false),
-    _hiLiIst(0.0f),
-    _hiReIst(0.0f),
+    _hiLiIstCms(0),
+    _hiReIstCms(0),
     _hiLiPwm(0),
     _hiRePwm(0),
     _hiLiCnt(0),
@@ -79,8 +86,8 @@ void RearFrameClient::clearFrame()
 
 void RearFrameClient::clearRearIst()
 {
-    _hiLiIst = 0.0f;
-    _hiReIst = 0.0f;
+    _hiLiIstCms = 0;
+    _hiReIstCms = 0;
     _hiLiPwm = 0;
     _hiRePwm = 0;
     _hiLiCnt = 0;
@@ -114,12 +121,22 @@ uint32_t RearFrameClient::lastSendMs() const
 
 float RearFrameClient::hiLiIst() const
 {
-    return _hiLiIst;
+    return cmsToMps(_hiLiIstCms);
 }
 
 float RearFrameClient::hiReIst() const
 {
-    return _hiReIst;
+    return cmsToMps(_hiReIstCms);
+}
+
+int16_t RearFrameClient::hiLiIstCms() const
+{
+    return _hiLiIstCms;
+}
+
+int16_t RearFrameClient::hiReIstCms() const
+{
+    return _hiReIstCms;
 }
 
 int16_t RearFrameClient::hiLiPwm() const
@@ -154,18 +171,21 @@ bool RearFrameClient::requestFrame(
     _frame.frameId = frameId;
     _frame.t = request.frameTimeMs;
 
-    _frame.voLi_s = request.voLi_s;
-    _frame.voLi_i = request.voLi_i;
+    // Uebergang fuer den alten Printer:
+    // RearFrameRequest ist bereits cm/s-Integer,
+    // RearPendingFrame bleibt bis zum Printer-Umbau float/m/s.
+    _frame.voLi_s = cmsToMps(request.voLi_s_cms);
+    _frame.voLi_i = cmsToMps(request.voLi_i_cms);
     _frame.voLi_pwm = request.voLi_pwm;
     _frame.voLiCnt = request.voLiCnt;
 
-    _frame.voRe_s = request.voRe_s;
-    _frame.voRe_i = request.voRe_i;
+    _frame.voRe_s = cmsToMps(request.voRe_s_cms);
+    _frame.voRe_i = cmsToMps(request.voRe_i_cms);
     _frame.voRe_pwm = request.voRe_pwm;
     _frame.voReCnt = request.voReCnt;
 
-    _frame.hiLi_s = request.hiLi_s;
-    _frame.hiRe_s = request.hiRe_s;
+    _frame.hiLi_s = cmsToMps(request.hiLi_s_cms);
+    _frame.hiRe_s = cmsToMps(request.hiRe_s_cms);
 
     _frame.hiLiCnt = 0;
     _frame.hiReCnt = 0;
@@ -174,10 +194,13 @@ bool RearFrameClient::requestFrame(
 
     startWaitingForVsolOk(nowMs);
 
-    const int16_t hiLi_i100 = floatToInt100(request.hiLi_s);
-    const int16_t hiRe_i100 = floatToInt100(request.hiRe_s);
-
-    printVsol(out, frameId, request.resetPi, hiLi_i100, hiRe_i100);
+    printVsol(
+        out,
+        frameId,
+        request.resetPi,
+        request.hiLi_s_cms,
+        request.hiRe_s_cms
+    );
 
     _lastSendMs = nowMs;
     return true;
@@ -230,8 +253,8 @@ bool RearFrameClient::handleVistLine(const char* line, VistMessage& msg)
 
     msg = vist;
 
-    _hiLiIst = int100ToFloat(vist.hiLiIst);
-    _hiReIst = int100ToFloat(vist.hiReIst);
+    _hiLiIstCms = vist.hiLiIst;
+    _hiReIstCms = vist.hiReIst;
     _hiLiPwm = vist.hiLiPwm;
     _hiRePwm = vist.hiRePwm;
     _hiLiCnt = vist.hiLiCnt;

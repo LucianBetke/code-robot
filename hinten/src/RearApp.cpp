@@ -2,9 +2,28 @@
 #include "RearApp.h"
 
 #include "src/CommProtocol.h"
-#include "src/CommUtils.h"
 #include "src/Control.h"
 #include "src/ControlConfig.h"
+
+namespace
+{
+    float cmsToMps(int16_t value_cms)
+    {
+        return (float)value_cms * 0.01f;
+    }
+
+    int16_t mpsToCmsRounded(float value_mps)
+    {
+        const float value_cms = value_mps * 100.0f;
+
+        if (value_cms >= 0.0f)
+        {
+            return (int16_t)(value_cms + 0.5f);
+        }
+
+        return (int16_t)(value_cms - 0.5f);
+    }
+}
 
 RearApp::RearApp()
     : uart(Serial, false),
@@ -67,12 +86,16 @@ void RearApp::handleIncomingVsol(uint32_t now)
     {
         lastVsolFrameId = vsol.frameId;
 
-        float vSollLi = int100ToFloat(vsol.hiLiSoll);
-        float vSollRe = int100ToFloat(vsol.hiReSoll);
+        const float vSollLi = cmsToMps(vsol.hiLiSoll);
+        const float vSollRe = cmsToMps(vsol.hiReSoll);
 
         if (vsol.resetPi)
         {
+            // Neuer CMDP-Fahrabschnitt:
+            // PI-Zustaende und SpeedWeg-Filter muessen beide zurueckgesetzt werden,
+            // damit alte Istgeschwindigkeiten nicht in den neuen Abschnitt laufen.
             control_resetPiStates();
+            speed_reset_all();
         }
 
         rad[Li].setSoll(vSollLi);
@@ -99,8 +122,8 @@ void RearApp::handleSyncVist()
 
     syncFlag = false;
 
-    const int16_t vIstLi = floatToInt100(speed[Li].mps());
-    const int16_t vIstRe = floatToInt100(speed[Re].mps());
+    const int16_t vIstLi = mpsToCmsRounded(speed[Li].mps());
+    const int16_t vIstRe = mpsToCmsRounded(speed[Re].mps());
 
     const int16_t pwmLi = rad[Li].lastPwm();
     const int16_t pwmRe = rad[Re].lastPwm();

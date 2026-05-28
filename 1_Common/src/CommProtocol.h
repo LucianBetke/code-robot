@@ -21,12 +21,15 @@ class Stream;
 //   Rear -> Front
 //   VIST,<frameId>,<hiLiIst>,<hiReIst>,<hiLiPwm>,<hiRePwm>,<hiLiCnt>,<hiReCnt>
 //
-// Geschwindigkeiten werden als int16_t im Format:
-//   Wert = m/s * 100
-// uebertragen.
+// Geschwindigkeiten werden als int16_t in cm/s uebertragen.
 // Beispiel:
-//   0.30 m/s  ->  30
-//  -0.20 m/s  -> -20
+//    30 cm/s  ->  30
+//   -20 cm/s  -> -20
+//
+// Wichtig:
+// Die Feldnamen hiLiSoll, hiReSoll, hiLiIst, hiReIst bleiben vorerst gleich,
+// aber ihre Bedeutung ist jetzt direkt cm/s.
+// Es ist nicht mehr "m/s * 100" als Denkmodell.
 //
 // Encoder-Counts werden als int32_t Rohwerte uebertragen.
 // ============================================================

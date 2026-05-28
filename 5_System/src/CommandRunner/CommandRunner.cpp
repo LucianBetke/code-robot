@@ -97,7 +97,11 @@ void CommandRunner::startSettlePhase(uint32_t now)
     _durationMs = CMDP_SETTLE_MS;
 
     _settleActive = true;
-    _startFramePending = true;
+
+    // Wichtig:
+    // Die Settle-Phase ist KEIN neuer CMDP-Fahrabschnitt.
+    // Deshalb darf sie keinen Startframe und keinen Messframe erzeugen.
+    _startFramePending = false;
 }
 
 void CommandRunner::updateSettlePhase(uint32_t now)

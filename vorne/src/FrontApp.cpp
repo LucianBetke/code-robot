@@ -11,6 +11,21 @@
 #include "src/ControlConfig.h"
 #include "src/PrinterConfig.h"
 
+namespace
+{
+    int16_t mpsToCmsRounded(float value_mps)
+    {
+        const float value_cms = value_mps * 100.0f;
+
+        if (value_cms >= 0.0f)
+        {
+            return (int16_t)(value_cms + 0.5f);
+        }
+
+        return (int16_t)(value_cms - 0.5f);
+    }
+}
+
 // ============================================================
 // Konstruktor
 // ============================================================
@@ -106,7 +121,9 @@ void FrontApp::updateFrameTimeout(uint32_t now)
 
 void FrontApp::tryRequestFrame(uint32_t now)
 {
-    if (!commandRunner.isActive())
+    // Nur echte CMDP-Fahrabschnitte bekommen Messframes.
+    // Die Settle-Phase zwischen zwei CMDP-Befehlen darf keine WHEELS-Frames erzeugen.
+    if (!commandRunner.hasActivePathCommand())
     {
         return;
     }
@@ -141,12 +158,25 @@ void FrontApp::updateCommandRunner(uint32_t now)
     }
 
     const bool wasActive = commandRunner.isActive();
+    const bool pathWasActive = commandRunner.hasActivePathCommand();
 
     commandRunner.update(now);
 
     const bool isActive = commandRunner.isActive();
+    const bool pathIsActive = commandRunner.hasActivePathCommand();
 
-    if (isActive && commandRunner.consumeStartFramePending())
+    // Ein echter CMDP-Fahrabschnitt ist gerade beendet worden.
+    // Dann muss die Hinterachse sofort auf 0 gesetzt werden.
+    // Wichtig: sendStop() erzeugt keinen normalen Messframe.
+    if (pathWasActive && !pathIsActive)
+    {
+        applyFrontWheelSoll();
+        rearFrameClient.sendStop(Serial, now);
+    }
+
+    // Startframe nur fuer echte CMDP-Fahrabschnitte, nicht fuer Settle.
+    if (pathIsActive &&
+        commandRunner.consumeStartFramePending())
     {
         requestStartFrameForNewCommand(now);
     }
@@ -161,7 +191,9 @@ void FrontApp::updateLogRaster(uint32_t now)
 {
     RearPendingFrame& frame = rearFrameClient.frame();
 
-    if (!commandRunner.isActive())
+    const bool pathActive = commandRunner.hasActivePathCommand();
+
+    if (!pathActive)
     {
         frameScheduler.stop();
 
@@ -171,7 +203,7 @@ void FrontApp::updateLogRaster(uint32_t now)
         }
     }
 
-    if (commandRunner.isActive())
+    if (pathActive)
     {
         rearFrameClient.cancelStopSequence();
 
@@ -275,18 +307,18 @@ RearFrameRequest FrontApp::makeRearFrameRequest(uint32_t frameTime, bool resetPi
     request.frameTimeMs = frameTime;
     request.resetPi = resetPi;
 
-    request.voLi_s = commandRunner.getWheelSoll(VoLi);
-    request.voLi_i = speed[Li].mps();
+    request.voLi_s_cms = mpsToCmsRounded(commandRunner.getWheelSoll(VoLi));
+    request.voLi_i_cms = mpsToCmsRounded(speed[Li].mps());
     request.voLi_pwm = rad[Li].lastPwm();
     request.voLiCnt = (int32_t)speed[Li].counts_total();
 
-    request.voRe_s = commandRunner.getWheelSoll(VoRe);
-    request.voRe_i = speed[Re].mps();
+    request.voRe_s_cms = mpsToCmsRounded(commandRunner.getWheelSoll(VoRe));
+    request.voRe_i_cms = mpsToCmsRounded(speed[Re].mps());
     request.voRe_pwm = rad[Re].lastPwm();
     request.voReCnt = (int32_t)speed[Re].counts_total();
 
-    request.hiLi_s = commandRunner.getWheelSoll(HiLi);
-    request.hiRe_s = commandRunner.getWheelSoll(HiRe);
+    request.hiLi_s_cms = mpsToCmsRounded(commandRunner.getWheelSoll(HiLi));
+    request.hiRe_s_cms = mpsToCmsRounded(commandRunner.getWheelSoll(HiRe));
 
     return request;
 }
@@ -322,8 +354,13 @@ void FrontApp::requestStartFrameForNewCommand(uint32_t now)
     _odomResetPending = true;
 
     // Neuer echter Fahrabschnitt:
+    // SpeedWeg zuruecksetzen, damit alte Tiefpasswerte nicht
+    // in den neuen CMDP-Abschnitt laufen.
+    speed_reset_all();
+
     // Front-PI einmalig zuruecksetzen.
-    // Rear-PI wird ueber resetPi=true im VSOL-Startframe zurueckgesetzt.
+    // Rear-PI und Rear-SpeedWeg werden ueber resetPi=true im VSOL-Startframe
+    // zurueckgesetzt.
     control_resetPiStates();
 
     applyFrontWheelSoll();
