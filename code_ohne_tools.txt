@@ -4030,10 +4030,10 @@ FILE: C:\Users\Acer\source\repos\robot\5_System\src\PrinterConfig.h
 #define PRINTER_ENABLE_INFO     0
 #define PRINTER_ENABLE_ERRORS   0
 #define PRINTER_ENABLE_EVENTS   0
-#define PRINTER_ENABLE_ODOM     0
+#define PRINTER_ENABLE_ODOM     1
 #define PRINTER_ENABLE_COUNTS   0
 
-#define PRINTER_ENABLE_WHEELS   0
+#define PRINTER_ENABLE_WHEELS   1
 #define PRINTER_ENABLE_CHASSIS  0
 
 #endif // PRINTER_CONFIG_H
@@ -4824,112 +4824,401 @@ public:
 FILE: C:\Users\Acer\source\repos\robot\vorne\src\FrontApp.cpp
 ============================================================
 // ============================================================
-// File: SpeedWeg.cpp
+// File: FrontApp.cpp
 // ============================================================
 
-#include "src/SpeedWeg.h"
-#include "src/globals.h"
-#include "src/Encoder.h"
+#include "FrontApp.h"
+
+#include <avr/wdt.h>
+
+#include "src/Hardware.h"
+#include "src/Control.h"
+#include "src/ControlConfig.h"
+#include "src/PrinterConfig.h"
 #include "src/ScaleUtils.h"
 
-namespace
+// ============================================================
+// Konstruktor
+// ============================================================
+
+FrontApp::FrontApp()
+    : vehicle(),
+    odometer(),
+    uart(Serial, true),
+    conn(uart, 13),
+    commandRunner(vehicle, odometer, CommandScript::get, CommandScript::size),
+    rearFrameClient(),
+    frameScheduler(),
+    printer(),
+    _odomResetPending(true)
 {
-    const float SPEED_ALPHA = 0.2f;
 }
 
-SpeedWeg::SpeedWeg(Enc& enc)
-    : _enc(enc)
-{
-    _last_counts = _enc.getCounts();
-    _counts_total = 0;
+// ============================================================
+// Sichtbare loop()-Schritte
+// ============================================================
 
-    _acc_counts = 0;
-    _rps_filt = 0.0f;
-    _last_time_ms = 0;
-    _last_tick_ms = 0;
+void FrontApp::updateCommunication()
+{
+    uart.update();
+    conn.update();
 }
 
-void SpeedWeg::reset()
+void FrontApp::updateConnectionSafety(uint32_t now)
 {
-    _counts_total = 0;
+    (void)now;
 
-    _acc_counts = 0;
-    _rps_filt = 0.0f;
-    _last_time_ms = 0;
-    _last_tick_ms = 0;
+    static bool prevConnected = false;
+    const bool nowConnected = uart.isConnected();
 
-    _last_counts = _enc.getCounts();
-}
-
-void SpeedWeg::update(uint32_t now_ms)
-{
-    long cur = _enc.getCounts();
-    long d = cur - _last_counts;
-
-    if (d != 0)
+    // Verbindung verloren:
+    // Front sofort sicher stoppen und lokale Wartezustaende loeschen.
+    if (prevConnected && !nowConnected)
     {
-        if (d > 32767) d = 32767;
-        if (d < -32768) d = -32768;
+        vehicle.stop();
 
-        updateFromTicks((int16_t)d, now_ms);
+        control_stopAll();
+        control_resetPiStates();
+        speed_reset_all();
 
-        _last_counts = cur;
-        _last_tick_ms = now_ms;
+        rearFrameClient.clearWaiting();
+        rearFrameClient.clearFrame();
+        rearFrameClient.cancelStopSequence();
+
+        frameScheduler.stop();
+
+        _odomResetPending = true;
     }
 
-    timeoutCheck(now_ms);
-}
-
-void SpeedWeg::updateFromTicks(int16_t dcounts, uint32_t now_ms)
-{
-    _counts_total += dcounts;
-    _acc_counts += dcounts;
-
-    if (_last_time_ms == 0)
+    // Verbindung wieder da:
+    // Fahrskript bewusst neu starten.
+    // Wichtig: uart.begin() hier NICHT aufrufen, sonst wuerde man die
+    // gerade aufgebaute Verbindung sofort wieder zuruecksetzen.
+    if (!prevConnected && nowConnected)
     {
-        _last_time_ms = now_ms;
-        return;
+        vehicle.stop();
+
+        control_stopAll();
+        control_resetPiStates();
+        speed_reset_all();
+
+        commandRunner.begin();
+        rearFrameClient.begin();
+        frameScheduler.begin(VEHICLE_DT_MS);
+
+        _odomResetPending = true;
     }
 
-    uint32_t dt_ms = now_ms - _last_time_ms;
-
-    if (dt_ms < SPEED_MIN_DT_MS)
-    {
-        return;
-    }
-
-    _last_time_ms = now_ms;
-
-    const float dt_s = (float)dt_ms * 0.001f;
-    const float revs = (float)_acc_counts / (float)COUNTS_PER_REV;
-    const float rps_i = revs / dt_s;
-
-    _rps_filt += SPEED_ALPHA * (rps_i - _rps_filt);
-
-    _acc_counts = 0;
+    prevConnected = nowConnected;
 }
 
-void SpeedWeg::timeoutCheck(uint32_t now_ms)
+void FrontApp::handleIncomingLines(uint32_t now)
 {
-    if (_last_tick_ms == 0)
+    if (!uart.availableLine())
     {
         return;
     }
 
-    if ((uint32_t)(now_ms - _last_tick_ms) > SPEED_TIMEOUT_MS)
+    const char* line = uart.getLine();
+
+    if (rearFrameClient.handleVsolOkLine(line, now))
     {
-        _rps_filt = 0.0f;
+        hardware_requestVist();
+        return;
+    }
+
+    if (rearFrameClient.handleVistLine(line))
+    {
+        updateVehicleIst();
+        updateOdometerFromCompletedFrame();
+
+#if PRINTER_ENABLE_WHEELS || PRINTER_ENABLE_CHASSIS || PRINTER_ENABLE_COUNTS
+        printer.printCompletedFrame(
+            vehicle,
+            rearFrameClient.frame(),
+            (float)rearFrameClient.hiLiIstCms(),
+            (float)rearFrameClient.hiReIstCms(),
+            rearFrameClient.hiLiPwm(),
+            rearFrameClient.hiRePwm()
+        );
+#endif
+
+#if PRINTER_ENABLE_ODOM
+        if (commandRunner.hasActivePathCommand())
+        {
+            printer.printOdom2(
+                commandRunner.activeCmdpId(),
+                rearFrameClient.frame().t,
+                odometer
+            );
+        }
+#endif
     }
 }
 
-float SpeedWeg::cms() const
+void FrontApp::updateFrameTimeout(uint32_t now)
 {
-    return _rps_filt * RAD_UMFANG_CM;
+    if (rearFrameClient.isBusy() &&
+        now - rearFrameClient.requestMs() > 2 * VEHICLE_DT_MS)
+    {
+        resetByWatchdog();
+    }
 }
 
-int16_t SpeedWeg::cmsInt() const
+void FrontApp::tryRequestFrame(uint32_t now)
 {
-    return scaleRoundToInt16(cms());
+    // Nur echte CMDP-Fahrabschnitte bekommen Messframes.
+    // Die Settle-Phase zwischen zwei CMDP-Befehlen darf keine WHEELS-Frames erzeugen.
+    if (!commandRunner.hasActivePathCommand())
+    {
+        return;
+    }
+
+    if (rearFrameClient.isBusy())
+    {
+        return;
+    }
+
+    uint32_t frameTime = 0;
+
+    if (frameScheduler.due(now, frameTime))
+    {
+        requestRearFrame(now, frameTime, false);
+    }
+}
+
+void FrontApp::updateCommandRunner(uint32_t now)
+{
+    // Solange noch VSOL_OK oder VIST offen ist, darf der CommandRunner
+    // nicht zum naechsten Befehl springen. Sonst geht der letzte Frame
+    // eines Befehls verloren.
+
+    if (!uart.isConnected())
+    {
+        return;
+    }
+
+    if (rearFrameClient.isBusy())
+    {
+        return;
+    }
+
+    const bool wasActive = commandRunner.isActive();
+    const bool pathWasActive = commandRunner.hasActivePathCommand();
+
+    commandRunner.update(now);
+
+    const bool isActive = commandRunner.isActive();
+    const bool pathIsActive = commandRunner.hasActivePathCommand();
+
+    // Ein echter CMDP-Fahrabschnitt ist gerade beendet worden.
+    // Dann muss die Hinterachse sofort auf 0 gesetzt werden.
+    // Wichtig: sendStop() erzeugt keinen normalen Messframe.
+    if (pathWasActive && !pathIsActive)
+    {
+        applyFrontWheelSoll();
+        rearFrameClient.sendStop(Serial, now);
+    }
+
+    // Startframe nur fuer echte CMDP-Fahrabschnitte, nicht fuer Settle.
+    if (pathIsActive &&
+        commandRunner.consumeStartFramePending())
+    {
+        requestStartFrameForNewCommand(now);
+    }
+
+    if (wasActive && !isActive && commandRunner.isFinished())
+    {
+        rearFrameClient.armStopSequence();
+    }
+}
+
+void FrontApp::updateLogRaster(uint32_t now)
+{
+    RearPendingFrame& frame = rearFrameClient.frame();
+
+    const bool pathActive = commandRunner.hasActivePathCommand();
+
+    if (!pathActive)
+    {
+        frameScheduler.stop();
+
+        if (!rearFrameClient.isBusy())
+        {
+            frame.hasFrontSnapshot = false;
+        }
+    }
+
+    if (pathActive)
+    {
+        rearFrameClient.cancelStopSequence();
+
+        // Fallback, falls ein aktiver Befehl ohne Startframe laufen sollte.
+        if (!frameScheduler.isRunning())
+        {
+            frameScheduler.start(now);
+        }
+    }
+}
+
+void FrontApp::updateVehicleAndFrontControl(uint32_t now)
+{
+    updateVehicleIst();
+
+    vehicle.update(now);
+
+    applyFrontWheelSoll();
+
+    control_update(now);
+}
+
+void FrontApp::updateRearStopSequence(uint32_t now)
+{
+    const bool ready =
+        uart.isConnected() &&
+        !commandRunner.isActive() &&
+        commandRunner.isFinished();
+
+    rearFrameClient.updateStopSequence(
+        Serial,
+        now,
+        ready,
+        VEHICLE_DT_MS
+    );
+}
+
+bool FrontApp::isConnected() const
+{
+    return uart.isConnected();
+}
+
+// ============================================================
+// Private Hilfsfunktionen
+// ============================================================
+
+void FrontApp::resetByWatchdog()
+{
+    wdt_enable(WDTO_15MS);
+
+    while (1)
+    {
+    }
+}
+
+void FrontApp::applyFrontWheelSoll()
+{
+    rad[Li].setSoll(commandRunner.getWheelSoll(VoLi));
+    rad[Re].setSoll(commandRunner.getWheelSoll(VoRe));
+}
+
+void FrontApp::updateVehicleIst()
+{
+    vehicle.updateIst(
+        speed[Re].cms(),
+        speed[Li].cms(),
+        (float)rearFrameClient.hiLiIstCms(),
+        (float)rearFrameClient.hiReIstCms()
+    );
+}
+
+void FrontApp::updateOdometerFromCompletedFrame()
+{
+    const RearPendingFrame& frame = rearFrameClient.frame();
+
+    if (_odomResetPending || !odometer.isPrimed())
+    {
+        odometer.reset(
+            frame.voReCnt,
+            frame.voLiCnt,
+            frame.hiLiCnt,
+            frame.hiReCnt
+        );
+
+        _odomResetPending = false;
+        return;
+    }
+
+    odometer.update(
+        frame.voReCnt,
+        frame.voLiCnt,
+        frame.hiLiCnt,
+        frame.hiReCnt
+    );
+}
+
+RearFrameRequest FrontApp::makeRearFrameRequest(uint32_t frameTime, bool resetPi)
+{
+    RearFrameRequest request = {};
+
+    request.frameTimeMs = frameTime;
+    request.resetPi = resetPi;
+
+    request.voLi_s_cms = scaleRoundToInt16(commandRunner.getWheelSoll(VoLi));
+    request.voLi_i_cms = scaleRoundToInt16(speed[Li].cms());
+    request.voLi_pwm = rad[Li].lastPwm();
+    request.voLiCnt = (int32_t)speed[Li].counts_total();
+
+    request.voRe_s_cms = scaleRoundToInt16(commandRunner.getWheelSoll(VoRe));
+    request.voRe_i_cms = scaleRoundToInt16(speed[Re].cms());
+    request.voRe_pwm = rad[Re].lastPwm();
+    request.voReCnt = (int32_t)speed[Re].counts_total();
+
+    request.hiLi_s_cms = scaleRoundToInt16(commandRunner.getWheelSoll(HiLi));
+    request.hiRe_s_cms = scaleRoundToInt16(commandRunner.getWheelSoll(HiRe));
+
+    return request;
+}
+
+void FrontApp::requestRearFrame(uint32_t now, uint32_t frameTime, bool resetPi)
+{
+    const RearFrameRequest request = makeRearFrameRequest(frameTime, resetPi);
+
+    rearFrameClient.requestFrame(
+        Serial,
+        now,
+        request
+    );
+
+    // VIST wird erst nach VSOL_OK,<frameId> angefordert.
+}
+
+void FrontApp::requestStartFrameForNewCommand(uint32_t now)
+{
+    if (!uart.isConnected())
+    {
+        return;
+    }
+
+    if (rearFrameClient.isBusy())
+    {
+        return;
+    }
+
+    // Neuer Fahrabschnitt:
+    // Odometrie wird beim ersten vollstaendigen Frame dieses Befehls
+    // auf die dann vorhandenen vier Encoderstaende genullt.
+    _odomResetPending = true;
+
+    // Neuer echter Fahrabschnitt:
+    // SpeedWeg muss ebenfalls zurueckgesetzt werden,
+    // damit alte Tiefpasswerte nicht in den neuen CMDP-Abschnitt laufen.
+    speed_reset_all();
+
+    // Front-PI einmalig zuruecksetzen.
+    // Rear-PI und Rear-SpeedWeg werden ueber resetPi=true im VSOL-Startframe
+    // zurueckgesetzt.
+    control_resetPiStates();
+
+    applyFrontWheelSoll();
+
+    rearFrameClient.clearWaiting();
+    rearFrameClient.clearFrame();
+
+    frameScheduler.start(now);
+
+    // Startframe:
+    // t = 0, neue Sollwerte, resetPi=true fuer Rear.
+    requestRearFrame(now, 0, true);
 }
 
 ============================================================
