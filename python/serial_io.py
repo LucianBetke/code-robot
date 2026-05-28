@@ -12,21 +12,18 @@
 #
 # Wichtig:
 #  - Arduino sendet ODOM2 als Integerwerte mit Faktor 100.
-#  - Python wandelt diese Werte beim Einlesen wieder in cm bzw. Grad um.
-#  - Der Store und der Plot bleiben dadurch unverändert:
-#       path_cm
-#       x_body_cm
-#       y_body_cm
-#       phi_deg
-#
-# Alle anderen Zeilen werden ignoriert (gehen aber weiter in das CSV-Log
-# und in die Echo-Ausgabe). serial_thread bleibt mit identischer Signatur
-# fuer main.py erhalten.
+#    Python wandelt diese Werte beim Einlesen wieder in cm bzw. Grad um.
+#  - WHEELS-Frames erhalten die cmd_id des zuletzt empfangenen
+#    CMDP_BEGIN. Damit kann ein WHEELS-Frame eindeutig einem Lauf
+#    zugeordnet und mit dem passenden ODOM2-Eintrag (cmd_id, ms)
+#    verknuepft werden. Settle-Frames zwischen zwei CMDP_BEGIN-Bloecken
+#    behalten die cmd_id des vorherigen Laufs; sie haben keinen
+#    passenden ODOM2-Eintrag und werden im Plot weggefiltert.
 # ============================================================
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from threading import Lock, Event
 from typing import Optional, TextIO
 import csv
@@ -71,8 +68,9 @@ class Odom2Sample:
 
 @dataclass
 class WheelSample:
+    cmd_id: int
     ms: float
-    values: list[float]
+    values: list[float] = field(default_factory=list)
 
 
 # ============================================================
@@ -89,12 +87,17 @@ class Store:
         self.odom2_rows: list[Odom2Sample] = []
         self.wheels_rows: list[WheelSample] = []
 
+        # cmd_id des zuletzt empfangenen CMDP_BEGIN.
+        # Wird WHEELS-Frames mitgegeben, damit Settle/Lauf unterscheidbar sind.
+        self.current_cmd_id: int = -1
+
     def clear(self) -> None:
         with self.lock:
             self.cmdp_by_id.clear()
             self.cmdp_order.clear()
             self.odom2_rows.clear()
             self.wheels_rows.clear()
+            self.current_cmd_id = -1
 
     def _trim(self) -> None:
         if len(self.odom2_rows) > self.max_rows:
@@ -107,15 +110,20 @@ class Store:
             if msg.cmd_id not in self.cmdp_by_id:
                 self.cmdp_order.append(msg.cmd_id)
             self.cmdp_by_id[msg.cmd_id] = msg
+            self.current_cmd_id = msg.cmd_id
 
     def add_odom2(self, row: Odom2Sample) -> None:
         with self.lock:
             self.odom2_rows.append(row)
             self._trim()
 
-    def add_wheels(self, row: WheelSample) -> None:
+    def add_wheels(self, ms: float, values: list[float]) -> None:
         with self.lock:
-            self.wheels_rows.append(row)
+            self.wheels_rows.append(WheelSample(
+                cmd_id=self.current_cmd_id,
+                ms=ms,
+                values=values,
+            ))
             self._trim()
 
     def snapshot(self) -> dict:
@@ -173,10 +181,10 @@ def parse_line(line: str, store: Store) -> bool:
             parts = line.split(",")
             if len(parts) < 2:
                 return False
-            store.add_wheels(WheelSample(
+            store.add_wheels(
                 ms     = float(parts[1]),
                 values = [float(p) for p in parts[2:]],
-            ))
+            )
             return True
 
     except (ValueError, IndexError):

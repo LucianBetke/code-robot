@@ -459,7 +459,6 @@ FILE: C:\Users\Acer\source\repos\robot\1_Common\src\globals.h
 #ifndef GLOBALS_H
 #define GLOBALS_H
 
-
 #include <Arduino.h>
 
 // ============================================================
@@ -481,14 +480,6 @@ enum WheelVehicle : uint8_t
     WHEEL_VEHICLE_COUNT
 };
 
-constexpr const char* WHEEL_VEHICLE_NAME[WHEEL_VEHICLE_COUNT] =
-{
-    "VoRe",
-    "VoLi",
-    "HiLi",
-    "HiRe"
-};
-
 // ============================================================
 // Wheel Index – Lokal (pro Nano: links / rechts)
 // Für Motor, Encoder, PI, Rad
@@ -499,12 +490,6 @@ enum Wheel : uint8_t
     Li = 0,
     Re = 1,
     WHEEL_COUNT
-};
-
-constexpr const char* WHEEL_NAME[WHEEL_COUNT] =
-{
-    "Li",
-    "Re"
 };
 
 // ============================================================
@@ -521,7 +506,7 @@ constexpr uint32_t SPEED_MIN_DT_MS = 5;
 constexpr uint16_t RAD_REGEL_DT_MS = 20;
 
 /** Regelperiode Fahrzeug + UART VSOL/VIST (ms) */
-constexpr uint16_t VEHICLE_DT_MS = 100;
+constexpr uint16_t VEHICLE_DT_MS = 80;
 
 /** Beruhigungszeit nach erreichtem CMDP-Ziel vor dem nächsten Fahrbefehl (ms) */
 constexpr uint16_t CMDP_SETTLE_MS = 100;
@@ -1257,7 +1242,10 @@ void control_begin(const ControlConfig& cfg)
 
 void speed_reset_all()
 {
-    for (uint8_t i = 0; i < WHEEL_COUNT; i++) speed[i].reset();
+    for (uint8_t i = 0; i < WHEEL_COUNT; i++)
+    {
+        speed[i].reset();
+    }
 }
 
 // ============================================================
@@ -1266,33 +1254,44 @@ void speed_reset_all()
 // Setzt nur die inneren PI-Zustaende zurueck:
 //  - Integralanteil
 //  - vorherige PWM
-//  - Debugwerte
 //
 // Wichtig:
 //  - Sollwerte bleiben erhalten.
 //  - Motoren werden nicht gestoppt.
 //  - SpeedWeg wird nicht zurueckgesetzt.
-//  - Kein kuenstlicher Null-Sollwert zwischen zwei CMDT-Befehlen.
+//  - Kein kuenstlicher Null-Sollwert zwischen zwei Fahrabschnitten.
 // ============================================================
 
 void control_resetPiStates()
 {
-    for (uint8_t i = 0; i < WHEEL_COUNT; i++) regler[i].reset();
+    for (uint8_t i = 0; i < WHEEL_COUNT; i++)
+    {
+        regler[i].reset();
+    }
 }
 
 void control_update(uint32_t now)
 {
-    for (uint8_t i = 0; i < WHEEL_COUNT; i++) rad[i].update(now);
+    for (uint8_t i = 0; i < WHEEL_COUNT; i++)
+    {
+        rad[i].update(now);
+    }
 }
 
 void control_setSoll(uint8_t w, float v)
 {
-    if (w < WHEEL_COUNT) rad[w].setSoll(v);
+    if (w < WHEEL_COUNT)
+    {
+        rad[w].setSoll(v);
+    }
 }
 
 void control_stopAll()
 {
-    for (uint8_t i = 0; i < WHEEL_COUNT; i++) rad[i].stop();
+    for (uint8_t i = 0; i < WHEEL_COUNT; i++)
+    {
+        rad[i].stop();
+    }
 }
 
 ============================================================
@@ -1308,7 +1307,6 @@ FILE: C:\Users\Acer\source\repos\robot\3_Control\src\Control.h
 #ifndef CONTROL_H
 #define CONTROL_H
 
-
 #include <Arduino.h>
 #include "src/globals.h"
 #include "src/SpeedWeg.h"
@@ -1316,7 +1314,7 @@ FILE: C:\Users\Acer\source\repos\robot\3_Control\src\Control.h
 #include "src/Rad.h"
 #include "ControlConfig.h"
 
-// --- SpeedWeg (Geschwindigkeit/Weg pro Rad) ---
+// --- SpeedWeg (Geschwindigkeit / Counts pro Rad) ---
 extern SpeedWeg speed[WHEEL_COUNT];
 
 // --- Regler / Rad ---
@@ -1336,7 +1334,7 @@ void control_begin(const ControlConfig& cfg);
 void speed_reset_all();
 
 // PI-Zustaende zuruecksetzen, ohne Sollwerte oder Motorzustand zu aendern.
-// Wichtig fuer neue CMDT-Fahrabschnitte.
+// Wichtig fuer neue Fahrabschnitte, z.B. neue CMDP-Kommandos.
 void control_resetPiStates();
 
 // Regelschleife pro Loop-Durchlauf aufrufen
@@ -1432,11 +1430,17 @@ namespace ConfigRear
 ============================================================
 FILE: C:\Users\Acer\source\repos\robot\3_Control\src\PIRegler.cpp
 ============================================================
-// PIRegler.cpp  (bidirektional)
+// ============================================================
+// File: PIRegler.cpp
+// Beschreibung:
+//  - Bidirektionaler PI-Regler für Drehzahlregelung
+//  - Ausgang: signed PWM [-uMax .. +uMax]
+//  - Anti-Windup (Clamping)
+//  - Slew-Rate Begrenzung
+// ============================================================
 
 #include "PIRegler.h"
 #include <Arduino.h>
-#include <math.h> // fabsf
 
 PIRegler::PIRegler(float Kp, float Ki,
     int16_t uMin, int16_t uMax,
@@ -1446,10 +1450,7 @@ PIRegler::PIRegler(float Kp, float Ki,
     _slewLimit(slewLimit),
     _v_soll(0.0f),
     _integral(0.0f),
-    _uPrev(0),
-    _lastE(0.0f),
-    _lastP(0.0f),
-    _lastI(0.0f)
+    _uPrev(0)
 {
 }
 
@@ -1458,7 +1459,6 @@ int16_t PIRegler::update(float v_ist, uint16_t dt_ms) {
 
     // --- Fehler ---
     const float e = _v_soll - v_ist;
-    _lastE = e;
 
     // --- Zeit ---
     const float dt_s = (float)dt_ms * 0.001f;
@@ -1483,9 +1483,6 @@ int16_t PIRegler::update(float v_ist, uint16_t dt_ms) {
     // --- endgültiger PI-Ausgang ---
     float u = p_part + _integral;
     u = constrain(u, uMinNorm, uMaxNorm);
-
-    _lastP = p_part;
-    _lastI = _integral;
 
     // --- PWM signed in [-255..+255] ---
     float pwm_f = u * 255.0f;
@@ -1537,23 +1534,23 @@ void PIRegler::presetOutput(float u0_pwm) {
     float pwm_f = u0_pwm;
     if (pwm_f >= 0.0f) pwm_f += 0.5f;
     else               pwm_f -= 0.5f;
+
     _uPrev = (int16_t)pwm_f;
 }
 
-void PIRegler::setSoll(float v_soll) { _v_soll = v_soll; }
+void PIRegler::setSoll(float v_soll) {
+    _v_soll = v_soll;
+}
 
-float PIRegler::soll() const { return _v_soll; }
+float PIRegler::soll() const {
+    return _v_soll;
+}
 
 void PIRegler::reset() {
     _integral = 0.0f;
     _uPrev = 0;
-
-    _lastE = 0.0f;
-    _lastP = 0.0f;
-    _lastI = 0.0f;
 }
 
-// PI-Parameter zur Laufzeit neu setzen
 void PIRegler::setParams(float Kp, float Ki)
 {
     _Kp = Kp;
@@ -1572,6 +1569,7 @@ FILE: C:\Users\Acer\source\repos\robot\3_Control\src\PIRegler.h
 //  - Slew-Rate Begrenzung
 // ============================================================
 #pragma once
+
 #include <Arduino.h>
 
 class PIRegler {
@@ -1597,11 +1595,6 @@ public:
     // PI-Parameter zur Laufzeit neu setzen
     void setParams(float Kp, float Ki);
 
-    // --- Debug / Monitoring ---
-    float lastError() const { return _lastE; }
-    float lastP()     const { return _lastP; }
-    float lastI()     const { return _lastI; }
-
 private:
     int16_t applySlew(int16_t pwm);
 
@@ -1616,11 +1609,6 @@ private:
     float   _integral;
 
     int16_t _uPrev;
-
-    // Debug
-    float _lastE;
-    float _lastP;
-    float _lastI;
 };
 
 ============================================================
@@ -1860,11 +1848,6 @@ void Rad::update(uint32_t nowMs)
     _lastPwm = pwm;
 }
 
-PIParam Rad::getPI() const
-{
-    return { _regler.Kp(), _regler.Ki() };
-}
-
 void Rad::reset()
 {
     _regler.reset();
@@ -1879,16 +1862,12 @@ void Rad::setDeadPwm(int16_t deadPwm)
     _deadPwm = deadPwm;
 }
 
-long Rad::countsTotal() const
-{
-    return _speed.counts_total();
-}
-
 ============================================================
 FILE: C:\Users\Acer\source\repos\robot\3_Control\src\Rad.h
 ============================================================
 // Rad.h
 #pragma once
+
 #include <Arduino.h>
 #include "src/ControlTypes.h"
 #include "src/Motor.h"
@@ -1908,13 +1887,11 @@ public:
 
     int16_t lastPwm() const { return _lastPwm; }
 
-    PIParam getPI() const;
     void reset();
     void stop();
 
     int16_t deadPwm() const { return _deadPwm; }
     void setDeadPwm(int16_t deadPwm);
-    long countsTotal() const;
 
 private:
     Motor& _motor;
@@ -1937,7 +1914,14 @@ FILE: C:\Users\Acer\source\repos\robot\3_Control\src\SpeedWeg.cpp
 #include "SpeedWeg.h"
 #include "src/globals.h"
 #include "src/Encoder.h"
-#include <math.h>
+
+// ------------------------------------------------------------
+// Lokale Konstanten
+// ------------------------------------------------------------
+namespace
+{
+    const float SPEED_ALPHA = 0.2f;
+}
 
 // ------------------------------------------------------------
 // Konstruktor
@@ -1947,21 +1931,17 @@ SpeedWeg::SpeedWeg(Enc& enc)
 {
     _last_counts = _enc.getCounts();
     _counts_total = 0;
-    _weg_mm_total = 0.0f;
-    _weg_abs_mm_total = 0.0f;
 
     _acc_counts = 0;
-    _alpha = 0.2f;
     _rps_filt = 0.0f;
     _last_time_ms = 0;
     _last_tick_ms = 0;
 }
 
 // ------------------------------------------------------------
-void SpeedWeg::reset() {
+void SpeedWeg::reset()
+{
     _counts_total = 0;
-    _weg_mm_total = 0.0f;
-    _weg_abs_mm_total = 0.0f;
 
     _acc_counts = 0;
     _rps_filt = 0.0f;
@@ -1972,52 +1952,41 @@ void SpeedWeg::reset() {
 }
 
 // ------------------------------------------------------------
-void SpeedWeg::setAlpha(float a) {
-    if (a < 0.0f) a = 0.0f;
-    if (a > 1.0f) a = 1.0f;
-    _alpha = a;
-}
-
+// Encoder poll + Berechnung
+// Zeitbasis: ms
 // ------------------------------------------------------------
-void SpeedWeg::setTimeoutMs(uint16_t ms) {
-    _timeout_ms = (uint32_t)ms;
-}
-
-// ------------------------------------------------------------
-// Encoder poll + Berechnung  (Zeitbasis: ms)
-// ------------------------------------------------------------
-void SpeedWeg::update(uint32_t now_ms) {
+void SpeedWeg::update(uint32_t now_ms)
+{
     long cur = _enc.getCounts();
     long d = cur - _last_counts;
 
-    if (d != 0) {
+    if (d != 0)
+    {
         if (d > 32767) d = 32767;
         if (d < -32768) d = -32768;
 
         updateFromTicks((int16_t)d, now_ms);
+
         _last_counts = cur;
-        _last_tick_ms = now_ms;   // Zeitpunkt dieses Ticks merken
+        _last_tick_ms = now_ms;
     }
 
     timeoutCheck(now_ms);
 }
 
 // ------------------------------------------------------------
-void SpeedWeg::updateFromTicks(int16_t dcounts, uint32_t now_ms) {
-
-    // 1) Weg immer summieren
-    const float d_mm =
-        ((float)dcounts / (float)COUNTS_PER_REV) * RAD_UMFANG_MM;
-
+void SpeedWeg::updateFromTicks(int16_t dcounts, uint32_t now_ms)
+{
+    // 1) Counts immer summieren.
+    // Diese Gesamtcounts sind die Grundlage fuer Odometrie/Plot.
     _counts_total += dcounts;
-    _weg_mm_total += d_mm;
-    _weg_abs_mm_total += fabsf(d_mm);
 
-    // 2) Tick-Sammelpuffer
+    // 2) Tick-Sammelpuffer fuer Geschwindigkeitsfenster
     _acc_counts += dcounts;
 
     // 3) Zeit seit letzter Geschwindigkeitsmessung
-    if (_last_time_ms == 0) {
+    if (_last_time_ms == 0)
+    {
         _last_time_ms = now_ms;
         return;
     }
@@ -2025,11 +1994,12 @@ void SpeedWeg::updateFromTicks(int16_t dcounts, uint32_t now_ms) {
     uint32_t dt_ms = now_ms - _last_time_ms;
 
     // Noch nicht genug Zeit? Nichts tun.
-    if (dt_ms < SPEED_MIN_DT_MS) {
+    if (dt_ms < SPEED_MIN_DT_MS)
+    {
         return;
     }
 
-    // Zeit aktualisieren (Fensterende)
+    // Zeit aktualisieren: Fensterende
     _last_time_ms = now_ms;
 
     // 4) Geschwindigkeit berechnen
@@ -2038,37 +2008,30 @@ void SpeedWeg::updateFromTicks(int16_t dcounts, uint32_t now_ms) {
     const float rps_i = revs / dt_s;
 
     // 5) Tiefpass
-    _rps_filt += _alpha * (rps_i - _rps_filt);
+    _rps_filt += SPEED_ALPHA * (rps_i - _rps_filt);
 
-    // 6) Fenster zurücksetzen
+    // 6) Fenster zuruecksetzen
     _acc_counts = 0;
 }
 
 // ------------------------------------------------------------
-void SpeedWeg::timeoutCheck(uint32_t now_ms) {
-    if (_last_tick_ms == 0) return;  // noch kein Tick
+void SpeedWeg::timeoutCheck(uint32_t now_ms)
+{
+    if (_last_tick_ms == 0)
+    {
+        return;
+    }
 
-    if ((now_ms - _last_tick_ms) > _timeout_ms) {
+    if ((uint32_t)(now_ms - _last_tick_ms) > SPEED_TIMEOUT_MS)
+    {
         _rps_filt = 0.0f;
     }
 }
 
 // ------------------------------------------------------------
-float SpeedWeg::mps() const {
+float SpeedWeg::mps() const
+{
     return (_rps_filt * RAD_UMFANG_MM) / 1000.0f;
-}
-
-// ------------------------------------------------------------
-float SpeedWeg::rpm() const {
-    return _rps_filt * 60.0f;
-}
-
-float SpeedWeg::weg_mm() const {
-    return _weg_mm_total;
-}
-
-float SpeedWeg::weg_abs_mm() const {
-    return _weg_abs_mm_total;
 }
 
 ============================================================
@@ -2076,9 +2039,11 @@ FILE: C:\Users\Acer\source\repos\robot\3_Control\src\SpeedWeg.h
 ============================================================
 // ============================================================
 // File: SpeedWeg.h
-// Zweck: Geschwindigkeit (m/s) & Weg aus Encoder-Ticks
-//        inkl. Tiefpass-Filter für stabile v_Ist-Werte
-//        -> Zeitbasis: Millisekunden (ms)
+// Zweck:
+//  - Geschwindigkeit (m/s) aus Encoder-Ticks
+//  - Encoder-Gesamtcounts fuer Odometrie/Plot
+//  - Tiefpass-Filter fuer stabile v_Ist-Werte
+//  - Zeitbasis: Millisekunden (ms)
 // ============================================================
 
 #pragma once
@@ -2093,20 +2058,13 @@ public:
     explicit SpeedWeg(Enc& enc);
 
     void reset();
-    void setAlpha(float a);
-    void setTimeoutMs(uint16_t ms);
 
     // now_ms = millis()
     void update(uint32_t now_ms);
 
     float mps() const;       // m/s
-    float rpm() const;       // U/min
-    float weg_mm() const;    // mm (signed)
-    float weg_abs_mm() const;
 
-    float weg_mm_total() const { return _weg_mm_total; }
-    float weg_abs_mm_total() const { return _weg_abs_mm_total; }
-    long  counts_total() const { return _counts_total; }
+    long counts_total() const { return _counts_total; }
 
 private:
     void updateFromTicks(int16_t dcounts, uint32_t now_ms);
@@ -2115,21 +2073,17 @@ private:
 private:
     Enc& _enc;
 
-    // Weg & Zähler
-    long  _last_counts = 0;
-    long  _counts_total = 0;
-    float _weg_mm_total = 0.0f;
-    float _weg_abs_mm_total = 0.0f;
+    // Encoder-Zaehler
+    long _last_counts = 0;
+    long _counts_total = 0;
 
-    // Tick-Sammelpuffer für das Geschwindigkeitsfenster
+    // Tick-Sammelpuffer fuer das Geschwindigkeitsfenster
     int32_t _acc_counts = 0;
 
-    // Filter & Zeit (in ms)
+    // Filter & Zeit
     float    _rps_filt = 0.0f;
-    float    _alpha = 0.2f;
     uint32_t _last_time_ms = 0;    // Zeitpunkt der letzten Geschwindigkeitsmessung
-    uint32_t _timeout_ms = SPEED_TIMEOUT_MS;
-    uint32_t _last_tick_ms = 0;    // Zeitpunkt des letzten Ticks (für Timeout)
+    uint32_t _last_tick_ms = 0;    // Zeitpunkt des letzten Ticks fuer Timeout
 };
 
 ============================================================
@@ -2153,10 +2107,7 @@ MecanumOdometer::MecanumOdometer()
     _x_mm(0.0f),
     _y_mm(0.0f),
     _abs_mm(0.0f),
-    _phi_rad(0.0f),
-    _last_dx_body_mm(0.0f),
-    _last_dy_body_mm(0.0f),
-    _last_dphi_rad(0.0f)
+    _phi_rad(0.0f)
 {
 }
 
@@ -2177,10 +2128,6 @@ void MecanumOdometer::reset(
     _y_mm = 0.0f;
     _abs_mm = 0.0f;
     _phi_rad = 0.0f;
-
-    _last_dx_body_mm = 0.0f;
-    _last_dy_body_mm = 0.0f;
-    _last_dphi_rad = 0.0f;
 }
 
 bool MecanumOdometer::update(
@@ -2231,19 +2178,11 @@ bool MecanumOdometer::update(
     const float dphi_rad =
         (dVoRe - dVoLi - dHiLi + dHiRe) / (4.0f * MECANUM_K_MM);
 
-    _last_dx_body_mm = dx_body_mm;
-    _last_dy_body_mm = dy_body_mm;
-    _last_dphi_rad = dphi_rad;
-
     // Speicheroptimierung:
     // Keine Weltkoordinaten-Transformation mehr auf dem Arduino.
     //
-    // Vorher:
-    //   dx_body/dy_body wurden mit sinf()/cosf() in Weltkoordinaten gedreht.
-    //
-    // Jetzt:
-    //   Der Arduino summiert nur die lokale Roboterbewegung.
-    //   Die Umrechnung in Weltkoordinaten uebernimmt spaeter Python.
+    // Der Arduino summiert nur die lokale Roboterbewegung.
+    // Die Umrechnung in Weltkoordinaten uebernimmt Python.
     //
     // Wichtig:
     //   _phi_rad bleibt erhalten, damit Python oder eine spaetere Regelung
@@ -2253,10 +2192,8 @@ bool MecanumOdometer::update(
     _y_mm += dy_body_mm;
     _phi_rad += dphi_rad;
 
-    // sqrtf bleibt in diesem ersten Schritt absichtlich erhalten.
-    // Dadurch bleiben absMm(), absCm() und die bestehende ODOM-Ausgabe stabil.
-    // Wenn sqrtf spaeter auch raus soll, muss CommandRunner.cpp ebenfalls
-    // geprueft werden, weil dort noch ein weiteres sqrtf() fuer CMDP steckt.
+    // sqrtf bleibt vorerst erhalten.
+    // absMm() / absCm() werden weiterhin fuer CMDP / ODOM2 gebraucht.
     _abs_mm = sqrtf(_x_mm * _x_mm + _y_mm * _y_mm);
 
     return true;
@@ -2318,10 +2255,6 @@ public:
     float phiRad() const { return _phi_rad; }
     float phiDeg() const;
 
-    float lastDxBodyMm() const { return _last_dx_body_mm; }
-    float lastDyBodyMm() const { return _last_dy_body_mm; }
-    float lastDphiRad() const { return _last_dphi_rad; }
-
 private:
     float countsToMm(int32_t dCounts) const;
 
@@ -2336,10 +2269,6 @@ private:
     float _y_mm;
     float _abs_mm;
     float _phi_rad;
-
-    float _last_dx_body_mm;
-    float _last_dy_body_mm;
-    float _last_dphi_rad;
 };
 
 #endif // MECANUM_ODOMETER_H
@@ -2740,11 +2669,10 @@ FILE: C:\Users\Acer\source\repos\robot\5_System\src\CommandRunner\CommandRunner.
 
 namespace
 {
-    const float CMDP_TOLERANCE_CM = 1.0f;
-    const float CMDP_ANGLE_TOLERANCE_DEG = 2.0f;
+    const uint8_t CMDP_TOLERANCE_CM = 2;
+    const uint8_t CMDP_ANGLE_TOLERANCE_DEG = 2;
 
     const float CMDP_SPEED_EPS = 0.001f;
-    const float CMDP_ROT_SPEED_EPS = 0.001f;
 
     // Timeout-Regel:
     // ideale Fahrzeit * 3 + 1000 ms Reserve
@@ -2755,14 +2683,10 @@ namespace
 CommandRunner::CommandRunner(
     VehicleController& vehicle,
     MecanumOdometer& odometer,
-    UartLink& uart,
-    CommandParser& parser,
     GetCmdFn getCmd,
     SizeFn size)
     : _vehicle(vehicle),
     _odometer(odometer),
-    _uart(uart),
-    _parser(parser),
     _getCmd(getCmd),
     _size(size),
     _cmdIndex(0),
@@ -2770,16 +2694,15 @@ CommandRunner::CommandRunner(
     _finished(false),
     _settleActive(false),
     _startFramePending(false),
-    _activeType(CMD_NONE),
     _pathMode(PATH_NONE),
     _startTime(0),
     _durationMs(0),
-    _pathTargetCm(0.0f),
+    _pathTargetCm(0),
     _pathUnitX(0.0f),
     _pathUnitY(0.0f),
     _pathProgressCm(0.0f),
-    _angleTargetDeg(0.0f),
-    _angleDirection(0.0f),
+    _angleTargetDeg(0),
+    _angleDirection(0),
     _angleProgressDeg(0.0f),
     _nextCmdpId(1),
     _activeCmdpId(0)
@@ -2793,19 +2716,18 @@ void CommandRunner::begin()
     _finished = false;
     _settleActive = false;
     _startFramePending = false;
-    _activeType = CMD_NONE;
     _pathMode = PATH_NONE;
 
     _startTime = 0;
     _durationMs = 0;
 
-    _pathTargetCm = 0.0f;
+    _pathTargetCm = 0;
     _pathUnitX = 0.0f;
     _pathUnitY = 0.0f;
     _pathProgressCm = 0.0f;
 
-    _angleTargetDeg = 0.0f;
-    _angleDirection = 0.0f;
+    _angleTargetDeg = 0;
+    _angleDirection = 0;
     _angleProgressDeg = 0.0f;
 
     _nextCmdpId = 1;
@@ -2827,7 +2749,6 @@ void CommandRunner::startSettlePhase(uint32_t now)
     stopAll();
 
     _active = false;
-    _activeType = CMD_NONE;
     _pathMode = PATH_NONE;
 
     clearCmdpProtocol();
@@ -2883,38 +2804,6 @@ void CommandRunner::startCmdpProtocol(const ParsedCommand& cmd)
 void CommandRunner::clearCmdpProtocol()
 {
     _activeCmdpId = 0;
-}
-
-void CommandRunner::startTimeCmd(const ParsedCommand& cmd, uint32_t now)
-{
-    clearCmdpProtocol();
-
-    _durationMs = (uint32_t)cmd.param * 1000UL;
-
-#if PRINTER_ENABLE_EVENTS
-    Serial.print(F("#EVENT,startCmd,vx="));
-    Serial.print(cmd.vx);
-    Serial.print(F(",vy="));
-    Serial.print(cmd.vy);
-    Serial.print(F(",wz="));
-    Serial.print(cmd.wz);
-    Serial.print(F(",duration="));
-    Serial.print(cmd.param);
-    Serial.print(F(",durationMs="));
-    Serial.println(_durationMs);
-#endif
-
-    const float vx = (float)cmd.vx * 0.01f;
-    const float vy = (float)cmd.vy * 0.01f;
-    const float wz = (float)cmd.wz * DEG_TO_RAD;
-
-    _vehicle.cmd(vx, vy, wz);
-
-    _startTime = now;
-    _active = true;
-    _activeType = CMD_TIME;
-    _pathMode = PATH_NONE;
-    _startFramePending = true;
 }
 
 bool CommandRunner::startPathCmd(const ParsedCommand& cmd, uint32_t now)
@@ -2975,11 +2864,11 @@ bool CommandRunner::startTranslationPathCmd(const ParsedCommand& cmd, uint32_t n
 
     _pathUnitX = vx_cms / v_abs_cms;
     _pathUnitY = vy_cms / v_abs_cms;
-    _pathTargetCm = (float)cmd.param;
+    _pathTargetCm = cmd.param;
     _pathProgressCm = 0.0f;
 
-    _angleTargetDeg = 0.0f;
-    _angleDirection = 0.0f;
+    _angleTargetDeg = 0;
+    _angleDirection = 0;
     _angleProgressDeg = 0.0f;
 
     _durationMs = calcPathTimeoutMs(cmd.param, v_abs_cms);
@@ -2992,7 +2881,7 @@ bool CommandRunner::startTranslationPathCmd(const ParsedCommand& cmd, uint32_t n
     Serial.print(F(",wz="));
     Serial.print(cmd.wz);
     Serial.print(F(",targetCm="));
-    Serial.print(cmd.param);
+    Serial.print(_pathTargetCm);
     Serial.print(F(",unitX="));
     Serial.print(_pathUnitX, 3);
     Serial.print(F(",unitY="));
@@ -3009,7 +2898,6 @@ bool CommandRunner::startTranslationPathCmd(const ParsedCommand& cmd, uint32_t n
 
     _startTime = now;
     _active = true;
-    _activeType = CMD_PATH;
     _startFramePending = true;
 
     return true;
@@ -3017,10 +2905,20 @@ bool CommandRunner::startTranslationPathCmd(const ParsedCommand& cmd, uint32_t n
 
 bool CommandRunner::startRotationPathCmd(const ParsedCommand& cmd, uint32_t now)
 {
-    const float wz_deg_s = (float)cmd.wz;
-    const float wz_abs_deg_s = fabsf(wz_deg_s);
+    const int16_t wz_deg_s = cmd.wz;
 
-    if (wz_abs_deg_s <= CMDP_ROT_SPEED_EPS)
+    uint16_t wz_abs_deg_s = 0;
+
+    if (wz_deg_s < 0)
+    {
+        wz_abs_deg_s = (uint16_t)(-(int32_t)wz_deg_s);
+    }
+    else
+    {
+        wz_abs_deg_s = (uint16_t)wz_deg_s;
+    }
+
+    if (wz_abs_deg_s == 0)
     {
 #if PRINTER_ENABLE_ERRORS
         Serial.println(F("#ERROR,CMDP,wz_darf_nicht_0_sein"));
@@ -3032,13 +2930,13 @@ bool CommandRunner::startRotationPathCmd(const ParsedCommand& cmd, uint32_t now)
 
     _pathMode = PATH_ROTATION;
 
-    _pathTargetCm = 0.0f;
+    _pathTargetCm = 0;
     _pathUnitX = 0.0f;
     _pathUnitY = 0.0f;
     _pathProgressCm = 0.0f;
 
-    _angleTargetDeg = (float)cmd.param;
-    _angleDirection = (wz_deg_s >= 0.0f) ? 1.0f : -1.0f;
+    _angleTargetDeg = cmd.param;
+    _angleDirection = (wz_deg_s >= 0) ? 1 : -1;
     _angleProgressDeg = 0.0f;
 
     _durationMs = calcAngleTimeoutMs(cmd.param, wz_abs_deg_s);
@@ -3047,7 +2945,7 @@ bool CommandRunner::startRotationPathCmd(const ParsedCommand& cmd, uint32_t now)
     Serial.print(F("#EVENT,startCmdpTurn,wz="));
     Serial.print(cmd.wz);
     Serial.print(F(",targetDeg="));
-    Serial.print(cmd.param);
+    Serial.print(_angleTargetDeg);
     Serial.print(F(",dir="));
     Serial.print((int)_angleDirection);
     Serial.print(F(",timeoutMs="));
@@ -3056,13 +2954,12 @@ bool CommandRunner::startRotationPathCmd(const ParsedCommand& cmd, uint32_t now)
 
     const float vx = 0.0f;
     const float vy = 0.0f;
-    const float wz = wz_deg_s * DEG_TO_RAD;
+    const float wz = (float)wz_deg_s * DEG_TO_RAD;
 
     _vehicle.cmd(vx, vy, wz);
 
     _startTime = now;
     _active = true;
-    _activeType = CMD_PATH;
     _startFramePending = true;
 
     return true;
@@ -3081,15 +2978,16 @@ uint32_t CommandRunner::calcPathTimeoutMs(uint16_t targetCm, float speedCms) con
     return idealMs * CMDP_TIMEOUT_FACTOR + CMDP_TIMEOUT_RESERVE_MS;
 }
 
-uint32_t CommandRunner::calcAngleTimeoutMs(uint16_t targetDeg, float speedDegS) const
+uint32_t CommandRunner::calcAngleTimeoutMs(uint16_t targetDeg, uint16_t speedDegS) const
 {
-    if (speedDegS < 1.0f)
+    if (speedDegS == 0)
     {
-        speedDegS = 1.0f;
+        speedDegS = 1;
     }
 
-    const float idealMsF = ((float)targetDeg * 1000.0f) / speedDegS;
-    const uint32_t idealMs = (uint32_t)(idealMsF + 0.5f);
+    const uint32_t idealMs =
+        ((uint32_t)targetDeg * 1000UL + ((uint32_t)speedDegS / 2UL)) /
+        (uint32_t)speedDegS;
 
     return idealMs * CMDP_TIMEOUT_FACTOR + CMDP_TIMEOUT_RESERVE_MS;
 }
@@ -3113,22 +3011,8 @@ void CommandRunner::update(uint32_t now)
 
     if (_active)
     {
-        if (_activeType == CMD_TIME)
-        {
-            updateActiveTimeCmd(now);
-            return;
-        }
-
-        if (_activeType == CMD_PATH)
-        {
-            updateActivePathCmd(now);
-            return;
-        }
-
-        _active = false;
-        _activeType = CMD_NONE;
-        _pathMode = PATH_NONE;
-        clearCmdpProtocol();
+        updateActivePathCmd(now);
+        return;
     }
 
     while (_cmdIndex < _size())
@@ -3143,12 +3027,6 @@ void CommandRunner::update(uint32_t now)
 #endif
             _cmdIndex++;
             continue;
-        }
-
-        if (cmd.type == CMD_TIME)
-        {
-            startTimeCmd(cmd, now);
-            return;
         }
 
         if (cmd.type == CMD_PATH)
@@ -3170,16 +3048,6 @@ void CommandRunner::update(uint32_t now)
     _finished = true;
 }
 
-void CommandRunner::updateActiveTimeCmd(uint32_t now)
-{
-    if (now - _startTime < _durationMs)
-    {
-        return;
-    }
-
-    finishTimeCmd();
-}
-
 void CommandRunner::updateActivePathCmd(uint32_t now)
 {
     updatePathProgress();
@@ -3197,35 +3065,20 @@ void CommandRunner::updateActivePathCmd(uint32_t now)
     }
 }
 
-void CommandRunner::finishTimeCmd()
-{
-    _active = false;
-    _activeType = CMD_NONE;
-    _pathMode = PATH_NONE;
-    clearCmdpProtocol();
-    _cmdIndex++;
-
-    if (_cmdIndex >= _size())
-    {
-        stopAll();
-        _finished = true;
-    }
-}
-
 void CommandRunner::finishPathCmd(uint32_t now)
 {
 #if PRINTER_ENABLE_EVENTS
     if (_pathMode == PATH_ROTATION)
     {
         Serial.print(F("#EVENT,angleReached,targetDeg="));
-        Serial.print(_angleTargetDeg, 2);
+        Serial.print(_angleTargetDeg);
         Serial.print(F(",progressDeg="));
         Serial.println(_angleProgressDeg, 2);
     }
     else
     {
         Serial.print(F("#EVENT,pathReached,targetCm="));
-        Serial.print(_pathTargetCm, 2);
+        Serial.print(_pathTargetCm);
         Serial.print(F(",progressCm="));
         Serial.println(_pathProgressCm, 2);
     }
@@ -3234,7 +3087,6 @@ void CommandRunner::finishPathCmd(uint32_t now)
     stopAll();
 
     _active = false;
-    _activeType = CMD_NONE;
     _pathMode = PATH_NONE;
     clearCmdpProtocol();
     _cmdIndex++;
@@ -3254,7 +3106,7 @@ void CommandRunner::finishPathTimeoutCmd(uint32_t now)
     if (_pathMode == PATH_ROTATION)
     {
         Serial.print(F("#ERROR,CMDP,timeout,targetDeg="));
-        Serial.print(_angleTargetDeg, 2);
+        Serial.print(_angleTargetDeg);
         Serial.print(F(",progressDeg="));
         Serial.print(_angleProgressDeg, 2);
         Serial.print(F(",timeoutMs="));
@@ -3263,7 +3115,7 @@ void CommandRunner::finishPathTimeoutCmd(uint32_t now)
     else
     {
         Serial.print(F("#ERROR,CMDP,timeout,targetCm="));
-        Serial.print(_pathTargetCm, 2);
+        Serial.print(_pathTargetCm);
         Serial.print(F(",progressCm="));
         Serial.print(_pathProgressCm, 2);
         Serial.print(F(",timeoutMs="));
@@ -3274,7 +3126,6 @@ void CommandRunner::finishPathTimeoutCmd(uint32_t now)
     stopAll();
 
     _active = false;
-    _activeType = CMD_NONE;
     _pathMode = PATH_NONE;
     clearCmdpProtocol();
     _cmdIndex++;
@@ -3292,7 +3143,7 @@ void CommandRunner::updatePathProgress()
 {
     if (_pathMode == PATH_ROTATION)
     {
-        _angleProgressDeg = _odometer.phiDeg() * _angleDirection;
+        _angleProgressDeg = _odometer.phiDeg() * (float)_angleDirection;
         return;
     }
 
@@ -3305,24 +3156,26 @@ bool CommandRunner::pathReached() const
 {
     if (_pathMode == PATH_ROTATION)
     {
-        const float threshold = _angleTargetDeg - CMDP_ANGLE_TOLERANCE_DEG;
+        const int16_t threshold =
+            (int16_t)_angleTargetDeg - (int16_t)CMDP_ANGLE_TOLERANCE_DEG;
 
-        if (threshold <= 0.0f)
+        if (threshold <= 0)
         {
             return _angleProgressDeg >= 0.0f;
         }
 
-        return _angleProgressDeg >= threshold;
+        return _angleProgressDeg >= (float)threshold;
     }
 
-    const float threshold = _pathTargetCm - CMDP_TOLERANCE_CM;
+    const int16_t threshold =
+        (int16_t)_pathTargetCm - (int16_t)CMDP_TOLERANCE_CM;
 
-    if (threshold <= 0.0f)
+    if (threshold <= 0)
     {
         return _pathProgressCm >= 0.0f;
     }
 
-    return _pathProgressCm >= threshold;
+    return _pathProgressCm >= (float)threshold;
 }
 
 bool CommandRunner::pathTimedOut(uint32_t now) const
@@ -3347,7 +3200,7 @@ bool CommandRunner::isFinished() const
 
 bool CommandRunner::hasActivePathCommand() const
 {
-    return _active && _activeType == CMD_PATH && _activeCmdpId != 0;
+    return _active && _activeCmdpId != 0;
 }
 
 bool CommandRunner::consumeStartFramePending()
@@ -3372,7 +3225,6 @@ FILE: C:\Users\Acer\source\repos\robot\5_System\src\CommandRunner\CommandRunner.
 
 #include <Arduino.h>
 #include "src/Parser/CommandParser.h"
-#include "src/UartLink.h"
 #include "src/VehicleController.h"
 #include "src/MecanumOdometer.h"
 
@@ -3385,8 +3237,6 @@ public:
     CommandRunner(
         VehicleController& vehicle,
         MecanumOdometer& odometer,
-        UartLink& uart,
-        CommandParser& parser,
         GetCmdFn getCmd,
         SizeFn size);
 
@@ -3400,10 +3250,10 @@ public:
     bool consumeStartFramePending();
 
     float pathProgressCm() const { return _pathProgressCm; }
-    float pathTargetCm() const { return _pathTargetCm; }
+    float pathTargetCm() const { return (float)_pathTargetCm; }
 
     float angleProgressDeg() const { return _angleProgressDeg; }
-    float angleTargetDeg() const { return _angleTargetDeg; }
+    float angleTargetDeg() const { return (float)_angleTargetDeg; }
 
     uint16_t activeCmdpId() const { return _activeCmdpId; }
     bool hasActivePathCommand() const;
@@ -3416,17 +3266,14 @@ private:
         PATH_ROTATION = 2
     };
 
-    void startTimeCmd(const ParsedCommand& cmd, uint32_t now);
     bool startPathCmd(const ParsedCommand& cmd, uint32_t now);
 
     bool startTranslationPathCmd(const ParsedCommand& cmd, uint32_t now);
     bool startRotationPathCmd(const ParsedCommand& cmd, uint32_t now);
 
-    void updateActiveTimeCmd(uint32_t now);
     void updateActivePathCmd(uint32_t now);
     void updateSettlePhase(uint32_t now);
 
-    void finishTimeCmd();
     void finishPathCmd(uint32_t now);
     void finishPathTimeoutCmd(uint32_t now);
 
@@ -3435,7 +3282,7 @@ private:
     void updatePathProgress();
 
     uint32_t calcPathTimeoutMs(uint16_t targetCm, float speedCms) const;
-    uint32_t calcAngleTimeoutMs(uint16_t targetDeg, float speedDegS) const;
+    uint32_t calcAngleTimeoutMs(uint16_t targetDeg, uint16_t speedDegS) const;
 
     void stopAll();
 
@@ -3447,8 +3294,6 @@ private:
 
     VehicleController& _vehicle;
     MecanumOdometer& _odometer;
-    UartLink& _uart;
-    CommandParser& _parser;
     GetCmdFn _getCmd;
     SizeFn _size;
 
@@ -3458,19 +3303,18 @@ private:
     bool _settleActive;
     bool _startFramePending;
 
-    CmdType _activeType;
     PathMode _pathMode;
 
     uint32_t _startTime;
     uint32_t _durationMs;
 
-    float _pathTargetCm;
+    uint16_t _pathTargetCm;
     float _pathUnitX;
     float _pathUnitY;
     float _pathProgressCm;
 
-    float _angleTargetDeg;
-    float _angleDirection;
+    uint16_t _angleTargetDeg;
+    int8_t _angleDirection;
     float _angleProgressDeg;
 
     uint16_t _nextCmdpId;
@@ -3638,13 +3482,13 @@ FILE: C:\Users\Acer\source\repos\robot\5_System\src\FrameScheduler.h
 // ============================================================
 // FrameScheduler
 //
-// Verwaltet das Messraster eines aktiven CMDT-Befehls.
+// Verwaltet das Messraster eines aktiven Fahrabschnitts.
 //
 // Aufgabe:
-//  - Startzeit eines Befehls merken
+//  - Startzeit eines Fahrabschnitts merken
 //  - naechsten Messzeitpunkt verwalten
 //  - pruefen, ob ein Frame faellig ist
-//  - Frame-Zeit relativ zum Befehlsstart liefern
+//  - Frame-Zeit relativ zum Fahrabschnittsstart liefern
 //
 // Bewusst NICHT enthalten:
 //  - UART
@@ -3682,7 +3526,10 @@ private:
 ============================================================
 FILE: C:\Users\Acer\source\repos\robot\5_System\src\Parser\CommandParser.cpp
 ============================================================
+// ============================================================
 // CommandParser.cpp
+// ============================================================
+
 #include "CommandParser.h"
 #include <string.h>
 
@@ -3817,17 +3664,6 @@ bool CommandParser::parse(const char* line, ParsedCommand& cmd)
         return false;
     }
 
-    if (strncmp(line, "CMDT(", 5) == 0)
-    {
-        if (!parseVxVyWzParam(line + 5, cmd))
-        {
-            return false;
-        }
-
-        cmd.type = CMD_TIME;
-        return true;
-    }
-
     if (strncmp(line, "CMDP(", 5) == 0)
     {
         if (!parseVxVyWzParam(line + 5, cmd))
@@ -3856,8 +3692,7 @@ FILE: C:\Users\Acer\source\repos\robot\5_System\src\Parser\CommandParser.h
 enum CmdType : uint8_t
 {
     CMD_NONE = 0,
-    CMD_TIME = 1,
-    CMD_PATH = 2,   // spaeter
+    CMD_PATH = 1
 };
 
 struct ParsedCommand
@@ -3868,7 +3703,9 @@ struct ParsedCommand
     // vx    = Geschwindigkeit in cm/s
     // vy    = Geschwindigkeit in cm/s
     // wz    = Winkelgeschwindigkeit in Grad/s
-    // param = Dauer in Sekunden bei CMDT
+    // param = Zielwert bei CMDP:
+    //         Translation: Strecke in cm
+    //         Rotation: Winkel in Grad
     int16_t  vx;
     int16_t  vy;
     int16_t  wz;
@@ -3890,6 +3727,18 @@ FILE: C:\Users\Acer\source\repos\robot\5_System\src\Printer.cpp
 #include "Printer.h"
 
 #include "src/MecanumOdometer.h"
+
+#if PRINTER_ENABLE_ODOM
+static long valueToInt100(float value)
+{
+    if (value >= 0.0f)
+    {
+        return (long)(value * 100.0f + 0.5f);
+    }
+
+    return (long)(value * 100.0f - 0.5f);
+}
+#endif
 
 void Printer::printInfo(VehicleController& vehicle, const ControlConfig& cfg)
 {
@@ -3952,18 +3801,6 @@ void Printer::printCompletedFrame(
 #endif
 }
 
-void Printer::printOdom(uint32_t t_ms, const MecanumOdometer& odom)
-{
-#if PRINTER_ENABLE_ODOM
-    Serial.print(F("#ODOM,"));
-    Serial.print(t_ms);              Serial.print(',');
-    Serial.print(odom.xCm(), 2);     Serial.print(',');
-    Serial.print(odom.yCm(), 2);     Serial.print(',');
-    Serial.print(odom.absCm(), 2);   Serial.print(',');
-    Serial.println(odom.phiDeg(), 2);
-#endif
-}
-
 void Printer::printOdom2(
     uint16_t cmdpId,
     uint32_t t_ms,
@@ -3976,12 +3813,16 @@ void Printer::printOdom2(
     }
 
     Serial.print(F("#ODOM2,"));
-    Serial.print((unsigned int)cmdpId); Serial.print(',');
-    Serial.print(t_ms);                 Serial.print(',');
-    Serial.print(odom.absCm(), 2);      Serial.print(',');
-    Serial.print(odom.xCm(), 2);        Serial.print(',');
-    Serial.print(odom.yCm(), 2);        Serial.print(',');
-    Serial.println(odom.phiDeg(), 2);
+    Serial.print((unsigned int)cmdpId);              Serial.print(',');
+    Serial.print((unsigned long)t_ms);               Serial.print(',');
+    Serial.print(valueToInt100(odom.absCm()));       Serial.print(',');
+    Serial.print(valueToInt100(odom.xCm()));         Serial.print(',');
+    Serial.print(valueToInt100(odom.yCm()));         Serial.print(',');
+    Serial.println(valueToInt100(odom.phiDeg()));
+#else
+    (void)cmdpId;
+    (void)t_ms;
+    (void)odom;
 #endif
 }
 
@@ -4137,8 +3978,6 @@ public:
         int16_t hiLi_pwm,
         int16_t hiRe_pwm);
 
-    void printOdom(uint32_t t_ms, const MecanumOdometer& odom);
-
     void printOdom2(
         uint16_t cmdpId,
         uint32_t t_ms,
@@ -4203,13 +4042,13 @@ FILE: C:\Users\Acer\source\repos\robot\5_System\src\PrinterConfig.h
 // 1 = Ausgabe aktiv
 // 0 = Ausgabe wird beim Kompilieren entfernt
 
-#define PRINTER_ENABLE_INFO     1
+#define PRINTER_ENABLE_INFO     0
 #define PRINTER_ENABLE_ERRORS   0
 #define PRINTER_ENABLE_EVENTS   0
 #define PRINTER_ENABLE_ODOM     1
 #define PRINTER_ENABLE_COUNTS   0
 
-#define PRINTER_ENABLE_WHEELS   0
+#define PRINTER_ENABLE_WHEELS   1
 #define PRINTER_ENABLE_CHASSIS  0
 
 #endif // PRINTER_CONFIG_H
@@ -4229,8 +4068,7 @@ RearFrameClient::RearFrameClient()
     _frame(),
     _requestMs(0),
     _lastSendMs(0),
-    _waitingVsolOk(false),
-    _waitingVist(false),
+    _waitState(WAIT_NONE),
     _stopSendCount(0),
     _stopSequenceArmed(false),
     _hiLiIst(0.0f),
@@ -4263,9 +4101,15 @@ uint16_t RearFrameClient::nextFrameId()
     return id;
 }
 
-RearPendingFrame& RearFrameClient::frame() { return _frame; }
+RearPendingFrame& RearFrameClient::frame()
+{
+    return _frame;
+}
 
-const RearPendingFrame& RearFrameClient::frame() const { return _frame; }
+const RearPendingFrame& RearFrameClient::frame() const
+{
+    return _frame;
+}
 
 void RearFrameClient::clearFrame()
 {
@@ -4301,27 +4145,60 @@ void RearFrameClient::clearRearIst()
     _hiReCnt = 0;
 }
 
-bool RearFrameClient::waitingVsolOk() const { return _waitingVsolOk; }
+bool RearFrameClient::waitingVsolOk() const
+{
+    return _waitState == WAIT_VSOL_OK;
+}
 
-bool RearFrameClient::waitingVist() const { return _waitingVist; }
+bool RearFrameClient::waitingVist() const
+{
+    return _waitState == WAIT_VIST;
+}
 
-bool RearFrameClient::isBusy() const { return _waitingVsolOk || _waitingVist; }
+bool RearFrameClient::isBusy() const
+{
+    return _waitState != WAIT_NONE;
+}
 
-uint32_t RearFrameClient::requestMs() const { return _requestMs; }
+uint32_t RearFrameClient::requestMs() const
+{
+    return _requestMs;
+}
 
-uint32_t RearFrameClient::lastSendMs() const { return _lastSendMs; }
+uint32_t RearFrameClient::lastSendMs() const
+{
+    return _lastSendMs;
+}
 
-float RearFrameClient::hiLiIst() const { return _hiLiIst; }
+float RearFrameClient::hiLiIst() const
+{
+    return _hiLiIst;
+}
 
-float RearFrameClient::hiReIst() const { return _hiReIst; }
+float RearFrameClient::hiReIst() const
+{
+    return _hiReIst;
+}
 
-int16_t RearFrameClient::hiLiPwm() const { return _hiLiPwm; }
+int16_t RearFrameClient::hiLiPwm() const
+{
+    return _hiLiPwm;
+}
 
-int16_t RearFrameClient::hiRePwm() const { return _hiRePwm; }
+int16_t RearFrameClient::hiRePwm() const
+{
+    return _hiRePwm;
+}
 
-int32_t RearFrameClient::hiLiCnt() const { return _hiLiCnt; }
+int32_t RearFrameClient::hiLiCnt() const
+{
+    return _hiLiCnt;
+}
 
-int32_t RearFrameClient::hiReCnt() const { return _hiReCnt; }
+int32_t RearFrameClient::hiReCnt() const
+{
+    return _hiReCnt;
+}
 
 bool RearFrameClient::requestFrame(
     Stream& out,
@@ -4380,7 +4257,7 @@ bool RearFrameClient::handleVsolOkLine(const char* line, uint32_t nowMs)
     if (!parseVsolOkLine(line, vsolOk)) return false;
 
     const bool valid =
-        _waitingVsolOk &&
+        waitingVsolOk() &&
         _frame.hasFrontSnapshot &&
         vsolOk.frameId == _frame.frameId;
 
@@ -4403,7 +4280,7 @@ bool RearFrameClient::handleVistLine(const char* line, VistMessage& msg)
     if (!parseVistLine(line, vist)) return false;
 
     const bool valid =
-        _waitingVist &&
+        waitingVist() &&
         _frame.hasFrontSnapshot &&
         vist.frameId == _frame.frameId;
 
@@ -4439,7 +4316,10 @@ void RearFrameClient::cancelStopSequence()
     _stopSendCount = 0;
 }
 
-bool RearFrameClient::stopSequenceArmed() const { return _stopSequenceArmed; }
+bool RearFrameClient::stopSequenceArmed() const
+{
+    return _stopSequenceArmed;
+}
 
 bool RearFrameClient::updateStopSequence(
     Stream& out,
@@ -4471,22 +4351,19 @@ bool RearFrameClient::updateStopSequence(
 
 void RearFrameClient::startWaitingForVsolOk(uint32_t nowMs)
 {
-    _waitingVsolOk = true;
-    _waitingVist = false;
+    _waitState = WAIT_VSOL_OK;
     _requestMs = nowMs;
 }
 
 void RearFrameClient::startWaitingForVist(uint32_t nowMs)
 {
-    _waitingVsolOk = false;
-    _waitingVist = true;
+    _waitState = WAIT_VIST;
     _requestMs = nowMs;
 }
 
 void RearFrameClient::clearWaiting()
 {
-    _waitingVsolOk = false;
-    _waitingVist = false;
+    _waitState = WAIT_NONE;
     _requestMs = 0;
 }
 
@@ -4620,6 +4497,13 @@ public:
 private:
     static const uint8_t STOP_SEND_MAX = 3;
 
+    enum WaitState : uint8_t
+    {
+        WAIT_NONE = 0,
+        WAIT_VSOL_OK = 1,
+        WAIT_VIST = 2
+    };
+
     void clearRearIst();
 
     uint16_t _nextFrameId;
@@ -4628,8 +4512,7 @@ private:
     uint32_t _requestMs;
     uint32_t _lastSendMs;
 
-    bool _waitingVsolOk;
-    bool _waitingVist;
+    WaitState _waitState;
 
     uint8_t _stopSendCount;
     bool _stopSequenceArmed;
@@ -4925,6 +4808,7 @@ FILE: C:\Users\Acer\source\repos\robot\vorne\src\CommandScript.cpp
 #include "CommandScript.h"
 
 static const char* _script[] = {
+    "CMDP(20,20,0) 141;",
     "CMDP(30,0,0) 100;"
 };
 
@@ -4956,7 +4840,10 @@ public:
 ============================================================
 FILE: C:\Users\Acer\source\repos\robot\vorne\src\FrontApp.cpp
 ============================================================
-// FrontApp.cpp
+// ============================================================
+// File: FrontApp.cpp
+// ============================================================
+
 #include "FrontApp.h"
 
 #include <avr/wdt.h>
@@ -4964,6 +4851,7 @@ FILE: C:\Users\Acer\source\repos\robot\vorne\src\FrontApp.cpp
 #include "src/Hardware.h"
 #include "src/Control.h"
 #include "src/ControlConfig.h"
+#include "src/PrinterConfig.h"
 
 // ============================================================
 // Konstruktor
@@ -4974,8 +4862,7 @@ FrontApp::FrontApp()
     odometer(),
     uart(Serial, true),
     conn(uart, 13),
-    parser(),
-    commandRunner(vehicle, odometer, uart, parser, CommandScript::get, CommandScript::size),
+    commandRunner(vehicle, odometer, CommandScript::get, CommandScript::size),
     rearFrameClient(),
     frameScheduler(),
     printer(),
@@ -5000,14 +4887,20 @@ void FrontApp::updateConnectionSafety(uint32_t now)
     static bool prevConnected = false;
     const bool nowConnected = uart.isConnected();
 
-    if (prevConnected && !nowConnected) resetByWatchdog();
+    if (prevConnected && !nowConnected)
+    {
+        resetByWatchdog();
+    }
 
     prevConnected = nowConnected;
 }
 
 void FrontApp::handleIncomingLines(uint32_t now)
 {
-    if (!uart.availableLine()) return;
+    if (!uart.availableLine())
+    {
+        return;
+    }
 
     const char* line = uart.getLine();
 
@@ -5022,6 +4915,7 @@ void FrontApp::handleIncomingLines(uint32_t now)
         updateVehicleIst();
         updateOdometerFromCompletedFrame();
 
+#if PRINTER_ENABLE_WHEELS || PRINTER_ENABLE_CHASSIS || PRINTER_ENABLE_COUNTS
         printer.printCompletedFrame(
             vehicle,
             rearFrameClient.frame(),
@@ -5030,11 +4924,7 @@ void FrontApp::handleIncomingLines(uint32_t now)
             rearFrameClient.hiLiPwm(),
             rearFrameClient.hiRePwm()
         );
-
-        printer.printOdom(
-            rearFrameClient.frame().t,
-            odometer
-        );
+#endif
 
         if (commandRunner.hasActivePathCommand())
         {
@@ -5058,8 +4948,15 @@ void FrontApp::updateFrameTimeout(uint32_t now)
 
 void FrontApp::tryRequestFrame(uint32_t now)
 {
-    if (!commandRunner.isActive()) return;
-    if (rearFrameClient.isBusy()) return;
+    if (!commandRunner.isActive())
+    {
+        return;
+    }
+
+    if (rearFrameClient.isBusy())
+    {
+        return;
+    }
 
     uint32_t frameTime = 0;
 
@@ -5075,8 +4972,15 @@ void FrontApp::updateCommandRunner(uint32_t now)
     // nicht zum naechsten Befehl springen. Sonst geht der letzte Frame
     // eines Befehls verloren.
 
-    if (!uart.isConnected()) return;
-    if (rearFrameClient.isBusy()) return;
+    if (!uart.isConnected())
+    {
+        return;
+    }
+
+    if (rearFrameClient.isBusy())
+    {
+        return;
+    }
 
     const bool wasActive = commandRunner.isActive();
 
@@ -5159,7 +5063,10 @@ bool FrontApp::isConnected() const
 void FrontApp::resetByWatchdog()
 {
     wdt_enable(WDTO_15MS);
-    while (1) {}
+
+    while (1)
+    {
+    }
 }
 
 void FrontApp::applyFrontWheelSoll()
@@ -5241,8 +5148,15 @@ void FrontApp::requestRearFrame(uint32_t now, uint32_t frameTime, bool resetPi)
 
 void FrontApp::requestStartFrameForNewCommand(uint32_t now)
 {
-    if (!uart.isConnected()) return;
-    if (rearFrameClient.isBusy()) return;
+    if (!uart.isConnected())
+    {
+        return;
+    }
+
+    if (rearFrameClient.isBusy())
+    {
+        return;
+    }
 
     // Neuer Fahrabschnitt:
     // Odometrie wird beim ersten vollstaendigen Frame dieses Befehls
@@ -5281,7 +5195,6 @@ FILE: C:\Users\Acer\source\repos\robot\vorne\src\FrontApp.h
 #include "src/MecanumOdometer.h"
 #include "src/UartLink.h"
 #include "src/Connection/ConnectionMonitor.h"
-#include "src/Parser/CommandParser.h"
 #include "src/CommandRunner/CommandRunner.h"
 #include "src/RearFrameClient.h"
 #include "src/FrameScheduler.h"
@@ -5315,7 +5228,6 @@ public:
 
     UartLink uart;
     ConnectionMonitor conn;
-    CommandParser parser;
     CommandRunner commandRunner;
 
     RearFrameClient rearFrameClient;
