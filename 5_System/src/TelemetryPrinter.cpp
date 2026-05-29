@@ -1,5 +1,5 @@
 // ============================================================
-// File: Printer.cpp
+// File: TelemetryPrinter.cpp
 // ============================================================
 
 #include "TelemetryPrinter.h"
@@ -20,7 +20,7 @@ namespace
     }
 }
 
-void Printer::printInfo(VehicleController& vehicle, const ControlConfig& cfg)
+void TelemetryPrinter::printInfo(VehicleController& vehicle, const ControlConfig& cfg)
 {
 #if PRINTER_ENABLE_INFO
     Serial.print(F("#INFO,Raeder,Li,Kp100="));  Serial.print(scaleFloatToInt100(cfg.pi[Li].Kp));
@@ -42,7 +42,7 @@ void Printer::printInfo(VehicleController& vehicle, const ControlConfig& cfg)
 #endif
 }
 
-void Printer::printCompletedFrame(
+void TelemetryPrinter::printCompletedFrame(
     VehicleController& vehicle,
     const RearPendingFrame& frame,
     float hiLi_i_cms,
@@ -84,7 +84,7 @@ void Printer::printCompletedFrame(
 #endif
 }
 
-void Printer::printOdom2(
+void TelemetryPrinter::printOdom2(
     uint16_t cmdpId,
     uint32_t t_ms,
     const MecanumOdometer& odom)
@@ -111,7 +111,7 @@ void Printer::printOdom2(
 
 #ifdef PRINTER_MODE_CHASSIS
 
-void Printer::printWheels(
+void TelemetryPrinter::printWheels(
     VehicleController& vehicle,
     float v2_ist_cms,
     float v3_ist_cms,
@@ -173,7 +173,7 @@ void Printer::printFrame(
 
 #ifdef PRINTER_MODE_RAEDER
 
-void Printer::printWheels(
+void TelemetryPrinter::printWheels(
     VehicleController& vehicle,
     float v2_ist_cms,
     float v3_ist_cms,
@@ -217,7 +217,7 @@ void Printer::printWheels(
 #endif
 }
 
-void Printer::printFrame(
+void TelemetryPrinter::printFrame(
     uint32_t t_ms,
     float voLi_s_cms,
     float voLi_i_cms,

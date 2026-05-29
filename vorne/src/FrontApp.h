@@ -47,7 +47,7 @@ public:
 
     RearFrameClient rearFrameClient;
     FrameScheduler frameScheduler;
-    Printer printer;
+    TelemetryPrinter printer;
 
     // --------------------------------------------------------
     // Sichtbare loop()-Schritte fuer vorne.ino

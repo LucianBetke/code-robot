@@ -11,7 +11,7 @@
 
 class MecanumOdometer;
 
-class Printer
+class TelemetryPrinter
 {
 public:
     void printInfo(VehicleController& vehicle, const ControlConfig& cfg);

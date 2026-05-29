@@ -9,7 +9,7 @@
 #include "src/Hardware.h"
 #include "src/RadControl.h"
 #include "src/RadControlConfig.h"
-#include "src/PrinterConfig.h"
+#include "src/TelemetryPrinterConfig.h"
 #include "src/ScaleUtils.h"
 
 // ============================================================
