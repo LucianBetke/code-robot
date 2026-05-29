@@ -329,12 +329,12 @@ RearFrameRequest FrontApp::makeRearFrameRequest(uint32_t frameTime, bool resetPi
     request.resetPi = resetPi;
 
     request.voLi_s_cms = scaleRoundToInt16(commandRunner.getWheelSoll(VoLi));
-    request.voLi_i_cms = scaleRoundToInt16(wheelMeasurements[Li].cms());
+    request.voLi_i_cms = wheelMeasurements[Li].cmsInt();
     request.voLi_pwm = rad[Li].lastPwm();
     request.voLiCnt = (int32_t)wheelMeasurements[Li].counts_total();
 
     request.voRe_s_cms = scaleRoundToInt16(commandRunner.getWheelSoll(VoRe));
-    request.voRe_i_cms = scaleRoundToInt16(wheelMeasurements[Re].cms());
+    request.voRe_i_cms = wheelMeasurements[Re].cmsInt();
     request.voRe_pwm = rad[Re].lastPwm();
     request.voReCnt = (int32_t)wheelMeasurements[Re].counts_total();
 
