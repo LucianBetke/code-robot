@@ -1,9 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Text Include="$(MSBuildThisFileDirectory)readme.txt" />
-  </ItemGroup>
-  <ItemGroup>
     <ClCompile Include="$(MSBuildThisFileDirectory)src\VehicleController.cpp" />
     <ClCompile Include="$(MSBuildThisFileDirectory)src\VehiclePIController.cpp" />
     <ClCompile Include="$(MSBuildThisFileDirectory)src\MecanumOdometer.cpp" />
@@ -12,5 +9,6 @@
     <ClInclude Include="$(MSBuildThisFileDirectory)src\VehicleController.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)src\VehiclePIController.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)src\MecanumOdometer.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)src\VehicleControlConfig.h" />
   </ItemGroup>
 </Project>

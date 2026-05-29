@@ -2,7 +2,6 @@
 #pragma once
 
 #include <Arduino.h>
-#include "src/ControlTypes.h"
 #include "src/Motor.h"
 #include "WheelMeasurement.h"
 #include "PIRegler.h"

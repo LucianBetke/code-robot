@@ -3,7 +3,7 @@
 #include "Encoder.h"
 #include "Motor.h"
 #include "Hardware.h"
-#include "hardware_pins.h"
+#include "HardwarePins.h"
 
 Enc   enc[WHEEL_COUNT];
 Motor motor[WHEEL_COUNT];

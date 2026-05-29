@@ -432,17 +432,17 @@ struct PIParam {
 };
 
 ============================================================
-FILE: C:\Users\Acer\source\repos\robot\1_Common\src\globals.h
+FILE: C:\Users\Acer\source\repos\robot\1_Common\src\RobotConfig.h
 ============================================================
 // ============================================================
-// File: globals.h
+// File: RobotConfig.h
 // Zweck:
 //  - Zentrale Definitionen fuer Logik, Geometrie und Zeit
 //  - KEINE Hardware-Pins!
 // ============================================================
 
-#ifndef GLOBALS_H
-#define GLOBALS_H
+#ifndef ROBOT_CONFIG_H
+#define ROBOT_CONFIG_H
 
 #include <Arduino.h>
 
@@ -542,7 +542,7 @@ constexpr int16_t SLEW_LIMIT_PWM = 255;
 constexpr float V_WHEEL_MIN = 17.0f;
 constexpr float V_WHEEL_MAX = 50.0f;
 
-#endif // GLOBALS_H
+#endif // ROBOT_CONFIG_H
 
 ============================================================
 FILE: C:\Users\Acer\source\repos\robot\1_Common\src\ScaleUtils.cpp
@@ -764,7 +764,7 @@ namespace PCINT1_Dispatcher {
 FILE: C:\Users\Acer\source\repos\robot\2_Hardware\src\Hardware.cpp
 ============================================================
 #include <Arduino.h>
-#include "src/globals.h"
+#include "src/RobotConfig.h"
 #include "Encoder.h"
 #include "Motor.h"
 #include "Hardware.h"
@@ -811,8 +811,8 @@ FILE: C:\Users\Acer\source\repos\robot\2_Hardware\src\Hardware.h
 #ifndef HARDWARE_H
 #define HARDWARE_H
 #include <Arduino.h>
-#include "src/globals.h"
-#include "src/hardware_pins.h"
+#include "src/RobotConfig.h"
+#include "src/HardwarePins.h"
 
 class Enc;
 class Motor;
@@ -826,7 +826,7 @@ void hardware_requestVist();
 #endif // HARDWARE_H
 
 ============================================================
-FILE: C:\Users\Acer\source\repos\robot\2_Hardware\src\hardware_pins.h
+FILE: C:\Users\Acer\source\repos\robot\2_Hardware\src\HardwarePins.h
 ============================================================
 // hardware_pins.h
 #ifndef HARDWARE_PINS_H
@@ -1177,230 +1177,6 @@ private:
 #endif // UARTLINK_H
 
 ============================================================
-FILE: C:\Users\Acer\source\repos\robot\3_Control\src\Control.cpp
-============================================================
-// ============================================================
-// File: Control.cpp (3_Control)
-// Zweck:
-//  - Gemeinsame Steuerungs-Implementierung fuer vorne und hinten
-//  - Konfiguration kommt von der App via control_begin(cfg)
-// ============================================================
-
-#include "Control.h"
-#include "src/Encoder.h"   // Klasse Enc (aus 2_Hardware)
-#include "src/Motor.h"     // Klasse Motor (aus 2_Hardware)
-
-// ============================================================
-// enc[] und motor[] werden in der App definiert
-// (vorne/src/Hardware.cpp bzw. hinten/src/Hardware.cpp).
-// Hier nur als extern bekannt machen.
-// ============================================================
-
-extern Enc enc[WHEEL_COUNT];
-extern Motor motor[WHEEL_COUNT];
-
-// ============================================================
-// Globale Objekte
-//
-// Die Regler werden hier mit Default-Parametern (0.0f, 0.0f)
-// angelegt. Die echten Parameter setzt control_begin() spaeter
-// per setParams() / setDeadPwm().
-// ============================================================
-
-SpeedWeg speed[WHEEL_COUNT] =
-{
-    SpeedWeg(enc[Li]),
-    SpeedWeg(enc[Re])
-};
-
-PIRegler regler[WHEEL_COUNT] =
-{
-    PIRegler(0.0f, 0.0f, -MAX_PWM, MAX_PWM, SLEW_LIMIT_PWM),
-    PIRegler(0.0f, 0.0f, -MAX_PWM, MAX_PWM, SLEW_LIMIT_PWM)
-};
-
-Rad rad[WHEEL_COUNT] =
-{
-    Rad(motor[Li], speed[Li], regler[Li], RAD_REGEL_DT_MS, 0),
-    Rad(motor[Re], speed[Re], regler[Re], RAD_REGEL_DT_MS, 0)
-};
-
-// ============================================================
-// control_begin
-//
-// Wird von der App im setup() aufgerufen mit der gewuenschten
-// Konfiguration. Setzt PI-Parameter und DeadPWM in Reglern und
-// Raedern.
-// ============================================================
-
-void control_begin(const ControlConfig& cfg)
-{
-    for (uint8_t i = 0; i < WHEEL_COUNT; i++)
-    {
-        regler[i].setParams(cfg.pi[i].Kp, cfg.pi[i].Ki);
-        rad[i].setDeadPwm(cfg.deadPwm[i]);
-    }
-}
-
-// ============================================================
-// Bestehende Funktionen
-// ============================================================
-
-void speed_reset_all()
-{
-    for (uint8_t i = 0; i < WHEEL_COUNT; i++)
-    {
-        speed[i].reset();
-    }
-}
-
-// ============================================================
-// control_resetPiStates
-//
-// Setzt nur die inneren PI-Zustaende zurueck:
-//  - Integralanteil
-//  - vorherige PWM
-//
-// Wichtig:
-//  - Sollwerte bleiben erhalten.
-//  - Motoren werden nicht gestoppt.
-//  - SpeedWeg wird nicht zurueckgesetzt.
-//  - Kein kuenstlicher Null-Sollwert zwischen zwei Fahrabschnitten.
-// ============================================================
-
-void control_resetPiStates()
-{
-    for (uint8_t i = 0; i < WHEEL_COUNT; i++)
-    {
-        regler[i].reset();
-    }
-}
-
-void control_update(uint32_t now)
-{
-    for (uint8_t i = 0; i < WHEEL_COUNT; i++)
-    {
-        rad[i].update(now);
-    }
-}
-
-void control_setSoll(uint8_t w, float v)
-{
-    if (w < WHEEL_COUNT)
-    {
-        rad[w].setSoll(v);
-    }
-}
-
-void control_stopAll()
-{
-    for (uint8_t i = 0; i < WHEEL_COUNT; i++)
-    {
-        rad[i].stop();
-    }
-}
-
-============================================================
-FILE: C:\Users\Acer\source\repos\robot\3_Control\src\Control.h
-============================================================
-// ============================================================
-// File: Control.h (3_Control)
-// Zweck:
-//  - Gemeinsame Steuerungs-Schnittstelle fuer vorne und hinten
-//  - Einheit fuer Radgeschwindigkeit: cm/s
-// ============================================================
-
-#ifndef CONTROL_H
-#define CONTROL_H
-
-#include <Arduino.h>
-#include "src/globals.h"
-#include "src/SpeedWeg.h"
-#include "src/PIRegler.h"
-#include "src/Rad.h"
-#include "ControlConfig.h"
-
-extern SpeedWeg speed[WHEEL_COUNT];
-
-extern PIRegler regler[WHEEL_COUNT];
-extern Rad rad[WHEEL_COUNT];
-
-void control_begin(const ControlConfig& cfg);
-
-void speed_reset_all();
-
-void control_resetPiStates();
-
-void control_update(uint32_t nowMs);
-
-void control_setSoll(uint8_t wheel, float v_cms);
-
-void control_stopAll();
-
-#endif // CONTROL_H
-
-============================================================
-FILE: C:\Users\Acer\source\repos\robot\3_Control\src\ControlConfig.h
-============================================================
-// ============================================================
-// File: ControlConfig.h
-// Zweck:
-//  - Datentyp ControlConfig fuer PI-Parameter und DeadPWM
-//  - Vordefinierte Konfigurationen fuer vorne und hinten
-//
-// Wichtig:
-//  - Radgeschwindigkeiten werden jetzt in cm/s geregelt.
-//  - Alte PI-Werte aus m/s wurden durch 100 geteilt.
-// ============================================================
-
-#ifndef CONTROLCONFIG_H
-#define CONTROLCONFIG_H
-
-#include <Arduino.h>
-#include "src/globals.h"
-#include "src/ControlTypes.h"
-
-struct ControlConfig
-{
-    int16_t deadPwm[WHEEL_COUNT];
-    PIParam pi[WHEEL_COUNT];
-};
-
-namespace ConfigFront
-{
-    constexpr ControlConfig CONFIG =
-    {
-        // deadPwm: Li, Re
-        { 70, 70 },
-
-        // PI-Parameter: Li, Re
-        // Einheit Fehler: cm/s
-        {
-            { 0.020f, 0.080f },   // Li: vorher 2.0 / 8.0 bei m/s
-            { 0.020f, 0.100f }    // Re: vorher 2.0 / 10.0 bei m/s
-        }
-    };
-}
-
-namespace ConfigRear
-{
-    constexpr ControlConfig CONFIG =
-    {
-        // deadPwm: Li, Re
-        { 80, 60 },
-
-        // PI-Parameter: Li, Re
-        // Einheit Fehler: cm/s
-        {
-            { 0.020f, 0.060f },   // Li: vorher 2.0 / 6.0 bei m/s
-            { 0.020f, 0.055f }    // Re: vorher 2.0 / 5.5 bei m/s
-        }
-    };
-}
-
-#endif // CONTROLCONFIG_H
-
-============================================================
 FILE: C:\Users\Acer\source\repos\robot\3_Control\src\PIRegler.cpp
 ============================================================
 // ============================================================
@@ -1643,7 +1419,7 @@ namespace
     }
 }
 
-Rad::Rad(Motor& motor, SpeedWeg& speed, PIRegler& regler,
+Rad::Rad(Motor& motor, WheelMeasurement& speed, PIRegler& regler,
     uint16_t dtMs, int16_t deadPwm)
     : _motor(motor), _speed(speed), _regler(regler),
     _dtMs(dtMs), _deadPwm(deadPwm),
@@ -1826,13 +1602,13 @@ FILE: C:\Users\Acer\source\repos\robot\3_Control\src\Rad.h
 #include <Arduino.h>
 #include "src/ControlTypes.h"
 #include "src/Motor.h"
-#include "SpeedWeg.h"
+#include "WheelMeasurement.h"
 #include "PIRegler.h"
 
 class Rad
 {
 public:
-    Rad(Motor& motor, SpeedWeg& speed, PIRegler& regler,
+    Rad(Motor& motor, WheelMeasurement& speed, PIRegler& regler,
         uint16_t dtMs, int16_t deadPwm);
 
     void  setSoll(float v_soll_cms);
@@ -1851,7 +1627,7 @@ public:
 
 private:
     Motor& _motor;
-    SpeedWeg& _speed;
+    WheelMeasurement& _speed;
     PIRegler& _regler;
 
     uint16_t _dtMs;
@@ -1861,14 +1637,238 @@ private:
 };
 
 ============================================================
-FILE: C:\Users\Acer\source\repos\robot\3_Control\src\SpeedWeg.cpp
+FILE: C:\Users\Acer\source\repos\robot\3_Control\src\RadControl.cpp
 ============================================================
 // ============================================================
-// File: SpeedWeg.cpp
+// File: RadControl.cpp (3_Control)
+// Zweck:
+//  - Gemeinsame Radregelungs-Implementierung fuer vorne und hinten
+//  - Konfiguration kommt von der App via radControl_begin(cfg)
 // ============================================================
 
-#include "SpeedWeg.h"
-#include "src/globals.h"
+#include "RadControl.h"
+#include "src/Encoder.h"   // Klasse Enc (aus 2_Hardware)
+#include "src/Motor.h"     // Klasse Motor (aus 2_Hardware)
+
+// ============================================================
+// enc[] und motor[] werden in der App definiert
+// (vorne/src/Hardware.cpp bzw. hinten/src/Hardware.cpp).
+// Hier nur als extern bekannt machen.
+// ============================================================
+
+extern Enc enc[WHEEL_COUNT];
+extern Motor motor[WHEEL_COUNT];
+
+// ============================================================
+// Globale Objekte
+//
+// Die Regler werden hier mit Default-Parametern (0.0f, 0.0f)
+// angelegt. Die echten Parameter setzt radControl_begin() spaeter
+// per setParams() / setDeadPwm().
+// ============================================================
+
+WheelMeasurement wheelMeasurements[WHEEL_COUNT] =
+{
+    WheelMeasurement(enc[Li]),
+    WheelMeasurement(enc[Re])
+};
+
+PIRegler regler[WHEEL_COUNT] =
+{
+    PIRegler(0.0f, 0.0f, -MAX_PWM, MAX_PWM, SLEW_LIMIT_PWM),
+    PIRegler(0.0f, 0.0f, -MAX_PWM, MAX_PWM, SLEW_LIMIT_PWM)
+};
+
+Rad rad[WHEEL_COUNT] =
+{
+    Rad(motor[Li], wheelMeasurements[Li], regler[Li], RAD_REGEL_DT_MS, 0),
+    Rad(motor[Re], wheelMeasurements[Re], regler[Re], RAD_REGEL_DT_MS, 0)
+};
+
+// ============================================================
+// radControl_begin
+//
+// Wird von der App im setup() aufgerufen mit der gewuenschten
+// Konfiguration. Setzt PI-Parameter und DeadPWM in Reglern und
+// Raedern.
+// ============================================================
+
+void radControl_begin(const RadControlConfig& cfg)
+{
+    for (uint8_t i = 0; i < WHEEL_COUNT; i++)
+    {
+        regler[i].setParams(cfg.pi[i].Kp, cfg.pi[i].Ki);
+        rad[i].setDeadPwm(cfg.deadPwm[i]);
+    }
+}
+
+// ============================================================
+// wheelMeasurement_reset_all
+// ============================================================
+
+void wheelMeasurement_reset_all()
+{
+    for (uint8_t i = 0; i < WHEEL_COUNT; i++)
+    {
+        wheelMeasurements[i].reset();
+    }
+}
+
+// ============================================================
+// control_resetPiStates
+//
+// Setzt nur die inneren PI-Zustaende zurueck:
+//  - Integralanteil
+//  - vorherige PWM
+//
+// Wichtig:
+//  - Sollwerte bleiben erhalten.
+//  - Motoren werden nicht gestoppt.
+//  - WheelMeasurement wird nicht zurueckgesetzt.
+//  - Kein kuenstlicher Null-Sollwert zwischen zwei Fahrabschnitten.
+// ============================================================
+
+void radControl_resetPiStates()
+{
+    for (uint8_t i = 0; i < WHEEL_COUNT; i++)
+    {
+        regler[i].reset();
+    }
+}
+
+void radControl_update(uint32_t now)
+{
+    for (uint8_t i = 0; i < WHEEL_COUNT; i++)
+    {
+        rad[i].update(now);
+    }
+}
+
+void radControl_setSoll(uint8_t w, float v)
+{
+    if (w < WHEEL_COUNT)
+    {
+        rad[w].setSoll(v);
+    }
+}
+
+void radControl_stopAll()
+{
+    for (uint8_t i = 0; i < WHEEL_COUNT; i++)
+    {
+        rad[i].stop();
+    }
+}
+
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\3_Control\src\RadControl.h
+============================================================
+// ============================================================
+// File: RadControl.h (3_Control)
+// Zweck:
+//  - Gemeinsame Radregelungs-Schnittstelle fuer vorne und hinten
+//  - Einheit fuer Radgeschwindigkeit: cm/s
+// ============================================================
+
+#ifndef RAD_CONTROL_H
+#define RAD_CONTROL_H
+
+#include <Arduino.h>
+#include "src/RobotConfig.h"
+#include "src/WheelMeasurement.h"
+#include "src/PIRegler.h"
+#include "src/Rad.h"
+#include "RadControlConfig.h"
+
+extern WheelMeasurement wheelMeasurements[WHEEL_COUNT];
+
+extern PIRegler regler[WHEEL_COUNT];
+extern Rad rad[WHEEL_COUNT];
+
+void radControl_begin(const RadControlConfig& cfg);
+
+void wheelMeasurement_reset_all();
+
+void radControl_resetPiStates();
+
+void radControl_update(uint32_t nowMs);
+
+void radControl_setSoll(uint8_t wheel, float v_cms);
+
+void radControl_stopAll();
+
+#endif // RAD_CONTROL_H
+
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\3_Control\src\RadControlConfig.h
+============================================================
+// ============================================================
+// File: RadControlConfig.h
+// Zweck:
+//  - Datentyp RadControlConfig fuer PI-Parameter und DeadPWM
+//  - Vordefinierte Konfigurationen fuer vorne und hinten
+//
+// Wichtig:
+//  - Radgeschwindigkeiten werden jetzt in cm/s geregelt.
+//  - Alte PI-Werte aus m/s wurden durch 100 geteilt.
+// ============================================================
+
+#ifndef RAD_CONTROL_CONFIG_H
+#define RAD_CONTROL_CONFIG_H
+
+#include <Arduino.h>
+#include "src/RobotConfig.h"
+#include "src/ControlTypes.h"
+
+struct RadControlConfig
+{
+    int16_t deadPwm[WHEEL_COUNT];
+    PIParam pi[WHEEL_COUNT];
+};
+
+namespace ConfigFront
+{
+    constexpr RadControlConfig CONFIG =
+    {
+        // deadPwm: Li, Re
+        { 70, 70 },
+
+        // PI-Parameter: Li, Re
+        // Einheit Fehler: cm/s
+        {
+            { 0.020f, 0.080f },   // Li: vorher 2.0 / 8.0 bei m/s
+            { 0.020f, 0.100f }    // Re: vorher 2.0 / 10.0 bei m/s
+        }
+    };
+}
+
+namespace ConfigRear
+{
+    constexpr RadControlConfig CONFIG =
+    {
+        // deadPwm: Li, Re
+        { 80, 60 },
+
+        // PI-Parameter: Li, Re
+        // Einheit Fehler: cm/s
+        {
+            { 0.020f, 0.060f },   // Li: vorher 2.0 / 6.0 bei m/s
+            { 0.020f, 0.055f }    // Re: vorher 2.0 / 5.5 bei m/s
+        }
+    };
+}
+
+#endif // RAD_CONTROL_CONFIG_H
+
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\3_Control\src\WheelMeasurement.cpp
+============================================================
+// ============================================================
+// File: WheelMeasurement.cpp
+// ============================================================
+
+#include "WheelMeasurement.h"
+#include "src/RobotConfig.h"
 #include "src/Encoder.h"
 #include "src/ScaleUtils.h"
 
@@ -1877,7 +1877,7 @@ namespace
     const float SPEED_ALPHA = 0.2f;
 }
 
-SpeedWeg::SpeedWeg(Enc& enc)
+WheelMeasurement::WheelMeasurement(Enc& enc)
     : _enc(enc)
 {
     _last_counts = _enc.getCounts();
@@ -1889,7 +1889,7 @@ SpeedWeg::SpeedWeg(Enc& enc)
     _last_tick_ms = 0;
 }
 
-void SpeedWeg::reset()
+void WheelMeasurement::reset()
 {
     _counts_total = 0;
 
@@ -1901,7 +1901,7 @@ void SpeedWeg::reset()
     _last_counts = _enc.getCounts();
 }
 
-void SpeedWeg::update(uint32_t now_ms)
+void WheelMeasurement::update(uint32_t now_ms)
 {
     long cur = _enc.getCounts();
     long d = cur - _last_counts;
@@ -1920,7 +1920,7 @@ void SpeedWeg::update(uint32_t now_ms)
     timeoutCheck(now_ms);
 }
 
-void SpeedWeg::updateFromTicks(int16_t dcounts, uint32_t now_ms)
+void WheelMeasurement::updateFromTicks(int16_t dcounts, uint32_t now_ms)
 {
     _counts_total += dcounts;
     _acc_counts += dcounts;
@@ -1949,7 +1949,7 @@ void SpeedWeg::updateFromTicks(int16_t dcounts, uint32_t now_ms)
     _acc_counts = 0;
 }
 
-void SpeedWeg::timeoutCheck(uint32_t now_ms)
+void WheelMeasurement::timeoutCheck(uint32_t now_ms)
 {
     if (_last_tick_ms == 0)
     {
@@ -1962,21 +1962,21 @@ void SpeedWeg::timeoutCheck(uint32_t now_ms)
     }
 }
 
-float SpeedWeg::cms() const
+float WheelMeasurement::cms() const
 {
     return _rps_filt * RAD_UMFANG_CM;
 }
 
-int16_t SpeedWeg::cmsInt() const
+int16_t WheelMeasurement::cmsInt() const
 {
     return scaleRoundToInt16(cms());
 }
 
 ============================================================
-FILE: C:\Users\Acer\source\repos\robot\3_Control\src\SpeedWeg.h
+FILE: C:\Users\Acer\source\repos\robot\3_Control\src\WheelMeasurement.h
 ============================================================
 // ============================================================
-// File: SpeedWeg.h
+// File: RadMessung.h
 // Zweck:
 //  - Geschwindigkeit in cm/s aus Encoder-Ticks
 //  - Encoder-Gesamtcounts fuer Odometrie/Plot
@@ -1987,14 +1987,14 @@ FILE: C:\Users\Acer\source\repos\robot\3_Control\src\SpeedWeg.h
 #pragma once
 
 #include <Arduino.h>
-#include "src/globals.h"
+#include "src/RobotConfig.h"
 
 class Enc;
 
-class SpeedWeg
+class WheelMeasurement
 {
 public:
-    explicit SpeedWeg(Enc& enc);
+    explicit WheelMeasurement(Enc& enc);
 
     void reset();
 
@@ -2032,7 +2032,7 @@ FILE: C:\Users\Acer\source\repos\robot\4_Vehicle\src\MecanumOdometer.cpp
 #include "MecanumOdometer.h"
 
 #include <math.h>
-#include "src/globals.h"
+#include "src/RobotConfig.h"
 
 MecanumOdometer::MecanumOdometer()
     : _primed(false),
@@ -2411,8 +2411,8 @@ FILE: C:\Users\Acer\source\repos\robot\4_Vehicle\src\VehicleController.h
 #ifndef VEHICLE_CONTROLLER_H
 #define VEHICLE_CONTROLLER_H
 
-#include "src/globals.h"
-#include "VehicleRegler.h"
+#include "src/RobotConfig.h"
+#include "VehiclePIController.h"
 
 class VehicleController
 {
@@ -2458,7 +2458,7 @@ private:
 
     float _wheelSoll[WHEEL_VEHICLE_COUNT] = { 0 };
 
-    VehicleRegler _regler;
+    VehiclePIController _regler;
     uint32_t _lastUpdateMs = 0;
 
     bool _turnOnly = false;
@@ -2467,14 +2467,14 @@ private:
 #endif
 
 ============================================================
-FILE: C:\Users\Acer\source\repos\robot\4_Vehicle\src\VehicleRegler.cpp
+FILE: C:\Users\Acer\source\repos\robot\4_Vehicle\src\VehiclePIController.cpp
 ============================================================
 // ============================================================
-// VehicleRegler.cpp
+// VehiclePIController.cpp
 // ============================================================
-#include "VehicleRegler.h"
+#include "VehiclePIController.h"
 
-VehicleRegler::VehicleRegler()
+VehiclePIController::VehiclePIController()
     : _Kp_vx(0.0f), _Ki_vx(0.0f)
     , _Kp_vy(0.0f), _Ki_vy(0.0f)
     , _Kp_wz(0.0f), _Ki_wz(0.0f)
@@ -2484,7 +2484,7 @@ VehicleRegler::VehicleRegler()
 {
 }
 
-void VehicleRegler::setParams(float Kp_vx, float Ki_vx,
+void VehiclePIController::setParams(float Kp_vx, float Ki_vx,
     float Kp_vy, float Ki_vy,
     float Kp_wz, float Ki_wz)
 {
@@ -2493,14 +2493,14 @@ void VehicleRegler::setParams(float Kp_vx, float Ki_vx,
     _Kp_wz = Kp_wz; _Ki_wz = Ki_wz;
 }
 
-void VehicleRegler::reset()
+void VehiclePIController::reset()
 {
     _integral_vx = 0.0f;
     _integral_vy = 0.0f;
     _integral_wz = 0.0f;
 }
 
-float VehicleRegler::updateVx(float soll, float ist, uint16_t dt_ms)
+float VehiclePIController::updateVx(float soll, float ist, uint16_t dt_ms)
 {
     if (_Kp_vx == 0.0f && _Ki_vx == 0.0f) return soll;
     if (dt_ms == 0) return soll;
@@ -2510,7 +2510,7 @@ float VehicleRegler::updateVx(float soll, float ist, uint16_t dt_ms)
     return _Kp_vx * e + _integral_vx;
 }
 
-float VehicleRegler::updateVy(float soll, float ist, uint16_t dt_ms)
+float VehiclePIController::updateVy(float soll, float ist, uint16_t dt_ms)
 {
     if (_Kp_vy == 0.0f && _Ki_vy == 0.0f) return soll;
     if (dt_ms == 0) return soll;
@@ -2520,7 +2520,7 @@ float VehicleRegler::updateVy(float soll, float ist, uint16_t dt_ms)
     return _Kp_vy * e + _integral_vy;
 }
 
-float VehicleRegler::updateWz(float soll, float ist, uint16_t dt_ms)
+float VehiclePIController::updateWz(float soll, float ist, uint16_t dt_ms)
 {
     if (_Kp_wz == 0.0f && _Ki_wz == 0.0f) return soll;
     if (dt_ms == 0) return soll;
@@ -2531,20 +2531,20 @@ float VehicleRegler::updateWz(float soll, float ist, uint16_t dt_ms)
 }
 
 ============================================================
-FILE: C:\Users\Acer\source\repos\robot\4_Vehicle\src\VehicleRegler.h
+FILE: C:\Users\Acer\source\repos\robot\4_Vehicle\src\VehiclePIController.h
 ============================================================
 // ============================================================
-// VehicleRegler.h
+// VehiclePIController.h
 // ============================================================
-#ifndef VEHICLE_REGLER_H
-#define VEHICLE_REGLER_H
+#ifndef VEHICLE_PI_CONTROLLER_H
+#define VEHICLE_PI_CONTROLLER_H
 
 #include <Arduino.h>
 
-class VehicleRegler
+class VehiclePIController
 {
 public:
-    VehicleRegler();
+    VehiclePIController();
     void setParams(float Kp_vx, float Ki_vx,
         float Kp_vy, float Ki_vy,
         float Kp_wz, float Ki_wz);
@@ -2571,7 +2571,7 @@ private:
     float _integral_wz;
 };
 
-#endif // VEHICLE_REGLER_H
+#endif // VEHICLE_PI_CONTROLLER_H
 
 ============================================================
 FILE: C:\Users\Acer\source\repos\robot\5_System\src\CommandRunner\CommandRunner.cpp
@@ -2582,8 +2582,8 @@ FILE: C:\Users\Acer\source\repos\robot\5_System\src\CommandRunner\CommandRunner.
 
 #include "CommandRunner.h"
 
-#include "src/PrinterConfig.h"
-#include "src/globals.h"
+#include "src/TelemetryPrinterConfig.h"
+#include "src/RobotConfig.h"
 #include "src/ScaleUtils.h"
 
 #include <math.h>
@@ -3647,398 +3647,6 @@ public:
 #endif
 
 ============================================================
-FILE: C:\Users\Acer\source\repos\robot\5_System\src\Printer.cpp
-============================================================
-// ============================================================
-// File: Printer.cpp
-// ============================================================
-
-#include "Printer.h"
-
-#include "src/MecanumOdometer.h"
-#include "src/ScaleUtils.h"
-
-namespace
-{
-    void printSpeedCms(float valueCms)
-    {
-        Serial.print((int)scaleRoundToInt16(valueCms));
-    }
-
-    void printValue100(float value)
-    {
-        Serial.print(scaleFloatToInt100(value));
-    }
-}
-
-void Printer::printInfo(VehicleController& vehicle, const ControlConfig& cfg)
-{
-#if PRINTER_ENABLE_INFO
-    Serial.print(F("#INFO,Raeder,Li,Kp100="));  Serial.print(scaleFloatToInt100(cfg.pi[Li].Kp));
-    Serial.print(F(",Ki100="));                 Serial.print(scaleFloatToInt100(cfg.pi[Li].Ki));
-    Serial.print(F(",dead="));                  Serial.print(cfg.deadPwm[Li]);
-    Serial.print(F(",Re,Kp100="));              Serial.print(scaleFloatToInt100(cfg.pi[Re].Kp));
-    Serial.print(F(",Ki100="));                 Serial.print(scaleFloatToInt100(cfg.pi[Re].Ki));
-    Serial.print(F(",dead="));                  Serial.println(cfg.deadPwm[Re]);
-
-    Serial.print(F("#INFO,Chassis,vx,Kp100=")); Serial.print(scaleFloatToInt100(vehicle.KpVx()));
-    Serial.print(F(",Ki100="));                 Serial.print(scaleFloatToInt100(vehicle.KiVx()));
-    Serial.print(F(",vy,Kp100="));              Serial.print(scaleFloatToInt100(vehicle.KpVy()));
-    Serial.print(F(",Ki100="));                 Serial.print(scaleFloatToInt100(vehicle.KiVy()));
-    Serial.print(F(",wz,Kp100="));              Serial.print(scaleFloatToInt100(vehicle.KpWz()));
-    Serial.print(F(",Ki100="));                 Serial.println(scaleFloatToInt100(vehicle.KiWz()));
-#else
-    (void)vehicle;
-    (void)cfg;
-#endif
-}
-
-void Printer::printCompletedFrame(
-    VehicleController& vehicle,
-    const RearPendingFrame& frame,
-    float hiLi_i_cms,
-    float hiRe_i_cms,
-    int16_t hiLi_pwm,
-    int16_t hiRe_pwm)
-{
-#ifdef PRINTER_MODE_CHASSIS
-    printFrame(
-        vehicle,
-        frame.t,
-        speed[Li].cms(),
-        speed[Re].cms(),
-        hiLi_i_cms,
-        hiRe_i_cms
-    );
-#endif
-
-#ifdef PRINTER_MODE_RAEDER
-    printFrame(
-        frame.t,
-
-        vehicle.getWheelSoll(VoLi),
-        speed[Li].cms(),
-        frame.voLi_pwm,
-
-        vehicle.getWheelSoll(VoRe),
-        speed[Re].cms(),
-        frame.voRe_pwm,
-
-        vehicle.getWheelSoll(HiLi),
-        hiLi_i_cms,
-        hiLi_pwm,
-
-        vehicle.getWheelSoll(HiRe),
-        hiRe_i_cms,
-        hiRe_pwm
-    );
-#endif
-}
-
-void Printer::printOdom2(
-    uint16_t cmdpId,
-    uint32_t t_ms,
-    const MecanumOdometer& odom)
-{
-#if PRINTER_ENABLE_ODOM
-    if (cmdpId == 0)
-    {
-        return;
-    }
-
-    Serial.print(F("#ODOM2,"));
-    Serial.print((unsigned int)cmdpId);              Serial.print(',');
-    Serial.print((unsigned long)t_ms);               Serial.print(',');
-    Serial.print(scaleFloatToInt100(odom.absCm()));  Serial.print(',');
-    Serial.print(scaleFloatToInt100(odom.xCm()));    Serial.print(',');
-    Serial.print(scaleFloatToInt100(odom.yCm()));    Serial.print(',');
-    Serial.println(scaleFloatToInt100(odom.phiDeg()));
-#else
-    (void)cmdpId;
-    (void)t_ms;
-    (void)odom;
-#endif
-}
-
-#ifdef PRINTER_MODE_CHASSIS
-
-void Printer::printWheels(
-    VehicleController& vehicle,
-    float v2_ist_cms,
-    float v3_ist_cms,
-    uint32_t t_ms)
-{
-#if PRINTER_ENABLE_CHASSIS
-    Serial.print(F("#CHASSIS,"));
-    Serial.print(t_ms);                  Serial.print(',');
-
-    printSpeedCms(speed[Li].cms());      Serial.print(',');
-    printSpeedCms(speed[Re].cms());      Serial.print(',');
-    printSpeedCms(v2_ist_cms);           Serial.print(',');
-    printSpeedCms(v3_ist_cms);           Serial.print(',');
-
-    printSpeedCms(vehicle.vxIst());      Serial.print(',');
-    printSpeedCms(vehicle.vyIst());      Serial.print(',');
-    printValue100(vehicle.wzIst());
-    Serial.println();
-#else
-    (void)vehicle;
-    (void)v2_ist_cms;
-    (void)v3_ist_cms;
-    (void)t_ms;
-#endif
-}
-
-void Printer::printFrame(
-    VehicleController& vehicle,
-    uint32_t t_ms,
-    float voLi_i_cms,
-    float voRe_i_cms,
-    float hiLi_i_cms,
-    float hiRe_i_cms)
-{
-#if PRINTER_ENABLE_CHASSIS
-    Serial.print(F("#CHASSIS,"));
-    Serial.print(t_ms);                  Serial.print(',');
-
-    printSpeedCms(voLi_i_cms);           Serial.print(',');
-    printSpeedCms(voRe_i_cms);           Serial.print(',');
-    printSpeedCms(hiLi_i_cms);           Serial.print(',');
-    printSpeedCms(hiRe_i_cms);           Serial.print(',');
-
-    printSpeedCms(vehicle.vxIst());      Serial.print(',');
-    printSpeedCms(vehicle.vyIst());      Serial.print(',');
-    printValue100(vehicle.wzIst());
-    Serial.println();
-#else
-    (void)vehicle;
-    (void)t_ms;
-    (void)voLi_i_cms;
-    (void)voRe_i_cms;
-    (void)hiLi_i_cms;
-    (void)hiRe_i_cms;
-#endif
-}
-
-#endif
-
-#ifdef PRINTER_MODE_RAEDER
-
-void Printer::printWheels(
-    VehicleController& vehicle,
-    float v2_ist_cms,
-    float v3_ist_cms,
-    int16_t pwm2,
-    int16_t pwm3,
-    uint32_t t_ms)
-{
-#if PRINTER_ENABLE_WHEELS
-    Serial.print(F("#WHEELS,"));
-    Serial.print(t_ms);                             Serial.print(',');
-
-    printSpeedCms(vehicle.getWheelSoll(VoLi));      Serial.print(',');
-    printSpeedCms(speed[Li].cms());                 Serial.print(',');
-    Serial.print(rad[Li].lastPwm());                Serial.print(',');
-
-    printSpeedCms(vehicle.getWheelSoll(VoRe));      Serial.print(',');
-    printSpeedCms(speed[Re].cms());                 Serial.print(',');
-    Serial.print(rad[Re].lastPwm());                Serial.print(',');
-
-    printSpeedCms(vehicle.getWheelSoll(HiLi));      Serial.print(',');
-    printSpeedCms(v2_ist_cms);                      Serial.print(',');
-    Serial.print(pwm2);                             Serial.print(',');
-
-    printSpeedCms(vehicle.getWheelSoll(HiRe));      Serial.print(',');
-    printSpeedCms(v3_ist_cms);                      Serial.print(',');
-    Serial.println(pwm3);
-#else
-    (void)vehicle;
-    (void)v2_ist_cms;
-    (void)v3_ist_cms;
-    (void)pwm2;
-    (void)pwm3;
-    (void)t_ms;
-#endif
-
-#if PRINTER_ENABLE_COUNTS
-    Serial.print(F("#CNTF,"));
-    Serial.print(t_ms);                     Serial.print(',');
-    Serial.print(speed[Li].counts_total()); Serial.print(',');
-    Serial.println(speed[Re].counts_total());
-#endif
-}
-
-void Printer::printFrame(
-    uint32_t t_ms,
-    float voLi_s_cms,
-    float voLi_i_cms,
-    int16_t voLi_pwm,
-    float voRe_s_cms,
-    float voRe_i_cms,
-    int16_t voRe_pwm,
-    float hiLi_s_cms,
-    float hiLi_i_cms,
-    int16_t hiLi_pwm,
-    float hiRe_s_cms,
-    float hiRe_i_cms,
-    int16_t hiRe_pwm)
-{
-#if PRINTER_ENABLE_WHEELS
-    Serial.print(F("#WHEELS,"));
-    Serial.print(t_ms);             Serial.print(',');
-
-    printSpeedCms(voLi_s_cms);      Serial.print(',');
-    printSpeedCms(voLi_i_cms);      Serial.print(',');
-    Serial.print(voLi_pwm);         Serial.print(',');
-
-    printSpeedCms(voRe_s_cms);      Serial.print(',');
-    printSpeedCms(voRe_i_cms);      Serial.print(',');
-    Serial.print(voRe_pwm);         Serial.print(',');
-
-    printSpeedCms(hiLi_s_cms);      Serial.print(',');
-    printSpeedCms(hiLi_i_cms);      Serial.print(',');
-    Serial.print(hiLi_pwm);         Serial.print(',');
-
-    printSpeedCms(hiRe_s_cms);      Serial.print(',');
-    printSpeedCms(hiRe_i_cms);      Serial.print(',');
-    Serial.println(hiRe_pwm);
-#else
-    (void)t_ms;
-    (void)voLi_s_cms;
-    (void)voLi_i_cms;
-    (void)voLi_pwm;
-    (void)voRe_s_cms;
-    (void)voRe_i_cms;
-    (void)voRe_pwm;
-    (void)hiLi_s_cms;
-    (void)hiLi_i_cms;
-    (void)hiLi_pwm;
-    (void)hiRe_s_cms;
-    (void)hiRe_i_cms;
-    (void)hiRe_pwm;
-#endif
-
-#if PRINTER_ENABLE_COUNTS
-    Serial.print(F("#CNTF,"));
-    Serial.print(t_ms);                     Serial.print(',');
-    Serial.print(speed[Li].counts_total()); Serial.print(',');
-    Serial.println(speed[Re].counts_total());
-#endif
-}
-
-#endif
-
-============================================================
-FILE: C:\Users\Acer\source\repos\robot\5_System\src\Printer.h
-============================================================
-#ifndef PRINTER_H
-#define PRINTER_H
-
-#include <Arduino.h>
-#include "src/globals.h"
-#include "src/VehicleController.h"
-#include "src/Control.h"
-#include "src/ControlConfig.h"
-#include "src/RearFrameClient.h"
-#include "PrinterConfig.h"
-
-class MecanumOdometer;
-
-class Printer
-{
-public:
-    void printInfo(VehicleController& vehicle, const ControlConfig& cfg);
-
-    void printCompletedFrame(
-        VehicleController& vehicle,
-        const RearPendingFrame& frame,
-        float hiLi_i_cms,
-        float hiRe_i_cms,
-        int16_t hiLi_pwm,
-        int16_t hiRe_pwm);
-
-    void printOdom2(
-        uint16_t cmdpId,
-        uint32_t t_ms,
-        const MecanumOdometer& odom);
-
-#ifdef PRINTER_MODE_CHASSIS
-    void printWheels(
-        VehicleController& vehicle,
-        float v2_ist_cms,
-        float v3_ist_cms,
-        uint32_t t_ms);
-
-    void printFrame(
-        VehicleController& vehicle,
-        uint32_t t_ms,
-        float voLi_i_cms,
-        float voRe_i_cms,
-        float hiLi_i_cms,
-        float hiRe_i_cms);
-#endif
-
-#ifdef PRINTER_MODE_RAEDER
-    void printWheels(
-        VehicleController& vehicle,
-        float v2_ist_cms,
-        float v3_ist_cms,
-        int16_t pwm2,
-        int16_t pwm3,
-        uint32_t t_ms);
-
-    void printFrame(
-        uint32_t t_ms,
-        float voLi_s_cms,
-        float voLi_i_cms,
-        int16_t voLi_pwm,
-        float voRe_s_cms,
-        float voRe_i_cms,
-        int16_t voRe_pwm,
-        float hiLi_s_cms,
-        float hiLi_i_cms,
-        int16_t hiLi_pwm,
-        float hiRe_s_cms,
-        float hiRe_i_cms,
-        int16_t hiRe_pwm);
-#endif
-};
-
-#endif
-
-============================================================
-FILE: C:\Users\Acer\source\repos\robot\5_System\src\PrinterConfig.h
-============================================================
-// PrinterConfig.h
-#ifndef PRINTER_CONFIG_H
-#define PRINTER_CONFIG_H
-
-// ------------------------------------------------------------
-// Ausgabe-Modus
-// ------------------------------------------------------------
-// Nur einen Modus aktivieren.
-
-// #define PRINTER_MODE_CHASSIS
-#define PRINTER_MODE_RAEDER
-
-// ------------------------------------------------------------
-// Diagnose-/Zusatzausgaben
-// ------------------------------------------------------------
-// 1 = Ausgabe aktiv
-// 0 = Ausgabe wird beim Kompilieren entfernt
-
-#define PRINTER_ENABLE_INFO     0
-#define PRINTER_ENABLE_ERRORS   0
-#define PRINTER_ENABLE_EVENTS   0
-#define PRINTER_ENABLE_ODOM     1
-#define PRINTER_ENABLE_COUNTS   0
-
-#define PRINTER_ENABLE_WHEELS   1
-#define PRINTER_ENABLE_CHASSIS  0
-
-#endif // PRINTER_CONFIG_H
-
-============================================================
 FILE: C:\Users\Acer\source\repos\robot\5_System\src\RearFrameClient.cpp
 ============================================================
 // RearFrameClient.cpp
@@ -4511,6 +4119,398 @@ private:
 #endif // REAR_FRAME_CLIENT_H
 
 ============================================================
+FILE: C:\Users\Acer\source\repos\robot\5_System\src\TelemetryPrinter.cpp
+============================================================
+// ============================================================
+// File: TelemetryPrinter.cpp
+// ============================================================
+
+#include "TelemetryPrinter.h"
+
+#include "src/MecanumOdometer.h"
+#include "src/ScaleUtils.h"
+
+namespace
+{
+    void printSpeedCms(float valueCms)
+    {
+        Serial.print((int)scaleRoundToInt16(valueCms));
+    }
+
+    void printValue100(float value)
+    {
+        Serial.print(scaleFloatToInt100(value));
+    }
+}
+
+void TelemetryPrinter::printInfo(VehicleController& vehicle, const RadControlConfig& cfg)
+{
+#if PRINTER_ENABLE_INFO
+    Serial.print(F("#INFO,Raeder,Li,Kp100="));  Serial.print(scaleFloatToInt100(cfg.pi[Li].Kp));
+    Serial.print(F(",Ki100="));                 Serial.print(scaleFloatToInt100(cfg.pi[Li].Ki));
+    Serial.print(F(",dead="));                  Serial.print(cfg.deadPwm[Li]);
+    Serial.print(F(",Re,Kp100="));              Serial.print(scaleFloatToInt100(cfg.pi[Re].Kp));
+    Serial.print(F(",Ki100="));                 Serial.print(scaleFloatToInt100(cfg.pi[Re].Ki));
+    Serial.print(F(",dead="));                  Serial.println(cfg.deadPwm[Re]);
+
+    Serial.print(F("#INFO,Chassis,vx,Kp100=")); Serial.print(scaleFloatToInt100(vehicle.KpVx()));
+    Serial.print(F(",Ki100="));                 Serial.print(scaleFloatToInt100(vehicle.KiVx()));
+    Serial.print(F(",vy,Kp100="));              Serial.print(scaleFloatToInt100(vehicle.KpVy()));
+    Serial.print(F(",Ki100="));                 Serial.print(scaleFloatToInt100(vehicle.KiVy()));
+    Serial.print(F(",wz,Kp100="));              Serial.print(scaleFloatToInt100(vehicle.KpWz()));
+    Serial.print(F(",Ki100="));                 Serial.println(scaleFloatToInt100(vehicle.KiWz()));
+#else
+    (void)vehicle;
+    (void)cfg;
+#endif
+}
+
+void TelemetryPrinter::printCompletedFrame(
+    VehicleController& vehicle,
+    const RearPendingFrame& frame,
+    float hiLi_i_cms,
+    float hiRe_i_cms,
+    int16_t hiLi_pwm,
+    int16_t hiRe_pwm)
+{
+#ifdef PRINTER_MODE_CHASSIS
+    printFrame(
+        vehicle,
+        frame.t,
+        speed[Li].cms(),
+        speed[Re].cms(),
+        hiLi_i_cms,
+        hiRe_i_cms
+    );
+#endif
+
+#ifdef PRINTER_MODE_RAEDER
+    printFrame(
+        frame.t,
+
+        vehicle.getWheelSoll(VoLi),
+        wheelMeasurements[Li].cms(),
+        frame.voLi_pwm,
+
+        vehicle.getWheelSoll(VoRe),
+        wheelMeasurements[Re].cms(),
+        frame.voRe_pwm,
+
+        vehicle.getWheelSoll(HiLi),
+        hiLi_i_cms,
+        hiLi_pwm,
+
+        vehicle.getWheelSoll(HiRe),
+        hiRe_i_cms,
+        hiRe_pwm
+    );
+#endif
+}
+
+void TelemetryPrinter::printOdom2(
+    uint16_t cmdpId,
+    uint32_t t_ms,
+    const MecanumOdometer& odom)
+{
+#if PRINTER_ENABLE_ODOM
+    if (cmdpId == 0)
+    {
+        return;
+    }
+
+    Serial.print(F("#ODOM2,"));
+    Serial.print((unsigned int)cmdpId);              Serial.print(',');
+    Serial.print((unsigned long)t_ms);               Serial.print(',');
+    Serial.print(scaleFloatToInt100(odom.absCm()));  Serial.print(',');
+    Serial.print(scaleFloatToInt100(odom.xCm()));    Serial.print(',');
+    Serial.print(scaleFloatToInt100(odom.yCm()));    Serial.print(',');
+    Serial.println(scaleFloatToInt100(odom.phiDeg()));
+#else
+    (void)cmdpId;
+    (void)t_ms;
+    (void)odom;
+#endif
+}
+
+#ifdef PRINTER_MODE_CHASSIS
+
+void TelemetryPrinter::printWheels(
+    VehicleController& vehicle,
+    float v2_ist_cms,
+    float v3_ist_cms,
+    uint32_t t_ms)
+{
+#if PRINTER_ENABLE_CHASSIS
+    Serial.print(F("#CHASSIS,"));
+    Serial.print(t_ms);                  Serial.print(',');
+
+    printSpeedCms(speed[Li].cms());      Serial.print(',');
+    printSpeedCms(speed[Re].cms());      Serial.print(',');
+    printSpeedCms(v2_ist_cms);           Serial.print(',');
+    printSpeedCms(v3_ist_cms);           Serial.print(',');
+
+    printSpeedCms(vehicle.vxIst());      Serial.print(',');
+    printSpeedCms(vehicle.vyIst());      Serial.print(',');
+    printValue100(vehicle.wzIst());
+    Serial.println();
+#else
+    (void)vehicle;
+    (void)v2_ist_cms;
+    (void)v3_ist_cms;
+    (void)t_ms;
+#endif
+}
+
+void Printer::printFrame(
+    VehicleController& vehicle,
+    uint32_t t_ms,
+    float voLi_i_cms,
+    float voRe_i_cms,
+    float hiLi_i_cms,
+    float hiRe_i_cms)
+{
+#if PRINTER_ENABLE_CHASSIS
+    Serial.print(F("#CHASSIS,"));
+    Serial.print(t_ms);                  Serial.print(',');
+
+    printSpeedCms(voLi_i_cms);           Serial.print(',');
+    printSpeedCms(voRe_i_cms);           Serial.print(',');
+    printSpeedCms(hiLi_i_cms);           Serial.print(',');
+    printSpeedCms(hiRe_i_cms);           Serial.print(',');
+
+    printSpeedCms(vehicle.vxIst());      Serial.print(',');
+    printSpeedCms(vehicle.vyIst());      Serial.print(',');
+    printValue100(vehicle.wzIst());
+    Serial.println();
+#else
+    (void)vehicle;
+    (void)t_ms;
+    (void)voLi_i_cms;
+    (void)voRe_i_cms;
+    (void)hiLi_i_cms;
+    (void)hiRe_i_cms;
+#endif
+}
+
+#endif
+
+#ifdef PRINTER_MODE_RAEDER
+
+void TelemetryPrinter::printWheels(
+    VehicleController& vehicle,
+    float v2_ist_cms,
+    float v3_ist_cms,
+    int16_t pwm2,
+    int16_t pwm3,
+    uint32_t t_ms)
+{
+#if PRINTER_ENABLE_WHEELS
+    Serial.print(F("#WHEELS,"));
+    Serial.print(t_ms);                             Serial.print(',');
+
+    printSpeedCms(vehicle.getWheelSoll(VoLi));      Serial.print(',');
+    printSpeedCms(wheelMeasurements[Li].cms());                 Serial.print(',');
+    Serial.print(rad[Li].lastPwm());                Serial.print(',');
+
+    printSpeedCms(vehicle.getWheelSoll(VoRe));      Serial.print(',');
+    printSpeedCms(wheelMeasurements[Re].cms());                 Serial.print(',');
+    Serial.print(rad[Re].lastPwm());                Serial.print(',');
+
+    printSpeedCms(vehicle.getWheelSoll(HiLi));      Serial.print(',');
+    printSpeedCms(v2_ist_cms);                      Serial.print(',');
+    Serial.print(pwm2);                             Serial.print(',');
+
+    printSpeedCms(vehicle.getWheelSoll(HiRe));      Serial.print(',');
+    printSpeedCms(v3_ist_cms);                      Serial.print(',');
+    Serial.println(pwm3);
+#else
+    (void)vehicle;
+    (void)v2_ist_cms;
+    (void)v3_ist_cms;
+    (void)pwm2;
+    (void)pwm3;
+    (void)t_ms;
+#endif
+
+#if PRINTER_ENABLE_COUNTS
+    Serial.print(F("#CNTF,"));
+    Serial.print(t_ms);                     Serial.print(',');
+    Serial.print(speed[Li].counts_total()); Serial.print(',');
+    Serial.println(speed[Re].counts_total());
+#endif
+}
+
+void TelemetryPrinter::printFrame(
+    uint32_t t_ms,
+    float voLi_s_cms,
+    float voLi_i_cms,
+    int16_t voLi_pwm,
+    float voRe_s_cms,
+    float voRe_i_cms,
+    int16_t voRe_pwm,
+    float hiLi_s_cms,
+    float hiLi_i_cms,
+    int16_t hiLi_pwm,
+    float hiRe_s_cms,
+    float hiRe_i_cms,
+    int16_t hiRe_pwm)
+{
+#if PRINTER_ENABLE_WHEELS
+    Serial.print(F("#WHEELS,"));
+    Serial.print(t_ms);             Serial.print(',');
+
+    printSpeedCms(voLi_s_cms);      Serial.print(',');
+    printSpeedCms(voLi_i_cms);      Serial.print(',');
+    Serial.print(voLi_pwm);         Serial.print(',');
+
+    printSpeedCms(voRe_s_cms);      Serial.print(',');
+    printSpeedCms(voRe_i_cms);      Serial.print(',');
+    Serial.print(voRe_pwm);         Serial.print(',');
+
+    printSpeedCms(hiLi_s_cms);      Serial.print(',');
+    printSpeedCms(hiLi_i_cms);      Serial.print(',');
+    Serial.print(hiLi_pwm);         Serial.print(',');
+
+    printSpeedCms(hiRe_s_cms);      Serial.print(',');
+    printSpeedCms(hiRe_i_cms);      Serial.print(',');
+    Serial.println(hiRe_pwm);
+#else
+    (void)t_ms;
+    (void)voLi_s_cms;
+    (void)voLi_i_cms;
+    (void)voLi_pwm;
+    (void)voRe_s_cms;
+    (void)voRe_i_cms;
+    (void)voRe_pwm;
+    (void)hiLi_s_cms;
+    (void)hiLi_i_cms;
+    (void)hiLi_pwm;
+    (void)hiRe_s_cms;
+    (void)hiRe_i_cms;
+    (void)hiRe_pwm;
+#endif
+
+#if PRINTER_ENABLE_COUNTS
+    Serial.print(F("#CNTF,"));
+    Serial.print(t_ms);                     Serial.print(',');
+    Serial.print(speed[Li].counts_total()); Serial.print(',');
+    Serial.println(speed[Re].counts_total());
+#endif
+}
+
+#endif
+
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\5_System\src\TelemetryPrinter.h
+============================================================
+#ifndef TELEMETRY_PRINTER_H
+#define TELEMETRY_PRINTER_H
+
+#include <Arduino.h>
+#include "src/RobotConfig.h"
+#include "src/VehicleController.h"
+#include "src/RadControl.h"
+#include "src/RadControlConfig.h"
+#include "src/RearFrameClient.h"
+#include "TelemetryPrinterConfig.h"
+
+class MecanumOdometer;
+
+class TelemetryPrinter
+{
+public:
+    void printInfo(VehicleController& vehicle, const RadControlConfig& cfg);
+
+    void printCompletedFrame(
+        VehicleController& vehicle,
+        const RearPendingFrame& frame,
+        float hiLi_i_cms,
+        float hiRe_i_cms,
+        int16_t hiLi_pwm,
+        int16_t hiRe_pwm);
+
+    void printOdom2(
+        uint16_t cmdpId,
+        uint32_t t_ms,
+        const MecanumOdometer& odom);
+
+#ifdef PRINTER_MODE_CHASSIS
+    void printWheels(
+        VehicleController& vehicle,
+        float v2_ist_cms,
+        float v3_ist_cms,
+        uint32_t t_ms);
+
+    void printFrame(
+        VehicleController& vehicle,
+        uint32_t t_ms,
+        float voLi_i_cms,
+        float voRe_i_cms,
+        float hiLi_i_cms,
+        float hiRe_i_cms);
+#endif
+
+#ifdef PRINTER_MODE_RAEDER
+    void printWheels(
+        VehicleController& vehicle,
+        float v2_ist_cms,
+        float v3_ist_cms,
+        int16_t pwm2,
+        int16_t pwm3,
+        uint32_t t_ms);
+
+    void printFrame(
+        uint32_t t_ms,
+        float voLi_s_cms,
+        float voLi_i_cms,
+        int16_t voLi_pwm,
+        float voRe_s_cms,
+        float voRe_i_cms,
+        int16_t voRe_pwm,
+        float hiLi_s_cms,
+        float hiLi_i_cms,
+        int16_t hiLi_pwm,
+        float hiRe_s_cms,
+        float hiRe_i_cms,
+        int16_t hiRe_pwm);
+#endif
+};
+
+#endif
+
+============================================================
+FILE: C:\Users\Acer\source\repos\robot\5_System\src\TelemetryPrinterConfig.h
+============================================================
+// PrinterConfig.h
+#ifndef PRINTER_CONFIG_H
+#define PRINTER_CONFIG_H
+
+// ------------------------------------------------------------
+// Ausgabe-Modus
+// ------------------------------------------------------------
+// Nur einen Modus aktivieren.
+
+// #define PRINTER_MODE_CHASSIS
+#define PRINTER_MODE_RAEDER
+
+// ------------------------------------------------------------
+// Diagnose-/Zusatzausgaben
+// ------------------------------------------------------------
+// 1 = Ausgabe aktiv
+// 0 = Ausgabe wird beim Kompilieren entfernt
+
+#define PRINTER_ENABLE_INFO     0
+#define PRINTER_ENABLE_ERRORS   0
+#define PRINTER_ENABLE_EVENTS   0
+#define PRINTER_ENABLE_ODOM     1
+#define PRINTER_ENABLE_COUNTS   0
+
+#define PRINTER_ENABLE_WHEELS   1
+#define PRINTER_ENABLE_CHASSIS  0
+
+#endif // PRINTER_CONFIG_H
+
+============================================================
 FILE: C:\Users\Acer\source\repos\robot\hinten\__vm\.hinten.vsarduino.h
 ============================================================
 /* 
@@ -4546,8 +4546,8 @@ FILE: C:\Users\Acer\source\repos\robot\hinten\src\hinten.ino
 
 #include "src/Hardware.h"
 #include "src/hardware_pins.h"
-#include "src/Control.h"
-#include "src/ControlConfig.h"
+#include "src/RadControl.h"
+#include "src/RadControlConfig.h"
 
 RearApp app;
 
@@ -4563,8 +4563,8 @@ void setup()
     Serial.begin(115200);
 
     hardware_begin(PinsRear::PINS);
-    control_begin(ConfigRear::CONFIG);
-    speed_reset_all();
+    radControl_begin(ConfigRear::CONFIG);
+    wheelMeasurement_reset_all();
 
     app.begin();
 
@@ -4583,7 +4583,7 @@ void loop()
     app.updateVsolTimeout(now);
     app.handleIncomingVsol(now);
 
-    control_update(now);
+    radControl_update(now);
 
     app.handleSyncVist();
 }
@@ -4595,8 +4595,8 @@ FILE: C:\Users\Acer\source\repos\robot\hinten\src\RearApp.cpp
 #include "RearApp.h"
 
 #include "src/CommProtocol.h"
-#include "src/Control.h"
-#include "src/ControlConfig.h"
+#include "src/RadControl.h"
+#include "src/RadControlConfig.h"
 
 RearApp::RearApp()
     : uart(Serial, false),
@@ -4664,8 +4664,8 @@ void RearApp::handleIncomingVsol(uint32_t now)
 
         if (vsol.resetPi)
         {
-            control_resetPiStates();
-            speed_reset_all();
+            radControl_resetPiStates();
+            wheelMeasurement_reset_all();
         }
 
         rad[Li].setSoll(vSollLiCms);
@@ -4692,14 +4692,14 @@ void RearApp::handleSyncVist()
 
     syncFlag = false;
 
-    const int16_t vIstLiCms = speed[Li].cmsInt();
-    const int16_t vIstReCms = speed[Re].cmsInt();
+    const int16_t vIstLiCms = wheelMeasurements[Li].cmsInt();
+    const int16_t vIstReCms = wheelMeasurements[Re].cmsInt();
 
     const int16_t pwmLi = rad[Li].lastPwm();
     const int16_t pwmRe = rad[Re].lastPwm();
 
-    const int32_t cntLi = (int32_t)speed[Li].counts_total();
-    const int32_t cntRe = (int32_t)speed[Re].counts_total();
+    const int32_t cntLi = (int32_t)wheelMeasurements[Li].counts_total();
+    const int32_t cntRe = (int32_t)wheelMeasurements[Re].counts_total();
 
     if (uart.isConnected())
     {
@@ -4832,9 +4832,9 @@ FILE: C:\Users\Acer\source\repos\robot\vorne\src\FrontApp.cpp
 #include <avr/wdt.h>
 
 #include "src/Hardware.h"
-#include "src/Control.h"
-#include "src/ControlConfig.h"
-#include "src/PrinterConfig.h"
+#include "src/RadControl.h"
+#include "src/RadControlConfig.h"
+#include "src/TelemetryPrinterConfig.h"
 #include "src/ScaleUtils.h"
 
 // ============================================================
@@ -4877,9 +4877,9 @@ void FrontApp::updateConnectionSafety(uint32_t now)
     {
         vehicle.stop();
 
-        control_stopAll();
-        control_resetPiStates();
-        speed_reset_all();
+        radControl_stopAll();
+        radControl_resetPiStates();
+        wheelMeasurement_reset_all();
 
         rearFrameClient.clearWaiting();
         rearFrameClient.clearFrame();
@@ -4898,9 +4898,9 @@ void FrontApp::updateConnectionSafety(uint32_t now)
     {
         vehicle.stop();
 
-        control_stopAll();
-        control_resetPiStates();
-        speed_reset_all();
+        radControl_stopAll();
+        radControl_resetPiStates();
+        wheelMeasurement_reset_all();
 
         commandRunner.begin();
         rearFrameClient.begin();
@@ -5069,7 +5069,7 @@ void FrontApp::updateVehicleAndFrontControl(uint32_t now)
 
     applyFrontWheelSoll();
 
-    control_update(now);
+    radControl_update(now);
 }
 
 void FrontApp::updateRearStopSequence(uint32_t now)
@@ -5114,8 +5114,8 @@ void FrontApp::applyFrontWheelSoll()
 void FrontApp::updateVehicleIst()
 {
     vehicle.updateIst(
-        speed[Re].cms(),
-        speed[Li].cms(),
+        wheelMeasurements[Re].cms(),
+        wheelMeasurements[Li].cms(),
         (float)rearFrameClient.hiLiIstCms(),
         (float)rearFrameClient.hiReIstCms()
     );
@@ -5154,14 +5154,14 @@ RearFrameRequest FrontApp::makeRearFrameRequest(uint32_t frameTime, bool resetPi
     request.resetPi = resetPi;
 
     request.voLi_s_cms = scaleRoundToInt16(commandRunner.getWheelSoll(VoLi));
-    request.voLi_i_cms = scaleRoundToInt16(speed[Li].cms());
+    request.voLi_i_cms = scaleRoundToInt16(wheelMeasurements[Li].cms());
     request.voLi_pwm = rad[Li].lastPwm();
-    request.voLiCnt = (int32_t)speed[Li].counts_total();
+    request.voLiCnt = (int32_t)wheelMeasurements[Li].counts_total();
 
     request.voRe_s_cms = scaleRoundToInt16(commandRunner.getWheelSoll(VoRe));
-    request.voRe_i_cms = scaleRoundToInt16(speed[Re].cms());
+    request.voRe_i_cms = scaleRoundToInt16(wheelMeasurements[Re].cms());
     request.voRe_pwm = rad[Re].lastPwm();
-    request.voReCnt = (int32_t)speed[Re].counts_total();
+    request.voReCnt = (int32_t)wheelMeasurements[Re].counts_total();
 
     request.hiLi_s_cms = scaleRoundToInt16(commandRunner.getWheelSoll(HiLi));
     request.hiRe_s_cms = scaleRoundToInt16(commandRunner.getWheelSoll(HiRe));
@@ -5200,14 +5200,14 @@ void FrontApp::requestStartFrameForNewCommand(uint32_t now)
     _odomResetPending = true;
 
     // Neuer echter Fahrabschnitt:
-    // SpeedWeg muss ebenfalls zurueckgesetzt werden,
+    // RasMessung muss ebenfalls zurueckgesetzt werden,
     // damit alte Tiefpasswerte nicht in den neuen CMDP-Abschnitt laufen.
-    speed_reset_all();
+    wheelMeasurement_reset_all();
 
     // Front-PI einmalig zuruecksetzen.
-    // Rear-PI und Rear-SpeedWeg werden ueber resetPi=true im VSOL-Startframe
+    // Rear-PI und Rear-RadMessung werden ueber resetPi=true im VSOL-Startframe
     // zurueckgesetzt.
-    control_resetPiStates();
+    radControl_resetPiStates();
 
     applyFrontWheelSoll();
 
@@ -5239,7 +5239,7 @@ FILE: C:\Users\Acer\source\repos\robot\vorne\src\FrontApp.h
 #include "src/CommandRunner/CommandRunner.h"
 #include "src/RearFrameClient.h"
 #include "src/FrameScheduler.h"
-#include "src/Printer.h"
+#include "src/TelemetryPrinter.h"
 
 // ============================================================
 // FrontApp
@@ -5273,7 +5273,7 @@ public:
 
     RearFrameClient rearFrameClient;
     FrameScheduler frameScheduler;
-    Printer printer;
+    TelemetryPrinter printer;
 
     // --------------------------------------------------------
     // Sichtbare loop()-Schritte fuer vorne.ino
@@ -5316,9 +5316,9 @@ FILE: C:\Users\Acer\source\repos\robot\vorne\src\vorne.ino
 #include "FrontApp.h"
 
 #include "src/Hardware.h"
-#include "src/hardware_pins.h"
-#include "src/Control.h"
-#include "src/ControlConfig.h"
+#include "src/HardwarePins.h"
+#include "src/RadControl.h"
+#include "src/RadControlConfig.h"
 
 FrontApp app;
 
@@ -5329,8 +5329,8 @@ void setup()
     Serial.begin(115200);
 
     hardware_begin(PinsFront::PINS);
-    control_begin(ConfigFront::CONFIG);
-    speed_reset_all();
+    radControl_begin(ConfigFront::CONFIG);
+    wheelMeasurement_reset_all();
 
     app.vehicle.begin(
         0.0f, 0.0f,

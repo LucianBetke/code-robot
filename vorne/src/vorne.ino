@@ -7,6 +7,7 @@
 #include "src/HardwarePins.h"
 #include "src/RadControl.h"
 #include "src/RadControlConfig.h"
+#include "src/VehicleControlConfig.h"
 
 FrontApp app;
 
@@ -20,11 +21,7 @@ void setup()
     radControl_begin(ConfigFront::CONFIG);
     wheelMeasurement_reset_all();
 
-    app.vehicle.begin(
-        0.0f, 0.0f,
-        0.0f, 0.0f,
-        0.0f, 0.0f
-    );
+    app.vehicle.begin(ConfigVehicleFront::CONFIG);
 
     app.commandRunner.begin();
     app.rearFrameClient.begin();

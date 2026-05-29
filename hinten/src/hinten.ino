@@ -4,7 +4,7 @@
 #include "RearApp.h"
 
 #include "src/Hardware.h"
-#include "src/hardware_pins.h"
+#include "src/HardwarePins.h"
 #include "src/RadControl.h"
 #include "src/RadControlConfig.h"
 

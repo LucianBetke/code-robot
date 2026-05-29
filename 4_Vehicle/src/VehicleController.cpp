@@ -26,6 +26,20 @@ void VehicleController::begin(float Kp_vx, float Ki_vx,
     _turnOnly = false;
 }
 
+void VehicleController::begin(const PIParam& vx, const PIParam& vy, const PIParam& wz)
+{
+    begin(
+        vx.Kp, vx.Ki,
+        vy.Kp, vy.Ki,
+        wz.Kp, wz.Ki
+    );
+}
+
+void VehicleController::begin(const VehicleControlConfig& cfg)
+{
+    begin(cfg.vx, cfg.vy, cfg.wz);
+}
+
 void VehicleController::cmd(float vx_cms, float vy_cms, float wz_rad_s)
 {
     applyDriveMode(vx_cms, vy_cms, wz_rad_s);

@@ -9,6 +9,8 @@
 #define VEHICLE_CONTROLLER_H
 
 #include "src/RobotConfig.h"
+#include "src/ControlTypes.h"
+#include "src/VehicleControlConfig.h"
 #include "VehiclePIController.h"
 
 class VehicleController
@@ -17,6 +19,9 @@ public:
     void begin(float Kp_vx, float Ki_vx,
         float Kp_vy, float Ki_vy,
         float Kp_wz, float Ki_wz);
+
+    void begin(const PIParam& vx, const PIParam& vy, const PIParam& wz);
+    void begin(const VehicleControlConfig& cfg);
 
     void cmd(float vx_cms, float vy_cms, float wz_rad_s);
     void updateIst(float v0_cms, float v1_cms, float v2_cms, float v3_cms);
@@ -61,4 +66,4 @@ private:
     bool _turnOnly = false;
 };
 
-#endif
+#endif // VEHICLE_CONTROLLER_H
