@@ -13,7 +13,7 @@
 #define RAD_CONTROL_CONFIG_H
 
 #include <Arduino.h>
-#include "src/globals.h"
+#include "src/RobotConfig.h"
 #include "src/ControlTypes.h"
 
 struct ControlConfig

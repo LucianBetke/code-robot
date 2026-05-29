@@ -375,12 +375,12 @@ void FrontApp::requestStartFrameForNewCommand(uint32_t now)
     _odomResetPending = true;
 
     // Neuer echter Fahrabschnitt:
-    // SpeedWeg muss ebenfalls zurueckgesetzt werden,
+    // RasMessung muss ebenfalls zurueckgesetzt werden,
     // damit alte Tiefpasswerte nicht in den neuen CMDP-Abschnitt laufen.
     speed_reset_all();
 
     // Front-PI einmalig zuruecksetzen.
-    // Rear-PI und Rear-SpeedWeg werden ueber resetPi=true im VSOL-Startframe
+    // Rear-PI und Rear-RadMessung werden ueber resetPi=true im VSOL-Startframe
     // zurueckgesetzt.
     control_resetPiStates();
 

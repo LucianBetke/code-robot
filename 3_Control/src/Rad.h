@@ -4,7 +4,7 @@
 #include <Arduino.h>
 #include "src/ControlTypes.h"
 #include "src/Motor.h"
-#include "SpeedWeg.h"
+#include "RadMessung.h"
 #include "PIRegler.h"
 
 class Rad

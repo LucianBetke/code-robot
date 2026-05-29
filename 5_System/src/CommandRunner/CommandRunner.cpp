@@ -5,7 +5,7 @@
 #include "CommandRunner.h"
 
 #include "src/PrinterConfig.h"
-#include "src/globals.h"
+#include "src/RobotConfig.h"
 #include "src/ScaleUtils.h"
 
 #include <math.h>

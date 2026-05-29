@@ -1,8 +1,8 @@
 // ============================================================
-// VehicleRegler.h
+// VehiclePIController.h
 // ============================================================
-#ifndef VEHICLE_REGLER_H
-#define VEHICLE_REGLER_H
+#ifndef VEHICLE_PI_CONTROLLER_H
+#define VEHICLE_PI_CONTROLLER_H
 
 #include <Arduino.h>
 
@@ -36,4 +36,4 @@ private:
     float _integral_wz;
 };
 
-#endif // VEHICLE_REGLER_H
+#endif // VEHICLE_PI_CONTROLLER_H

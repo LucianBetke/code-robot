@@ -5,7 +5,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="$(MSBuildThisFileDirectory)src\ControlTypes.h" />
-    <ClInclude Include="$(MSBuildThisFileDirectory)src\globals.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)src\RobotConfig.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)src\CommProtocol.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)src\ScaleUtils.h" />
   </ItemGroup>

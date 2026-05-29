@@ -10,7 +10,7 @@
 #pragma once
 
 #include <Arduino.h>
-#include "src/globals.h"
+#include "src/RobotConfig.h"
 
 class Enc;
 

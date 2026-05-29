@@ -1,7 +1,7 @@
 #ifndef HARDWARE_H
 #define HARDWARE_H
 #include <Arduino.h>
-#include "src/globals.h"
+#include "src/RobotConfig.h"
 #include "src/hardware_pins.h"
 
 class Enc;

@@ -19,11 +19,11 @@
   <ItemGroup>
     <ClCompile Include="$(MSBuildThisFileDirectory)src\MecanumOdometer.cpp" />
     <ClCompile Include="$(MSBuildThisFileDirectory)src\VehicleController.cpp" />
-    <ClCompile Include="$(MSBuildThisFileDirectory)src\VehicleRegler.cpp" />
+    <ClCompile Include="$(MSBuildThisFileDirectory)src\VehiclePIController.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="$(MSBuildThisFileDirectory)src\MecanumOdometer.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)src\VehicleController.h" />
-    <ClInclude Include="$(MSBuildThisFileDirectory)src\VehicleRegler.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)src\VehiclePIController.h" />
   </ItemGroup>
 </Project>

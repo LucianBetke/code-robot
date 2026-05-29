@@ -1,7 +1,7 @@
 // ============================================================
-// VehicleRegler.cpp
+// VehiclePIController.cpp
 // ============================================================
-#include "VehicleRegler.h"
+#include "VehiclePIController.h"
 
 VehicleRegler::VehicleRegler()
     : _Kp_vx(0.0f), _Ki_vx(0.0f)

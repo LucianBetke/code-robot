@@ -9,8 +9,8 @@
 #define RAD_CONTROL_H
 
 #include <Arduino.h>
-#include "src/globals.h"
-#include "src/SpeedWeg.h"
+#include "src/RobotConfig.h"
+#include "src/RadMessung.h"
 #include "src/PIRegler.h"
 #include "src/Rad.h"
 #include "RadControlConfig.h"

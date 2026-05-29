@@ -2,7 +2,7 @@
 #define PRINTER_H
 
 #include <Arduino.h>
-#include "src/globals.h"
+#include "src/RobotConfig.h"
 #include "src/VehicleController.h"
 #include "src/RadControl.h"
 #include "src/RadControlConfig.h"

@@ -5,7 +5,7 @@
 #include "MecanumOdometer.h"
 
 #include <math.h>
-#include "src/globals.h"
+#include "src/RobotConfig.h"
 
 MecanumOdometer::MecanumOdometer()
     : _primed(false),

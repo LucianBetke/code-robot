@@ -6,13 +6,13 @@
   <ItemGroup>
     <ClCompile Include="$(MSBuildThisFileDirectory)src\PIRegler.cpp" />
     <ClCompile Include="$(MSBuildThisFileDirectory)src\Rad.cpp" />
-    <ClCompile Include="$(MSBuildThisFileDirectory)src\SpeedWeg.cpp" />
+    <ClCompile Include="$(MSBuildThisFileDirectory)src\RadMessung.cpp" />
     <ClCompile Include="$(MSBuildThisFileDirectory)src\RadControl.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="$(MSBuildThisFileDirectory)src\PIRegler.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)src\Rad.h" />
-    <ClInclude Include="$(MSBuildThisFileDirectory)src\SpeedWeg.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)src\RadMessung.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)src\RadControlConfig.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)src\RadControl.h" />
   </ItemGroup>

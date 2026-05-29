@@ -1,9 +1,9 @@
 ﻿// ============================================================
-// File: SpeedWeg.cpp
+// File: RadMessung.cpp
 // ============================================================
 
-#include "SpeedWeg.h"
-#include "src/globals.h"
+#include "RadMessung.h"
+#include "src/RobotConfig.h"
 #include "src/Encoder.h"
 #include "src/ScaleUtils.h"
 

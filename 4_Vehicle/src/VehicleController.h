@@ -8,8 +8,8 @@
 #ifndef VEHICLE_CONTROLLER_H
 #define VEHICLE_CONTROLLER_H
 
-#include "src/globals.h"
-#include "VehicleRegler.h"
+#include "src/RobotConfig.h"
+#include "VehiclePIController.h"
 
 class VehicleController
 {

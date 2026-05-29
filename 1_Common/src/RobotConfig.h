@@ -1,12 +1,12 @@
 ﻿// ============================================================
-// File: globals.h
+// File: RobotConfig.h
 // Zweck:
 //  - Zentrale Definitionen fuer Logik, Geometrie und Zeit
 //  - KEINE Hardware-Pins!
 // ============================================================
 
-#ifndef GLOBALS_H
-#define GLOBALS_H
+#ifndef ROBOT_CONFIG_H
+#define ROBOT_CONFIG_H
 
 #include <Arduino.h>
 
@@ -106,4 +106,4 @@ constexpr int16_t SLEW_LIMIT_PWM = 255;
 constexpr float V_WHEEL_MIN = 17.0f;
 constexpr float V_WHEEL_MAX = 50.0f;
 
-#endif // GLOBALS_H
+#endif // ROBOT_CONFIG_H

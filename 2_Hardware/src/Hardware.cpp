@@ -1,5 +1,5 @@
 #include <Arduino.h>
-#include "src/globals.h"
+#include "src/RobotConfig.h"
 #include "Encoder.h"
 #include "Motor.h"
 #include "Hardware.h"
