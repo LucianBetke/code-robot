@@ -54,7 +54,7 @@ namespace
     }
 }
 
-Rad::Rad(Motor& motor, SpeedWeg& speed, PIRegler& regler,
+Rad::Rad(Motor& motor, RadMessung& speed, PIRegler& regler,
     uint16_t dtMs, int16_t deadPwm)
     : _motor(motor), _speed(speed), _regler(regler),
     _dtMs(dtMs), _deadPwm(deadPwm),

@@ -15,7 +15,7 @@
 #include "src/Rad.h"
 #include "RadControlConfig.h"
 
-extern SpeedWeg speed[WHEEL_COUNT];
+extern RadMessung speed[WHEEL_COUNT];
 
 extern PIRegler regler[WHEEL_COUNT];
 extern Rad rad[WHEEL_COUNT];

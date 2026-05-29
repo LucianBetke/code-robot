@@ -10,7 +10,7 @@
 class Rad
 {
 public:
-    Rad(Motor& motor, SpeedWeg& speed, PIRegler& regler,
+    Rad(Motor& motor, RadMessung& speed, PIRegler& regler,
         uint16_t dtMs, int16_t deadPwm);
 
     void  setSoll(float v_soll_cms);
@@ -29,7 +29,7 @@ public:
 
 private:
     Motor& _motor;
-    SpeedWeg& _speed;
+    RadMessung& _speed;
     PIRegler& _regler;
 
     uint16_t _dtMs;

@@ -26,10 +26,10 @@ extern Motor motor[WHEEL_COUNT];
 // per setParams() / setDeadPwm().
 // ============================================================
 
-SpeedWeg speed[WHEEL_COUNT] =
+RadMessung speed[WHEEL_COUNT] =
 {
-    SpeedWeg(enc[Li]),
-    SpeedWeg(enc[Re])
+    RadMessung(enc[Li]),
+    RadMessung(enc[Re])
 };
 
 PIRegler regler[WHEEL_COUNT] =
@@ -83,7 +83,7 @@ void speed_reset_all()
 // Wichtig:
 //  - Sollwerte bleiben erhalten.
 //  - Motoren werden nicht gestoppt.
-//  - SpeedWeg wird nicht zurueckgesetzt.
+//  - RadMessung wird nicht zurueckgesetzt.
 //  - Kein kuenstlicher Null-Sollwert zwischen zwei Fahrabschnitten.
 // ============================================================
 

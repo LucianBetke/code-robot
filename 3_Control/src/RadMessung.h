@@ -1,5 +1,5 @@
 // ============================================================
-// File: SpeedWeg.h
+// File: RadMessung.h
 // Zweck:
 //  - Geschwindigkeit in cm/s aus Encoder-Ticks
 //  - Encoder-Gesamtcounts fuer Odometrie/Plot
@@ -14,10 +14,10 @@
 
 class Enc;
 
-class SpeedWeg
+class RadMessung
 {
 public:
-    explicit SpeedWeg(Enc& enc);
+    explicit RadMessung(Enc& enc);
 
     void reset();
 

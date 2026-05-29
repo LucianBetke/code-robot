@@ -12,7 +12,7 @@ namespace
     const float SPEED_ALPHA = 0.2f;
 }
 
-SpeedWeg::SpeedWeg(Enc& enc)
+RadMessung::RadMessung(Enc& enc)
     : _enc(enc)
 {
     _last_counts = _enc.getCounts();
@@ -24,7 +24,7 @@ SpeedWeg::SpeedWeg(Enc& enc)
     _last_tick_ms = 0;
 }
 
-void SpeedWeg::reset()
+void RadMessung::reset()
 {
     _counts_total = 0;
 
@@ -36,7 +36,7 @@ void SpeedWeg::reset()
     _last_counts = _enc.getCounts();
 }
 
-void SpeedWeg::update(uint32_t now_ms)
+void RadMessung::update(uint32_t now_ms)
 {
     long cur = _enc.getCounts();
     long d = cur - _last_counts;
@@ -55,7 +55,7 @@ void SpeedWeg::update(uint32_t now_ms)
     timeoutCheck(now_ms);
 }
 
-void SpeedWeg::updateFromTicks(int16_t dcounts, uint32_t now_ms)
+void RadMessung::updateFromTicks(int16_t dcounts, uint32_t now_ms)
 {
     _counts_total += dcounts;
     _acc_counts += dcounts;
@@ -84,7 +84,7 @@ void SpeedWeg::updateFromTicks(int16_t dcounts, uint32_t now_ms)
     _acc_counts = 0;
 }
 
-void SpeedWeg::timeoutCheck(uint32_t now_ms)
+void RadMessung::timeoutCheck(uint32_t now_ms)
 {
     if (_last_tick_ms == 0)
     {
@@ -97,12 +97,12 @@ void SpeedWeg::timeoutCheck(uint32_t now_ms)
     }
 }
 
-float SpeedWeg::cms() const
+float RadMessung::cms() const
 {
     return _rps_filt * RAD_UMFANG_CM;
 }
 
-int16_t SpeedWeg::cmsInt() const
+int16_t RadMessung::cmsInt() const
 {
     return scaleRoundToInt16(cms());
 }
