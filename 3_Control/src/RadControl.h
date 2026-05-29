@@ -20,7 +20,7 @@ extern RadMessung speed[WHEEL_COUNT];
 extern PIRegler regler[WHEEL_COUNT];
 extern Rad rad[WHEEL_COUNT];
 
-void control_begin(const RadControlConfig& cfg);
+void radControl_begin(const RadControlConfig& cfg);
 
 void speed_reset_all();
 

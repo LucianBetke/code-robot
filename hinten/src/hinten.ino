@@ -22,7 +22,7 @@ void setup()
     Serial.begin(115200);
 
     hardware_begin(PinsRear::PINS);
-    control_begin(ConfigRear::CONFIG);
+    radControl_begin(ConfigRear::CONFIG);
     speed_reset_all();
 
     app.begin();

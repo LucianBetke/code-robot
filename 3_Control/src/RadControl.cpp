@@ -2,7 +2,7 @@
 // File: Control.cpp (3_Control)
 // Zweck:
 //  - Gemeinsame Steuerungs-Implementierung fuer vorne und hinten
-//  - Konfiguration kommt von der App via control_begin(cfg)
+//  - Konfiguration kommt von der App via radControl_begin(cfg)
 // ============================================================
 
 #include "RadControl.h"
@@ -22,7 +22,7 @@ extern Motor motor[WHEEL_COUNT];
 // Globale Objekte
 //
 // Die Regler werden hier mit Default-Parametern (0.0f, 0.0f)
-// angelegt. Die echten Parameter setzt control_begin() spaeter
+// angelegt. Die echten Parameter setzt radControl_begin() spaeter
 // per setParams() / setDeadPwm().
 // ============================================================
 
@@ -45,14 +45,14 @@ Rad rad[WHEEL_COUNT] =
 };
 
 // ============================================================
-// control_begin
+// radControl_begin
 //
 // Wird von der App im setup() aufgerufen mit der gewuenschten
 // Konfiguration. Setzt PI-Parameter und DeadPWM in Reglern und
 // Raedern.
 // ============================================================
 
-void control_begin(const RadControlConfig& cfg)
+void radControl_begin(const RadControlConfig& cfg)
 {
     for (uint8_t i = 0; i < WHEEL_COUNT; i++)
     {

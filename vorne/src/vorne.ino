@@ -17,7 +17,7 @@ void setup()
     Serial.begin(115200);
 
     hardware_begin(PinsFront::PINS);
-    control_begin(ConfigFront::CONFIG);
+    radControl_begin(ConfigFront::CONFIG);
     speed_reset_all();
 
     app.vehicle.begin(
