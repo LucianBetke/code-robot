@@ -2,7 +2,7 @@
 #include "RearApp.h"
 
 #include "src/CommProtocol.h"
-#include "src/Control.h"
+#include "src/RadControl.h"
 #include "src/RadControlConfig.h"
 
 RearApp::RearApp()

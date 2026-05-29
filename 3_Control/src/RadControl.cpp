@@ -5,7 +5,7 @@
 //  - Konfiguration kommt von der App via control_begin(cfg)
 // ============================================================
 
-#include "Control.h"
+#include "RadControl.h"
 #include "src/Encoder.h"   // Klasse Enc (aus 2_Hardware)
 #include "src/Motor.h"     // Klasse Motor (aus 2_Hardware)
 

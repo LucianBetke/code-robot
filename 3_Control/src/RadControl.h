@@ -5,8 +5,8 @@
 //  - Einheit fuer Radgeschwindigkeit: cm/s
 // ============================================================
 
-#ifndef CONTROL_H
-#define CONTROL_H
+#ifndef RAD_CONTROL_H
+#define RAD_CONTROL_H
 
 #include <Arduino.h>
 #include "src/globals.h"
@@ -32,4 +32,4 @@ void control_setSoll(uint8_t wheel, float v_cms);
 
 void control_stopAll();
 
-#endif // CONTROL_H
+#endif // RAD_CONTROL_H

@@ -4,7 +4,7 @@
 #include <Arduino.h>
 #include "src/globals.h"
 #include "src/VehicleController.h"
-#include "src/Control.h"
+#include "src/RadControl.h"
 #include "src/RadControlConfig.h"
 #include "src/RearFrameClient.h"
 #include "PrinterConfig.h"

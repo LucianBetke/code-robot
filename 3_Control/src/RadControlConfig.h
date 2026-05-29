@@ -1,7 +1,7 @@
 // ============================================================
 // File: RadControlConfig.h
 // Zweck:
-//  - Datentyp ControlConfig fuer PI-Parameter und DeadPWM
+//  - Datentyp RadControlConfig fuer PI-Parameter und DeadPWM
 //  - Vordefinierte Konfigurationen fuer vorne und hinten
 //
 // Wichtig:

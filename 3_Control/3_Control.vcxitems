@@ -17,15 +17,15 @@
     <Text Include="$(MSBuildThisFileDirectory)readme.txt" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="$(MSBuildThisFileDirectory)src\Control.cpp" />
     <ClCompile Include="$(MSBuildThisFileDirectory)src\PIRegler.cpp" />
     <ClCompile Include="$(MSBuildThisFileDirectory)src\Rad.cpp" />
+    <ClCompile Include="$(MSBuildThisFileDirectory)src\RadControl.cpp" />
     <ClCompile Include="$(MSBuildThisFileDirectory)src\SpeedWeg.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="$(MSBuildThisFileDirectory)src\Control.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)src\PIRegler.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)src\Rad.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)src\RadControl.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)src\RadControlConfig.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)src\SpeedWeg.h" />
   </ItemGroup>
