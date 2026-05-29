@@ -16,7 +16,7 @@
 #include "src/RobotConfig.h"
 #include "src/ControlTypes.h"
 
-struct ControlConfig
+struct RadControlConfig
 {
     int16_t deadPwm[WHEEL_COUNT];
     PIParam pi[WHEEL_COUNT];
@@ -24,7 +24,7 @@ struct ControlConfig
 
 namespace ConfigFront
 {
-    constexpr ControlConfig CONFIG =
+    constexpr RadControlConfig CONFIG =
     {
         // deadPwm: Li, Re
         { 70, 70 },
@@ -40,7 +40,7 @@ namespace ConfigFront
 
 namespace ConfigRear
 {
-    constexpr ControlConfig CONFIG =
+    constexpr RadControlConfig CONFIG =
     {
         // deadPwm: Li, Re
         { 80, 60 },

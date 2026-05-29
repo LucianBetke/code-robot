@@ -20,7 +20,7 @@ namespace
     }
 }
 
-void TelemetryPrinter::printInfo(VehicleController& vehicle, const ControlConfig& cfg)
+void TelemetryPrinter::printInfo(VehicleController& vehicle, const RadControlConfig& cfg)
 {
 #if PRINTER_ENABLE_INFO
     Serial.print(F("#INFO,Raeder,Li,Kp100="));  Serial.print(scaleFloatToInt100(cfg.pi[Li].Kp));

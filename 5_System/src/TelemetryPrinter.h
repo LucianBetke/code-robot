@@ -14,7 +14,7 @@ class MecanumOdometer;
 class TelemetryPrinter
 {
 public:
-    void printInfo(VehicleController& vehicle, const ControlConfig& cfg);
+    void printInfo(VehicleController& vehicle, const RadControlConfig& cfg);
 
     void printCompletedFrame(
         VehicleController& vehicle,

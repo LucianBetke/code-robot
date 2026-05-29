@@ -52,7 +52,7 @@ Rad rad[WHEEL_COUNT] =
 // Raedern.
 // ============================================================
 
-void control_begin(const ControlConfig& cfg)
+void control_begin(const RadControlConfig& cfg)
 {
     for (uint8_t i = 0; i < WHEEL_COUNT; i++)
     {
