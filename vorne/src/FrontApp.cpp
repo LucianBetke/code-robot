@@ -244,7 +244,7 @@ void FrontApp::updateVehicleAndFrontControl(uint32_t now)
 
     applyFrontWheelSoll();
 
-    control_update(now);
+    radControl_update(now);
 }
 
 void FrontApp::updateRearStopSequence(uint32_t now)

@@ -26,7 +26,7 @@ void speed_reset_all();
 
 void control_resetPiStates();
 
-void control_update(uint32_t nowMs);
+void radControl_update(uint32_t nowMs);
 
 void control_setSoll(uint8_t wheel, float v_cms);
 

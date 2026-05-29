@@ -42,7 +42,7 @@ void loop()
     app.updateVsolTimeout(now);
     app.handleIncomingVsol(now);
 
-    control_update(now);
+    radControl_update(now);
 
     app.handleSyncVist();
 }

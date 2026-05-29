@@ -95,7 +95,7 @@ void control_resetPiStates()
     }
 }
 
-void control_update(uint32_t now)
+void radControl_update(uint32_t now)
 {
     for (uint8_t i = 0; i < WHEEL_COUNT; i++)
     {
