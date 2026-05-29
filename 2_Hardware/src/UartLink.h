@@ -26,7 +26,6 @@ private:
     // Timing
     unsigned long _lastPing;
     unsigned long _lastSeen;
-    unsigned long _lastActivity;
 
     // Buffer fuer eingehende Zeichen
     char _buf[64];
@@ -37,7 +36,6 @@ private:
     bool _lineAvailable;
 
     static constexpr unsigned long PING_INTERVAL = 500;
-    static constexpr unsigned long KEEPALIVE_INTERVAL = 500;
     static constexpr unsigned long TIMEOUT = 2000;
 };
 

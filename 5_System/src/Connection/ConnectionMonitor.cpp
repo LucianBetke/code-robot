@@ -4,8 +4,7 @@
 ConnectionMonitor::ConnectionMonitor(UartLink& uart, uint8_t ledPin)
     : _uart(uart),
     _ledPin(ledPin),
-    _lastState(false),
-    _lastOk(0)
+    _lastState(false)
 {
 }
 
@@ -28,9 +27,11 @@ void ConnectionMonitor::begin(bool wait)
     digitalWrite(_ledPin, HIGH);
 
     _lastState = false;
-    _lastOk = millis();
 
-    if (wait) waitForConnection();
+    if (wait)
+    {
+        waitForConnection();
+    }
 }
 
 void ConnectionMonitor::update()

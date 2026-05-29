@@ -9,9 +9,9 @@
 
 namespace
 {
-    void printSpeedCms(float valueCms)
+    void printSpeedCms(int16_t valueCms)
     {
-        Serial.print((int)scaleRoundToInt16(valueCms));
+        Serial.print((int)valueCms);
     }
 
     void printValue100(float value)
@@ -28,10 +28,10 @@ namespace
     {
 #if PRINTER_ENABLE_COUNTS
         Serial.print(F("#CNTF,"));
-        Serial.print(t_ms);                  Serial.print(',');
-        Serial.print((long)voLiCnt);         Serial.print(',');
-        Serial.print((long)voReCnt);         Serial.print(',');
-        Serial.print((long)hiLiCnt);         Serial.print(',');
+        Serial.print(t_ms);          Serial.print(',');
+        Serial.print((long)voLiCnt); Serial.print(',');
+        Serial.print((long)voReCnt); Serial.print(',');
+        Serial.print((long)hiLiCnt); Serial.print(',');
         Serial.println((long)hiReCnt);
 #else
         (void)t_ms;
@@ -68,42 +68,49 @@ void TelemetryPrinter::printInfo(VehicleController& vehicle, const RadControlCon
 void TelemetryPrinter::printCompletedFrame(
     VehicleController& vehicle,
     const RearPendingFrame& frame,
-    float hiLi_i_cms,
-    float hiRe_i_cms,
+    int16_t hiLi_i_cms,
+    int16_t hiRe_i_cms,
     int16_t hiLi_pwm,
     int16_t hiRe_pwm)
 {
-#ifdef PRINTER_MODE_CHASSIS
+#if defined(PRINTER_MODE_CHASSIS) && PRINTER_ENABLE_CHASSIS
     printFrame(
         vehicle,
         frame.t,
-        wheelMeasurements[Li].cms(),
-        wheelMeasurements[Re].cms(),
+        frame.voLi_i_cms,
+        frame.voRe_i_cms,
         hiLi_i_cms,
         hiRe_i_cms
     );
+#else
+    (void)vehicle;
 #endif
 
-#ifdef PRINTER_MODE_RAEDER
+#if defined(PRINTER_MODE_RAEDER) && PRINTER_ENABLE_WHEELS
     printFrame(
         frame.t,
 
-        vehicle.getWheelSoll(VoLi),
-        wheelMeasurements[Li].cms(),
+        frame.voLi_s_cms,
+        frame.voLi_i_cms,
         frame.voLi_pwm,
 
-        vehicle.getWheelSoll(VoRe),
-        wheelMeasurements[Re].cms(),
+        frame.voRe_s_cms,
+        frame.voRe_i_cms,
         frame.voRe_pwm,
 
-        vehicle.getWheelSoll(HiLi),
+        frame.hiLi_s_cms,
         hiLi_i_cms,
         hiLi_pwm,
 
-        vehicle.getWheelSoll(HiRe),
+        frame.hiRe_s_cms,
         hiRe_i_cms,
         hiRe_pwm
     );
+#else
+    (void)hiLi_i_cms;
+    (void)hiRe_i_cms;
+    (void)hiLi_pwm;
+    (void)hiRe_pwm;
 #endif
 
     printCountsFrame(
@@ -144,21 +151,21 @@ void TelemetryPrinter::printOdom2(
 
 void TelemetryPrinter::printWheels(
     VehicleController& vehicle,
-    float v2_ist_cms,
-    float v3_ist_cms,
+    int16_t v2_ist_cms,
+    int16_t v3_ist_cms,
     uint32_t t_ms)
 {
 #if PRINTER_ENABLE_CHASSIS
     Serial.print(F("#CHASSIS,"));
-    Serial.print(t_ms);                            Serial.print(',');
+    Serial.print(t_ms);                                      Serial.print(',');
 
-    printSpeedCms(wheelMeasurements[Li].cms());    Serial.print(',');
-    printSpeedCms(wheelMeasurements[Re].cms());    Serial.print(',');
-    printSpeedCms(v2_ist_cms);                     Serial.print(',');
-    printSpeedCms(v3_ist_cms);                     Serial.print(',');
+    printSpeedCms(wheelMeasurements[Li].cmsInt());           Serial.print(',');
+    printSpeedCms(wheelMeasurements[Re].cmsInt());           Serial.print(',');
+    printSpeedCms(v2_ist_cms);                               Serial.print(',');
+    printSpeedCms(v3_ist_cms);                               Serial.print(',');
 
-    printSpeedCms(vehicle.vxIst());                Serial.print(',');
-    printSpeedCms(vehicle.vyIst());                Serial.print(',');
+    printSpeedCms(scaleRoundToInt16(vehicle.vxIst()));       Serial.print(',');
+    printSpeedCms(scaleRoundToInt16(vehicle.vyIst()));       Serial.print(',');
     printValue100(vehicle.wzIst());
     Serial.println();
 #else
@@ -172,22 +179,22 @@ void TelemetryPrinter::printWheels(
 void TelemetryPrinter::printFrame(
     VehicleController& vehicle,
     uint32_t t_ms,
-    float voLi_i_cms,
-    float voRe_i_cms,
-    float hiLi_i_cms,
-    float hiRe_i_cms)
+    int16_t voLi_i_cms,
+    int16_t voRe_i_cms,
+    int16_t hiLi_i_cms,
+    int16_t hiRe_i_cms)
 {
 #if PRINTER_ENABLE_CHASSIS
     Serial.print(F("#CHASSIS,"));
-    Serial.print(t_ms);                  Serial.print(',');
+    Serial.print(t_ms);                                      Serial.print(',');
 
-    printSpeedCms(voLi_i_cms);           Serial.print(',');
-    printSpeedCms(voRe_i_cms);           Serial.print(',');
-    printSpeedCms(hiLi_i_cms);           Serial.print(',');
-    printSpeedCms(hiRe_i_cms);           Serial.print(',');
+    printSpeedCms(voLi_i_cms);                               Serial.print(',');
+    printSpeedCms(voRe_i_cms);                               Serial.print(',');
+    printSpeedCms(hiLi_i_cms);                               Serial.print(',');
+    printSpeedCms(hiRe_i_cms);                               Serial.print(',');
 
-    printSpeedCms(vehicle.vxIst());      Serial.print(',');
-    printSpeedCms(vehicle.vyIst());      Serial.print(',');
+    printSpeedCms(scaleRoundToInt16(vehicle.vxIst()));       Serial.print(',');
+    printSpeedCms(scaleRoundToInt16(vehicle.vyIst()));       Serial.print(',');
     printValue100(vehicle.wzIst());
     Serial.println();
 #else
@@ -206,30 +213,30 @@ void TelemetryPrinter::printFrame(
 
 void TelemetryPrinter::printWheels(
     VehicleController& vehicle,
-    float v2_ist_cms,
-    float v3_ist_cms,
+    int16_t v2_ist_cms,
+    int16_t v3_ist_cms,
     int16_t pwm2,
     int16_t pwm3,
     uint32_t t_ms)
 {
 #if PRINTER_ENABLE_WHEELS
     Serial.print(F("#WHEELS,"));
-    Serial.print(t_ms);                            Serial.print(',');
+    Serial.print(t_ms);                                             Serial.print(',');
 
-    printSpeedCms(vehicle.getWheelSoll(VoLi));     Serial.print(',');
-    printSpeedCms(wheelMeasurements[Li].cms());    Serial.print(',');
-    Serial.print(rad[Li].lastPwm());               Serial.print(',');
+    printSpeedCms(scaleRoundToInt16(vehicle.getWheelSoll(VoLi)));   Serial.print(',');
+    printSpeedCms(wheelMeasurements[Li].cmsInt());                  Serial.print(',');
+    Serial.print(rad[Li].lastPwm());                                Serial.print(',');
 
-    printSpeedCms(vehicle.getWheelSoll(VoRe));     Serial.print(',');
-    printSpeedCms(wheelMeasurements[Re].cms());    Serial.print(',');
-    Serial.print(rad[Re].lastPwm());               Serial.print(',');
+    printSpeedCms(scaleRoundToInt16(vehicle.getWheelSoll(VoRe)));   Serial.print(',');
+    printSpeedCms(wheelMeasurements[Re].cmsInt());                  Serial.print(',');
+    Serial.print(rad[Re].lastPwm());                                Serial.print(',');
 
-    printSpeedCms(vehicle.getWheelSoll(HiLi));     Serial.print(',');
-    printSpeedCms(v2_ist_cms);                     Serial.print(',');
-    Serial.print(pwm2);                            Serial.print(',');
+    printSpeedCms(scaleRoundToInt16(vehicle.getWheelSoll(HiLi)));   Serial.print(',');
+    printSpeedCms(v2_ist_cms);                                      Serial.print(',');
+    Serial.print(pwm2);                                             Serial.print(',');
 
-    printSpeedCms(vehicle.getWheelSoll(HiRe));     Serial.print(',');
-    printSpeedCms(v3_ist_cms);                     Serial.print(',');
+    printSpeedCms(scaleRoundToInt16(vehicle.getWheelSoll(HiRe)));   Serial.print(',');
+    printSpeedCms(v3_ist_cms);                                      Serial.print(',');
     Serial.println(pwm3);
 #else
     (void)vehicle;
@@ -243,37 +250,37 @@ void TelemetryPrinter::printWheels(
 
 void TelemetryPrinter::printFrame(
     uint32_t t_ms,
-    float voLi_s_cms,
-    float voLi_i_cms,
+    int16_t voLi_s_cms,
+    int16_t voLi_i_cms,
     int16_t voLi_pwm,
-    float voRe_s_cms,
-    float voRe_i_cms,
+    int16_t voRe_s_cms,
+    int16_t voRe_i_cms,
     int16_t voRe_pwm,
-    float hiLi_s_cms,
-    float hiLi_i_cms,
+    int16_t hiLi_s_cms,
+    int16_t hiLi_i_cms,
     int16_t hiLi_pwm,
-    float hiRe_s_cms,
-    float hiRe_i_cms,
+    int16_t hiRe_s_cms,
+    int16_t hiRe_i_cms,
     int16_t hiRe_pwm)
 {
 #if PRINTER_ENABLE_WHEELS
     Serial.print(F("#WHEELS,"));
-    Serial.print(t_ms);             Serial.print(',');
+    Serial.print(t_ms);        Serial.print(',');
 
-    printSpeedCms(voLi_s_cms);      Serial.print(',');
-    printSpeedCms(voLi_i_cms);      Serial.print(',');
-    Serial.print(voLi_pwm);         Serial.print(',');
+    printSpeedCms(voLi_s_cms); Serial.print(',');
+    printSpeedCms(voLi_i_cms); Serial.print(',');
+    Serial.print(voLi_pwm);    Serial.print(',');
 
-    printSpeedCms(voRe_s_cms);      Serial.print(',');
-    printSpeedCms(voRe_i_cms);      Serial.print(',');
-    Serial.print(voRe_pwm);         Serial.print(',');
+    printSpeedCms(voRe_s_cms); Serial.print(',');
+    printSpeedCms(voRe_i_cms); Serial.print(',');
+    Serial.print(voRe_pwm);    Serial.print(',');
 
-    printSpeedCms(hiLi_s_cms);      Serial.print(',');
-    printSpeedCms(hiLi_i_cms);      Serial.print(',');
-    Serial.print(hiLi_pwm);         Serial.print(',');
+    printSpeedCms(hiLi_s_cms); Serial.print(',');
+    printSpeedCms(hiLi_i_cms); Serial.print(',');
+    Serial.print(hiLi_pwm);    Serial.print(',');
 
-    printSpeedCms(hiRe_s_cms);      Serial.print(',');
-    printSpeedCms(hiRe_i_cms);      Serial.print(',');
+    printSpeedCms(hiRe_s_cms); Serial.print(',');
+    printSpeedCms(hiRe_i_cms); Serial.print(',');
     Serial.println(hiRe_pwm);
 #else
     (void)t_ms;

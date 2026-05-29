@@ -18,5 +18,4 @@ private:
     uint8_t _ledPin;
 
     bool _lastState;
-    uint32_t _lastOk;
 };

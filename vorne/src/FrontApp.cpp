@@ -111,8 +111,8 @@ void FrontApp::handleIncomingLines(uint32_t now)
         printer.printCompletedFrame(
             vehicle,
             rearFrameClient.frame(),
-            (float)rearFrameClient.hiLiIstCms(),
-            (float)rearFrameClient.hiReIstCms(),
+            rearFrameClient.hiLiIstCms(),
+            rearFrameClient.hiReIstCms(),
             rearFrameClient.hiLiPwm(),
             rearFrameClient.hiRePwm()
         );
