@@ -1,8 +1,8 @@
 ﻿// ============================================================
-// File: RadMessung.cpp
+// File: WheelMeasurement.cpp
 // ============================================================
 
-#include "RadMessung.h"
+#include "WheelMeasurement.h"
 #include "src/RobotConfig.h"
 #include "src/Encoder.h"
 #include "src/ScaleUtils.h"
@@ -12,7 +12,7 @@ namespace
     const float SPEED_ALPHA = 0.2f;
 }
 
-RadMessung::RadMessung(Enc& enc)
+WheelMeasurement::WheelMeasurement(Enc& enc)
     : _enc(enc)
 {
     _last_counts = _enc.getCounts();
@@ -24,7 +24,7 @@ RadMessung::RadMessung(Enc& enc)
     _last_tick_ms = 0;
 }
 
-void RadMessung::reset()
+void WheelMeasurement::reset()
 {
     _counts_total = 0;
 
@@ -36,7 +36,7 @@ void RadMessung::reset()
     _last_counts = _enc.getCounts();
 }
 
-void RadMessung::update(uint32_t now_ms)
+void WheelMeasurement::update(uint32_t now_ms)
 {
     long cur = _enc.getCounts();
     long d = cur - _last_counts;
@@ -55,7 +55,7 @@ void RadMessung::update(uint32_t now_ms)
     timeoutCheck(now_ms);
 }
 
-void RadMessung::updateFromTicks(int16_t dcounts, uint32_t now_ms)
+void WheelMeasurement::updateFromTicks(int16_t dcounts, uint32_t now_ms)
 {
     _counts_total += dcounts;
     _acc_counts += dcounts;
@@ -84,7 +84,7 @@ void RadMessung::updateFromTicks(int16_t dcounts, uint32_t now_ms)
     _acc_counts = 0;
 }
 
-void RadMessung::timeoutCheck(uint32_t now_ms)
+void WheelMeasurement::timeoutCheck(uint32_t now_ms)
 {
     if (_last_tick_ms == 0)
     {
@@ -97,12 +97,12 @@ void RadMessung::timeoutCheck(uint32_t now_ms)
     }
 }
 
-float RadMessung::cms() const
+float WheelMeasurement::cms() const
 {
     return _rps_filt * RAD_UMFANG_CM;
 }
 
-int16_t RadMessung::cmsInt() const
+int16_t WheelMeasurement::cmsInt() const
 {
     return scaleRoundToInt16(cms());
 }

@@ -10,12 +10,12 @@
 
 #include <Arduino.h>
 #include "src/RobotConfig.h"
-#include "src/RadMessung.h"
+#include "src/WheelMeasurement.h"
 #include "src/PIRegler.h"
 #include "src/Rad.h"
 #include "RadControlConfig.h"
 
-extern RadMessung speed[WHEEL_COUNT];
+extern WheelMeasurement speed[WHEEL_COUNT];
 
 extern PIRegler regler[WHEEL_COUNT];
 extern Rad rad[WHEEL_COUNT];

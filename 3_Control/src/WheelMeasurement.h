@@ -14,10 +14,10 @@
 
 class Enc;
 
-class RadMessung
+class WheelMeasurement
 {
 public:
-    explicit RadMessung(Enc& enc);
+    explicit WheelMeasurement(Enc& enc);
 
     void reset();
 

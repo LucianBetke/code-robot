@@ -4,13 +4,13 @@
 #include <Arduino.h>
 #include "src/ControlTypes.h"
 #include "src/Motor.h"
-#include "RadMessung.h"
+#include "WheelMeasurement.h"
 #include "PIRegler.h"
 
 class Rad
 {
 public:
-    Rad(Motor& motor, RadMessung& speed, PIRegler& regler,
+    Rad(Motor& motor, WheelMeasurement& speed, PIRegler& regler,
         uint16_t dtMs, int16_t deadPwm);
 
     void  setSoll(float v_soll_cms);
@@ -29,7 +29,7 @@ public:
 
 private:
     Motor& _motor;
-    RadMessung& _speed;
+    WheelMeasurement& _speed;
     PIRegler& _regler;
 
     uint16_t _dtMs;
