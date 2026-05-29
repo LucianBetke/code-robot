@@ -52,8 +52,8 @@ void FrontApp::updateConnectionSafety(uint32_t now)
     {
         vehicle.stop();
 
-        control_stopAll();
-        control_resetPiStates();
+        radControl_stopAll();
+        radControl_resetPiStates();
         wheelMeasurement_reset_all();
 
         rearFrameClient.clearWaiting();
@@ -73,8 +73,8 @@ void FrontApp::updateConnectionSafety(uint32_t now)
     {
         vehicle.stop();
 
-        control_stopAll();
-        control_resetPiStates();
+        radControl_stopAll();
+        radControl_resetPiStates();
         wheelMeasurement_reset_all();
 
         commandRunner.begin();
@@ -382,7 +382,7 @@ void FrontApp::requestStartFrameForNewCommand(uint32_t now)
     // Front-PI einmalig zuruecksetzen.
     // Rear-PI und Rear-RadMessung werden ueber resetPi=true im VSOL-Startframe
     // zurueckgesetzt.
-    control_resetPiStates();
+    radControl_resetPiStates();
 
     applyFrontWheelSoll();
 

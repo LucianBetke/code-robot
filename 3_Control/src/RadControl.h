@@ -24,12 +24,12 @@ void radControl_begin(const RadControlConfig& cfg);
 
 void wheelMeasurement_reset_all();
 
-void control_resetPiStates();
+void radControl_resetPiStates();
 
 void radControl_update(uint32_t nowMs);
 
-void control_setSoll(uint8_t wheel, float v_cms);
+void radControl_setSoll(uint8_t wheel, float v_cms);
 
-void control_stopAll();
+void radControl_stopAll();
 
 #endif // RAD_CONTROL_H

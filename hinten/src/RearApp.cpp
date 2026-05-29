@@ -71,7 +71,7 @@ void RearApp::handleIncomingVsol(uint32_t now)
 
         if (vsol.resetPi)
         {
-            control_resetPiStates();
+            radControl_resetPiStates();
             wheelMeasurement_reset_all();
         }
 

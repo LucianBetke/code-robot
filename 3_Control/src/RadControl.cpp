@@ -87,7 +87,7 @@ void wheelMeasurement_reset_all()
 //  - Kein kuenstlicher Null-Sollwert zwischen zwei Fahrabschnitten.
 // ============================================================
 
-void control_resetPiStates()
+void radControl_resetPiStates()
 {
     for (uint8_t i = 0; i < WHEEL_COUNT; i++)
     {
@@ -103,7 +103,7 @@ void radControl_update(uint32_t now)
     }
 }
 
-void control_setSoll(uint8_t w, float v)
+void radControl_setSoll(uint8_t w, float v)
 {
     if (w < WHEEL_COUNT)
     {
@@ -111,7 +111,7 @@ void control_setSoll(uint8_t w, float v)
     }
 }
 
-void control_stopAll()
+void radControl_stopAll()
 {
     for (uint8_t i = 0; i < WHEEL_COUNT; i++)
     {
