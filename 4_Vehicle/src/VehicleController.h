@@ -55,7 +55,7 @@ private:
 
     float _wheelSoll[WHEEL_VEHICLE_COUNT] = { 0 };
 
-    VehicleRegler _regler;
+    VehiclePIController _regler;
     uint32_t _lastUpdateMs = 0;
 
     bool _turnOnly = false;

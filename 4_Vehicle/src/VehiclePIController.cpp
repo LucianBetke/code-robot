@@ -3,7 +3,7 @@
 // ============================================================
 #include "VehiclePIController.h"
 
-VehicleRegler::VehicleRegler()
+VehiclePIController::VehiclePIController()
     : _Kp_vx(0.0f), _Ki_vx(0.0f)
     , _Kp_vy(0.0f), _Ki_vy(0.0f)
     , _Kp_wz(0.0f), _Ki_wz(0.0f)
@@ -13,7 +13,7 @@ VehicleRegler::VehicleRegler()
 {
 }
 
-void VehicleRegler::setParams(float Kp_vx, float Ki_vx,
+void VehiclePIController::setParams(float Kp_vx, float Ki_vx,
     float Kp_vy, float Ki_vy,
     float Kp_wz, float Ki_wz)
 {
@@ -22,14 +22,14 @@ void VehicleRegler::setParams(float Kp_vx, float Ki_vx,
     _Kp_wz = Kp_wz; _Ki_wz = Ki_wz;
 }
 
-void VehicleRegler::reset()
+void VehiclePIController::reset()
 {
     _integral_vx = 0.0f;
     _integral_vy = 0.0f;
     _integral_wz = 0.0f;
 }
 
-float VehicleRegler::updateVx(float soll, float ist, uint16_t dt_ms)
+float VehiclePIController::updateVx(float soll, float ist, uint16_t dt_ms)
 {
     if (_Kp_vx == 0.0f && _Ki_vx == 0.0f) return soll;
     if (dt_ms == 0) return soll;
@@ -39,7 +39,7 @@ float VehicleRegler::updateVx(float soll, float ist, uint16_t dt_ms)
     return _Kp_vx * e + _integral_vx;
 }
 
-float VehicleRegler::updateVy(float soll, float ist, uint16_t dt_ms)
+float VehiclePIController::updateVy(float soll, float ist, uint16_t dt_ms)
 {
     if (_Kp_vy == 0.0f && _Ki_vy == 0.0f) return soll;
     if (dt_ms == 0) return soll;
@@ -49,7 +49,7 @@ float VehicleRegler::updateVy(float soll, float ist, uint16_t dt_ms)
     return _Kp_vy * e + _integral_vy;
 }
 
-float VehicleRegler::updateWz(float soll, float ist, uint16_t dt_ms)
+float VehiclePIController::updateWz(float soll, float ist, uint16_t dt_ms)
 {
     if (_Kp_wz == 0.0f && _Ki_wz == 0.0f) return soll;
     if (dt_ms == 0) return soll;

@@ -6,10 +6,10 @@
 
 #include <Arduino.h>
 
-class VehicleRegler
+class VehiclePIController
 {
 public:
-    VehicleRegler();
+    VehiclePIController();
     void setParams(float Kp_vx, float Ki_vx,
         float Kp_vy, float Ki_vy,
         float Kp_wz, float Ki_wz);
