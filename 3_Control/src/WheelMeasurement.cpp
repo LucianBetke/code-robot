@@ -1,10 +1,15 @@
 ﻿// ============================================================
 // File: WheelMeasurement.cpp
+// Zweck:
+//  - Geschwindigkeit in cm/s aus Encoder-Ticks berechnen
+//  - Geschwindigkeit ueber Tickfenster bestimmen
+//  - Stillstand ueber Timeout erkennen
 // ============================================================
 
 #include "WheelMeasurement.h"
-#include "src/RobotConfig.h"
+
 #include "src/Encoder.h"
+#include "src/RobotConfig.h"
 #include "src/ScaleUtils.h"
 
 namespace
@@ -20,20 +25,22 @@ WheelMeasurement::WheelMeasurement(Enc& enc)
 
     _acc_counts = 0;
     _rps_filt = 0.0f;
+
     _last_time_ms = 0;
     _last_tick_ms = 0;
 }
 
 void WheelMeasurement::reset()
 {
+    _last_counts = _enc.getCounts();
+
     _counts_total = 0;
 
     _acc_counts = 0;
     _rps_filt = 0.0f;
+
     _last_time_ms = 0;
     _last_tick_ms = 0;
-
-    _last_counts = _enc.getCounts();
 }
 
 void WheelMeasurement::update(uint32_t now_ms)
@@ -43,8 +50,15 @@ void WheelMeasurement::update(uint32_t now_ms)
 
     if (d != 0)
     {
-        if (d > 32767) d = 32767;
-        if (d < -32768) d = -32768;
+        if (d > 32767)
+        {
+            d = 32767;
+        }
+
+        if (d < -32768)
+        {
+            d = -32768;
+        }
 
         updateFromTicks((int16_t)d, now_ms);
 
@@ -66,7 +80,7 @@ void WheelMeasurement::updateFromTicks(int16_t dcounts, uint32_t now_ms)
         return;
     }
 
-    uint32_t dt_ms = now_ms - _last_time_ms;
+    const uint32_t dt_ms = now_ms - _last_time_ms;
 
     if (dt_ms < SPEED_MIN_DT_MS)
     {

@@ -1,8 +1,8 @@
 // ============================================================
-// File: RadMessung.h
+// File: WheelMeasurement.h
 // Zweck:
-//  - Geschwindigkeit in cm/s aus Encoder-Ticks
-//  - Encoder-Gesamtcounts fuer Odometrie/Plot
+//  - Geschwindigkeit in cm/s aus Encoder-Ticks berechnen
+//  - Encoder-Gesamtcounts fuer Odometrie/Plot bereitstellen
 //  - Tiefpass-Filter fuer stabile v_Ist-Werte
 //  - Zeitbasis: Millisekunden
 // ============================================================
@@ -40,7 +40,8 @@ private:
 
     int32_t _acc_counts = 0;
 
-    float    _rps_filt = 0.0f;
+    float _rps_filt = 0.0f;
+
     uint32_t _last_time_ms = 0;
     uint32_t _last_tick_ms = 0;
 };

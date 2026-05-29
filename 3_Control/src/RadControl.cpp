@@ -1,18 +1,18 @@
 // ============================================================
-// File: RadControl.cpp (3_Control)
+// File: RadControl.cpp
 // Zweck:
 //  - Gemeinsame Radregelungs-Implementierung fuer vorne und hinten
 //  - Konfiguration kommt von der App via radControl_begin(cfg)
 // ============================================================
 
 #include "RadControl.h"
-#include "src/Encoder.h"   // Klasse Enc (aus 2_Hardware)
-#include "src/Motor.h"     // Klasse Motor (aus 2_Hardware)
+
+#include "src/Encoder.h"
+#include "src/Motor.h"
 
 // ============================================================
-// enc[] und motor[] werden in der App definiert
-// (vorne/src/Hardware.cpp bzw. hinten/src/Hardware.cpp).
-// Hier nur als extern bekannt machen.
+// enc[] und motor[] werden im Hardware-Layer definiert.
+// Hier werden sie nur bekannt gemacht.
 // ============================================================
 
 extern Enc enc[WHEEL_COUNT];
@@ -21,9 +21,9 @@ extern Motor motor[WHEEL_COUNT];
 // ============================================================
 // Globale Objekte
 //
-// Die Regler werden hier mit Default-Parametern (0.0f, 0.0f)
-// angelegt. Die echten Parameter setzt radControl_begin() spaeter
-// per setParams() / setDeadPwm().
+// Die Regler werden hier mit Default-Parametern angelegt.
+// Die echten Parameter setzt radControl_begin() spaeter
+// per setParams() und setDeadPwm().
 // ============================================================
 
 WheelMeasurement wheelMeasurements[WHEEL_COUNT] =
@@ -47,9 +47,7 @@ Rad rad[WHEEL_COUNT] =
 // ============================================================
 // radControl_begin
 //
-// Wird von der App im setup() aufgerufen mit der gewuenschten
-// Konfiguration. Setzt PI-Parameter und DeadPWM in Reglern und
-// Raedern.
+// Setzt PI-Parameter und DeadPWM fuer beide lokalen Raeder.
 // ============================================================
 
 void radControl_begin(const RadControlConfig& cfg)
@@ -63,6 +61,10 @@ void radControl_begin(const RadControlConfig& cfg)
 
 // ============================================================
 // wheelMeasurement_reset_all
+//
+// Setzt nur die Radmessung zurueck.
+// Encoder-Rohzaehler werden dabei nicht zwingend geloescht;
+// WheelMeasurement setzt seinen internen Bezug neu.
 // ============================================================
 
 void wheelMeasurement_reset_all()
@@ -74,17 +76,18 @@ void wheelMeasurement_reset_all()
 }
 
 // ============================================================
-// control_resetPiStates
+// radControl_resetPiStates
 //
 // Setzt nur die inneren PI-Zustaende zurueck:
 //  - Integralanteil
 //  - vorherige PWM
+//  - Debugwerte
 //
 // Wichtig:
 //  - Sollwerte bleiben erhalten.
 //  - Motoren werden nicht gestoppt.
 //  - WheelMeasurement wird nicht zurueckgesetzt.
-//  - Kein kuenstlicher Null-Sollwert zwischen zwei Fahrabschnitten.
+//  - Kein kuenstlicher Null-Sollwert zwischen zwei Fahrbefehlen.
 // ============================================================
 
 void radControl_resetPiStates()
@@ -95,21 +98,33 @@ void radControl_resetPiStates()
     }
 }
 
-void radControl_update(uint32_t now)
+// ============================================================
+// radControl_update
+// ============================================================
+
+void radControl_update(uint32_t nowMs)
 {
     for (uint8_t i = 0; i < WHEEL_COUNT; i++)
     {
-        rad[i].update(now);
+        rad[i].update(nowMs);
     }
 }
 
-void radControl_setSoll(uint8_t w, float v)
+// ============================================================
+// radControl_setSoll
+// ============================================================
+
+void radControl_setSoll(uint8_t wheel, float v_cms)
 {
-    if (w < WHEEL_COUNT)
+    if (wheel < WHEEL_COUNT)
     {
-        rad[w].setSoll(v);
+        rad[wheel].setSoll(v_cms);
     }
 }
+
+// ============================================================
+// radControl_stopAll
+// ============================================================
 
 void radControl_stopAll()
 {
