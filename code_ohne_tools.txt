@@ -768,7 +768,7 @@ FILE: C:\Users\Acer\source\repos\robot\2_Hardware\src\Hardware.cpp
 #include "Encoder.h"
 #include "Motor.h"
 #include "Hardware.h"
-#include "hardware_pins.h"
+#include "HardwarePins.h"
 
 Enc   enc[WHEEL_COUNT];
 Motor motor[WHEEL_COUNT];
@@ -1600,7 +1600,6 @@ FILE: C:\Users\Acer\source\repos\robot\3_Control\src\Rad.h
 #pragma once
 
 #include <Arduino.h>
-#include "src/ControlTypes.h"
 #include "src/Motor.h"
 #include "WheelMeasurement.h"
 #include "PIRegler.h"
@@ -2210,6 +2209,44 @@ private:
 #endif // MECANUM_ODOMETER_H
 
 ============================================================
+FILE: C:\Users\Acer\source\repos\robot\4_Vehicle\src\VehicleControlConfig.h
+============================================================
+// ============================================================
+// File: VehicleControlConfig.h
+// Zweck:
+//  - Konfiguration fuer die Vehicle-Control-Ebene
+//  - PI-Parameter fuer vx, vy und wz
+//
+// Einheiten:
+//  - vx/vy: Fehler in cm/s
+//  - wz: Fehler in rad/s
+// ============================================================
+
+#ifndef VEHICLE_CONTROL_CONFIG_H
+#define VEHICLE_CONTROL_CONFIG_H
+
+#include "src/ControlTypes.h"
+
+struct VehicleControlConfig
+{
+    PIParam vx;
+    PIParam vy;
+    PIParam wz;
+};
+
+namespace ConfigVehicleFront
+{
+    constexpr VehicleControlConfig CONFIG =
+    {
+        { 0.0f, 0.0f },   // vx
+        { 0.0f, 0.0f },   // vy
+        { 0.0f, 0.0f }    // wz
+    };
+}
+
+#endif // VEHICLE_CONTROL_CONFIG_H
+
+============================================================
 FILE: C:\Users\Acer\source\repos\robot\4_Vehicle\src\VehicleController.cpp
 ============================================================
 // ============================================================
@@ -2238,6 +2275,20 @@ void VehicleController::begin(float Kp_vx, float Ki_vx,
     _regler.reset();
     _lastUpdateMs = 0;
     _turnOnly = false;
+}
+
+void VehicleController::begin(const PIParam& vx, const PIParam& vy, const PIParam& wz)
+{
+    begin(
+        vx.Kp, vx.Ki,
+        vy.Kp, vy.Ki,
+        wz.Kp, wz.Ki
+    );
+}
+
+void VehicleController::begin(const VehicleControlConfig& cfg)
+{
+    begin(cfg.vx, cfg.vy, cfg.wz);
 }
 
 void VehicleController::cmd(float vx_cms, float vy_cms, float wz_rad_s)
@@ -2412,6 +2463,8 @@ FILE: C:\Users\Acer\source\repos\robot\4_Vehicle\src\VehicleController.h
 #define VEHICLE_CONTROLLER_H
 
 #include "src/RobotConfig.h"
+#include "src/ControlTypes.h"
+#include "src/VehicleControlConfig.h"
 #include "VehiclePIController.h"
 
 class VehicleController
@@ -2420,6 +2473,9 @@ public:
     void begin(float Kp_vx, float Ki_vx,
         float Kp_vy, float Ki_vy,
         float Kp_wz, float Ki_wz);
+
+    void begin(const PIParam& vx, const PIParam& vy, const PIParam& wz);
+    void begin(const VehicleControlConfig& cfg);
 
     void cmd(float vx_cms, float vy_cms, float wz_rad_s);
     void updateIst(float v0_cms, float v1_cms, float v2_cms, float v3_cms);
@@ -2464,7 +2520,7 @@ private:
     bool _turnOnly = false;
 };
 
-#endif
+#endif // VEHICLE_CONTROLLER_H
 
 ============================================================
 FILE: C:\Users\Acer\source\repos\robot\4_Vehicle\src\VehiclePIController.cpp
@@ -4545,7 +4601,7 @@ FILE: C:\Users\Acer\source\repos\robot\hinten\src\hinten.ino
 #include "RearApp.h"
 
 #include "src/Hardware.h"
-#include "src/hardware_pins.h"
+#include "src/HardwarePins.h"
 #include "src/RadControl.h"
 #include "src/RadControlConfig.h"
 
@@ -5319,6 +5375,7 @@ FILE: C:\Users\Acer\source\repos\robot\vorne\src\vorne.ino
 #include "src/HardwarePins.h"
 #include "src/RadControl.h"
 #include "src/RadControlConfig.h"
+#include "src/VehicleControlConfig.h"
 
 FrontApp app;
 
@@ -5332,11 +5389,7 @@ void setup()
     radControl_begin(ConfigFront::CONFIG);
     wheelMeasurement_reset_all();
 
-    app.vehicle.begin(
-        0.0f, 0.0f,
-        0.0f, 0.0f,
-        0.0f, 0.0f
-    );
+    app.vehicle.begin(ConfigVehicleFront::CONFIG);
 
     app.commandRunner.begin();
     app.rearFrameClient.begin();
