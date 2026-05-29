@@ -1,7 +1,7 @@
 // ============================================================
-// File: Control.cpp (3_Control)
+// File: RadControl.cpp (3_Control)
 // Zweck:
-//  - Gemeinsame Steuerungs-Implementierung fuer vorne und hinten
+//  - Gemeinsame Radregelungs-Implementierung fuer vorne und hinten
 //  - Konfiguration kommt von der App via radControl_begin(cfg)
 // ============================================================
 
@@ -26,7 +26,7 @@ extern Motor motor[WHEEL_COUNT];
 // per setParams() / setDeadPwm().
 // ============================================================
 
-WheelMeasurement speed[WHEEL_COUNT] =
+WheelMeasurement wheelMeasurements[WHEEL_COUNT] =
 {
     WheelMeasurement(enc[Li]),
     WheelMeasurement(enc[Re])
@@ -40,8 +40,8 @@ PIRegler regler[WHEEL_COUNT] =
 
 Rad rad[WHEEL_COUNT] =
 {
-    Rad(motor[Li], speed[Li], regler[Li], RAD_REGEL_DT_MS, 0),
-    Rad(motor[Re], speed[Re], regler[Re], RAD_REGEL_DT_MS, 0)
+    Rad(motor[Li], wheelMeasurements[Li], regler[Li], RAD_REGEL_DT_MS, 0),
+    Rad(motor[Re], wheelMeasurements[Re], regler[Re], RAD_REGEL_DT_MS, 0)
 };
 
 // ============================================================
@@ -62,14 +62,14 @@ void radControl_begin(const RadControlConfig& cfg)
 }
 
 // ============================================================
-// Bestehende Funktionen
+// wheelMeasurement_reset_all
 // ============================================================
 
-void radMessung_reset_all()
+void wheelMeasurement_reset_all()
 {
     for (uint8_t i = 0; i < WHEEL_COUNT; i++)
     {
-        speed[i].reset();
+        wheelMeasurements[i].reset();
     }
 }
 

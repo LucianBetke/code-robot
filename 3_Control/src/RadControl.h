@@ -1,7 +1,7 @@
 // ============================================================
-// File: Control.h (3_Control)
+// File: RadControl.h (3_Control)
 // Zweck:
-//  - Gemeinsame Steuerungs-Schnittstelle fuer vorne und hinten
+//  - Gemeinsame Radregelungs-Schnittstelle fuer vorne und hinten
 //  - Einheit fuer Radgeschwindigkeit: cm/s
 // ============================================================
 
@@ -15,14 +15,14 @@
 #include "src/Rad.h"
 #include "RadControlConfig.h"
 
-extern WheelMeasurement speed[WHEEL_COUNT];
+extern WheelMeasurement wheelMeasurements[WHEEL_COUNT];
 
 extern PIRegler regler[WHEEL_COUNT];
 extern Rad rad[WHEEL_COUNT];
 
 void radControl_begin(const RadControlConfig& cfg);
 
-void radMessung_reset_all();
+void wheelMeasurement_reset_all();
 
 void control_resetPiStates();
 

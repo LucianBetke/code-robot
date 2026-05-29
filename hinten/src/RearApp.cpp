@@ -72,7 +72,7 @@ void RearApp::handleIncomingVsol(uint32_t now)
         if (vsol.resetPi)
         {
             control_resetPiStates();
-            radMessung_reset_all();
+            wheelMeasurement_reset_all();
         }
 
         rad[Li].setSoll(vSollLiCms);
@@ -99,14 +99,14 @@ void RearApp::handleSyncVist()
 
     syncFlag = false;
 
-    const int16_t vIstLiCms = speed[Li].cmsInt();
-    const int16_t vIstReCms = speed[Re].cmsInt();
+    const int16_t vIstLiCms = wheelMeasurements[Li].cmsInt();
+    const int16_t vIstReCms = wheelMeasurements[Re].cmsInt();
 
     const int16_t pwmLi = rad[Li].lastPwm();
     const int16_t pwmRe = rad[Re].lastPwm();
 
-    const int32_t cntLi = (int32_t)speed[Li].counts_total();
-    const int32_t cntRe = (int32_t)speed[Re].counts_total();
+    const int32_t cntLi = (int32_t)wheelMeasurements[Li].counts_total();
+    const int32_t cntRe = (int32_t)wheelMeasurements[Re].counts_total();
 
     if (uart.isConnected())
     {

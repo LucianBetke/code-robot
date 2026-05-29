@@ -18,7 +18,7 @@ void setup()
 
     hardware_begin(PinsFront::PINS);
     radControl_begin(ConfigFront::CONFIG);
-    radMessung_reset_all();
+    wheelMeasurement_reset_all();
 
     app.vehicle.begin(
         0.0f, 0.0f,

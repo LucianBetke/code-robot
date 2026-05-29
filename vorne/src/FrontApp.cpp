@@ -54,7 +54,7 @@ void FrontApp::updateConnectionSafety(uint32_t now)
 
         control_stopAll();
         control_resetPiStates();
-        radMessung_reset_all();
+        wheelMeasurement_reset_all();
 
         rearFrameClient.clearWaiting();
         rearFrameClient.clearFrame();
@@ -75,7 +75,7 @@ void FrontApp::updateConnectionSafety(uint32_t now)
 
         control_stopAll();
         control_resetPiStates();
-        radMessung_reset_all();
+        wheelMeasurement_reset_all();
 
         commandRunner.begin();
         rearFrameClient.begin();
@@ -289,8 +289,8 @@ void FrontApp::applyFrontWheelSoll()
 void FrontApp::updateVehicleIst()
 {
     vehicle.updateIst(
-        speed[Re].cms(),
-        speed[Li].cms(),
+        wheelMeasurements[Re].cms(),
+        wheelMeasurements[Li].cms(),
         (float)rearFrameClient.hiLiIstCms(),
         (float)rearFrameClient.hiReIstCms()
     );
@@ -329,14 +329,14 @@ RearFrameRequest FrontApp::makeRearFrameRequest(uint32_t frameTime, bool resetPi
     request.resetPi = resetPi;
 
     request.voLi_s_cms = scaleRoundToInt16(commandRunner.getWheelSoll(VoLi));
-    request.voLi_i_cms = scaleRoundToInt16(speed[Li].cms());
+    request.voLi_i_cms = scaleRoundToInt16(wheelMeasurements[Li].cms());
     request.voLi_pwm = rad[Li].lastPwm();
-    request.voLiCnt = (int32_t)speed[Li].counts_total();
+    request.voLiCnt = (int32_t)wheelMeasurements[Li].counts_total();
 
     request.voRe_s_cms = scaleRoundToInt16(commandRunner.getWheelSoll(VoRe));
-    request.voRe_i_cms = scaleRoundToInt16(speed[Re].cms());
+    request.voRe_i_cms = scaleRoundToInt16(wheelMeasurements[Re].cms());
     request.voRe_pwm = rad[Re].lastPwm();
-    request.voReCnt = (int32_t)speed[Re].counts_total();
+    request.voReCnt = (int32_t)wheelMeasurements[Re].counts_total();
 
     request.hiLi_s_cms = scaleRoundToInt16(commandRunner.getWheelSoll(HiLi));
     request.hiRe_s_cms = scaleRoundToInt16(commandRunner.getWheelSoll(HiRe));
@@ -377,7 +377,7 @@ void FrontApp::requestStartFrameForNewCommand(uint32_t now)
     // Neuer echter Fahrabschnitt:
     // RasMessung muss ebenfalls zurueckgesetzt werden,
     // damit alte Tiefpasswerte nicht in den neuen CMDP-Abschnitt laufen.
-    radMessung_reset_all();
+    wheelMeasurement_reset_all();
 
     // Front-PI einmalig zuruecksetzen.
     // Rear-PI und Rear-RadMessung werden ueber resetPi=true im VSOL-Startframe

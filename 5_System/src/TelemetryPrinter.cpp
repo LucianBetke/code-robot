@@ -66,11 +66,11 @@ void TelemetryPrinter::printCompletedFrame(
         frame.t,
 
         vehicle.getWheelSoll(VoLi),
-        speed[Li].cms(),
+        wheelMeasurements[Li].cms(),
         frame.voLi_pwm,
 
         vehicle.getWheelSoll(VoRe),
-        speed[Re].cms(),
+        wheelMeasurements[Re].cms(),
         frame.voRe_pwm,
 
         vehicle.getWheelSoll(HiLi),
@@ -186,11 +186,11 @@ void TelemetryPrinter::printWheels(
     Serial.print(t_ms);                             Serial.print(',');
 
     printSpeedCms(vehicle.getWheelSoll(VoLi));      Serial.print(',');
-    printSpeedCms(speed[Li].cms());                 Serial.print(',');
+    printSpeedCms(wheelMeasurements[Li].cms());                 Serial.print(',');
     Serial.print(rad[Li].lastPwm());                Serial.print(',');
 
     printSpeedCms(vehicle.getWheelSoll(VoRe));      Serial.print(',');
-    printSpeedCms(speed[Re].cms());                 Serial.print(',');
+    printSpeedCms(wheelMeasurements[Re].cms());                 Serial.print(',');
     Serial.print(rad[Re].lastPwm());                Serial.print(',');
 
     printSpeedCms(vehicle.getWheelSoll(HiLi));      Serial.print(',');
