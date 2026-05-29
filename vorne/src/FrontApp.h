@@ -13,7 +13,7 @@
 #include "src/CommandRunner/CommandRunner.h"
 #include "src/RearFrameClient.h"
 #include "src/FrameScheduler.h"
-#include "src/Printer.h"
+#include "src/TelemetryPrinter.h"
 
 // ============================================================
 // FrontApp
