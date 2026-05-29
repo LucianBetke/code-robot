@@ -1,5 +1,5 @@
 // ============================================================
-// File: ControlConfig.h
+// File: RadControlConfig.h
 // Zweck:
 //  - Datentyp ControlConfig fuer PI-Parameter und DeadPWM
 //  - Vordefinierte Konfigurationen fuer vorne und hinten
@@ -9,8 +9,8 @@
 //  - Alte PI-Werte aus m/s wurden durch 100 geteilt.
 // ============================================================
 
-#ifndef CONTROLCONFIG_H
-#define CONTROLCONFIG_H
+#ifndef RAD_CONTROL_CONFIG_H
+#define RAD_CONTROL_CONFIG_H
 
 #include <Arduino.h>
 #include "src/globals.h"
@@ -54,4 +54,4 @@ namespace ConfigRear
     };
 }
 
-#endif // CONTROLCONFIG_H
+#endif // RAD_CONTROL_CONFIG_H

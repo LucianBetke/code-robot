@@ -13,7 +13,7 @@
     <ClInclude Include="$(MSBuildThisFileDirectory)src\PIRegler.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)src\Rad.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)src\SpeedWeg.h" />
-    <ClInclude Include="$(MSBuildThisFileDirectory)src\ControlConfig.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)src\Control.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)src\RadControlConfig.h" />
   </ItemGroup>
 </Project>

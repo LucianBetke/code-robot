@@ -6,7 +6,7 @@
 #include "src/Hardware.h"
 #include "src/hardware_pins.h"
 #include "src/Control.h"
-#include "src/ControlConfig.h"
+#include "src/RadControlConfig.h"
 
 RearApp app;
 

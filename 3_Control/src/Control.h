@@ -13,7 +13,7 @@
 #include "src/SpeedWeg.h"
 #include "src/PIRegler.h"
 #include "src/Rad.h"
-#include "ControlConfig.h"
+#include "RadControlConfig.h"
 
 extern SpeedWeg speed[WHEEL_COUNT];
 

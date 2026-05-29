@@ -3,7 +3,7 @@
 
 #include "src/CommProtocol.h"
 #include "src/Control.h"
-#include "src/ControlConfig.h"
+#include "src/RadControlConfig.h"
 
 RearApp::RearApp()
     : uart(Serial, false),

@@ -5,7 +5,7 @@
 #include "src/globals.h"
 #include "src/VehicleController.h"
 #include "src/Control.h"
-#include "src/ControlConfig.h"
+#include "src/RadControlConfig.h"
 #include "src/RearFrameClient.h"
 #include "PrinterConfig.h"
 
