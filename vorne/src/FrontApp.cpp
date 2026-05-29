@@ -54,7 +54,7 @@ void FrontApp::updateConnectionSafety(uint32_t now)
 
         control_stopAll();
         control_resetPiStates();
-        speed_reset_all();
+        radMessung_reset_all();
 
         rearFrameClient.clearWaiting();
         rearFrameClient.clearFrame();
@@ -75,7 +75,7 @@ void FrontApp::updateConnectionSafety(uint32_t now)
 
         control_stopAll();
         control_resetPiStates();
-        speed_reset_all();
+        radMessung_reset_all();
 
         commandRunner.begin();
         rearFrameClient.begin();
@@ -377,7 +377,7 @@ void FrontApp::requestStartFrameForNewCommand(uint32_t now)
     // Neuer echter Fahrabschnitt:
     // RasMessung muss ebenfalls zurueckgesetzt werden,
     // damit alte Tiefpasswerte nicht in den neuen CMDP-Abschnitt laufen.
-    speed_reset_all();
+    radMessung_reset_all();
 
     // Front-PI einmalig zuruecksetzen.
     // Rear-PI und Rear-RadMessung werden ueber resetPi=true im VSOL-Startframe

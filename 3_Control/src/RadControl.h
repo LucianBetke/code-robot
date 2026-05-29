@@ -22,7 +22,7 @@ extern Rad rad[WHEEL_COUNT];
 
 void radControl_begin(const RadControlConfig& cfg);
 
-void speed_reset_all();
+void radMessung_reset_all();
 
 void control_resetPiStates();
 

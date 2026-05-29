@@ -72,7 +72,7 @@ void RearApp::handleIncomingVsol(uint32_t now)
         if (vsol.resetPi)
         {
             control_resetPiStates();
-            speed_reset_all();
+            radMessung_reset_all();
         }
 
         rad[Li].setSoll(vSollLiCms);

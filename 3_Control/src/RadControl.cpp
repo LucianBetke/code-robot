@@ -65,7 +65,7 @@ void radControl_begin(const RadControlConfig& cfg)
 // Bestehende Funktionen
 // ============================================================
 
-void speed_reset_all()
+void radMessung_reset_all()
 {
     for (uint8_t i = 0; i < WHEEL_COUNT; i++)
     {
