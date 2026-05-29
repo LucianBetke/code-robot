@@ -1,12 +1,5 @@
 ﻿// hinten.ino
-#include <avr/wdt.h>
-
 #include "RearApp.h"
-
-#include "src/Hardware.h"
-#include "src/HardwarePins.h"
-#include "src/RadControl.h"
-#include "src/RadControlConfig.h"
 
 RearApp app;
 
@@ -17,32 +10,10 @@ void syncISR()
 
 void setup()
 {
-    wdt_disable();
-
-    Serial.begin(115200);
-
-    hardware_begin(PinsRear::PINS);
-    radControl_begin(ConfigRear::CONFIG);
-    wheelMeasurement_reset_all();
-
-    app.begin();
-
-    hardware_enableMotors();
-
-    pinMode(3, INPUT);
-    attachInterrupt(digitalPinToInterrupt(3), syncISR, RISING);
+    app.begin(syncISR);
 }
 
 void loop()
 {
-    uint32_t now = millis();
-
-    app.updateCommunication();
-    app.updateConnectionSafety(now);
-    app.updateVsolTimeout(now);
-    app.handleIncomingVsol(now);
-
-    radControl_update(now);
-
-    app.handleSyncVist();
+    app.update(millis());
 }

@@ -4,11 +4,13 @@
     <ClCompile Include="$(MSBuildThisFileDirectory)src\VehicleController.cpp" />
     <ClCompile Include="$(MSBuildThisFileDirectory)src\VehiclePIController.cpp" />
     <ClCompile Include="$(MSBuildThisFileDirectory)src\MecanumOdometer.cpp" />
+    <ClCompile Include="$(MSBuildThisFileDirectory)src\MecanumKinematics.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="$(MSBuildThisFileDirectory)src\VehicleController.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)src\VehiclePIController.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)src\MecanumOdometer.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)src\VehicleControlConfig.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)src\MecanumKinematics.h" />
   </ItemGroup>
 </Project>

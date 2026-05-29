@@ -47,7 +47,6 @@ public:
 
 private:
     void applyDriveMode(float& vx_cms, float& vy_cms, float wz_rad_s);
-    void limitTranslation(float& vx_cms, float& vy_cms);
     void applyMixer(float vx_cms, float vy_cms, float wz_rad_s);
 
     float _vx = 0.0f;

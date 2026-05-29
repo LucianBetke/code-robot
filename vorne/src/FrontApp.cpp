@@ -7,8 +7,10 @@
 #include <avr/wdt.h>
 
 #include "src/Hardware.h"
+#include "src/HardwarePins.h"
 #include "src/RadControl.h"
 #include "src/RadControlConfig.h"
+#include "src/VehicleControlConfig.h"
 #include "src/TelemetryPrinterConfig.h"
 #include "src/ScaleUtils.h"
 
@@ -30,7 +32,54 @@ FrontApp::FrontApp()
 }
 
 // ============================================================
-// Sichtbare loop()-Schritte
+// Initialisierung und Hauptzyklus
+// ============================================================
+
+void FrontApp::begin()
+{
+    wdt_disable();
+
+    Serial.begin(115200);
+
+    hardware_begin(PinsFront::PINS);
+    radControl_begin(ConfigFront::CONFIG);
+    wheelMeasurement_reset_all();
+
+    vehicle.begin(ConfigVehicleFront::CONFIG);
+
+    commandRunner.begin();
+    rearFrameClient.begin();
+    frameScheduler.begin(VEHICLE_DT_MS);
+
+    uart.begin();
+    conn.begin(true);
+
+    printer.printInfo(vehicle, ConfigFront::CONFIG);
+}
+
+void FrontApp::update(uint32_t now)
+{
+    updateCommunication();
+    handleIncomingLines(now);
+    updateFrameTimeout(now);
+    updateConnectionSafety(now);
+
+    if (isConnected())
+    {
+        updateVehicleAndFrontControl(now);
+
+        // Erst Messframe pruefen.
+        // Danach darf der CommandRunner den aktiven Befehl beenden.
+        tryRequestFrame(now);
+
+        updateCommandRunner(now);
+        updateLogRaster(now);
+        updateRearStopSequence(now);
+    }
+}
+
+// ============================================================
+// Interne loop()-Schritte
 // ============================================================
 
 void FrontApp::updateCommunication()
@@ -375,12 +424,12 @@ void FrontApp::requestStartFrameForNewCommand(uint32_t now)
     _odomResetPending = true;
 
     // Neuer echter Fahrabschnitt:
-    // RasMessung muss ebenfalls zurueckgesetzt werden,
+    // Radmessung muss ebenfalls zurueckgesetzt werden,
     // damit alte Tiefpasswerte nicht in den neuen CMDP-Abschnitt laufen.
     wheelMeasurement_reset_all();
 
     // Front-PI einmalig zuruecksetzen.
-    // Rear-PI und Rear-RadMessung werden ueber resetPi=true im VSOL-Startframe
+    // Rear-PI und Rear-Radmessung werden ueber resetPi=true im VSOL-Startframe
     // zurueckgesetzt.
     radControl_resetPiStates();
 

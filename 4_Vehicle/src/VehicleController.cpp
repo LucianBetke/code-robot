@@ -12,6 +12,8 @@
 // ============================================================
 
 #include "VehicleController.h"
+#include "MecanumKinematics.h"
+
 #include <math.h>
 
 static const float VEHICLE_WZ_EPS = 0.0001f;
@@ -46,7 +48,7 @@ void VehicleController::cmd(float vx_cms, float vy_cms, float wz_rad_s)
 
     if (!_turnOnly)
     {
-        limitTranslation(vx_cms, vy_cms);
+        MecanumKinematics::limitTranslation(vx_cms, vy_cms);
     }
 
     _vx = vx_cms;
@@ -67,37 +69,17 @@ void VehicleController::applyDriveMode(float& vx_cms, float& vy_cms, float wz_ra
     }
 }
 
-void VehicleController::limitTranslation(float& vx_cms, float& vy_cms)
-{
-    const float sum = fabsf(vx_cms) + fabsf(vy_cms);
-
-    if (sum <= V_WHEEL_MAX)
-    {
-        return;
-    }
-
-    if (sum <= 0.0001f)
-    {
-        vx_cms = 0.0f;
-        vy_cms = 0.0f;
-        return;
-    }
-
-    const float scale = V_WHEEL_MAX / sum;
-
-    vx_cms *= scale;
-    vy_cms *= scale;
-}
-
 void VehicleController::updateIst(float v0_cms, float v1_cms, float v2_cms, float v3_cms)
 {
-    _vx_ist = (v0_cms + v1_cms + v2_cms + v3_cms) / 4.0f;
-
-    _vy_ist = (v0_cms - v1_cms + v2_cms - v3_cms) / 4.0f;
-
-    _wz_ist =
-        (v0_cms - v1_cms - v2_cms + v3_cms) /
-        (4.0f * MECANUM_K_CM);
+    MecanumKinematics::forward(
+        v0_cms,
+        v1_cms,
+        v2_cms,
+        v3_cms,
+        _vx_ist,
+        _vy_ist,
+        _wz_ist
+    );
 }
 
 void VehicleController::update(uint32_t now)
@@ -130,7 +112,7 @@ void VehicleController::update(uint32_t now)
         vy_korr = _regler.updateVy(_vy, _vy_ist, dt_ms);
         wz_korr = _regler.updateWz(_wz, _wz_ist, dt_ms);
 
-        limitTranslation(vx_korr, vy_korr);
+        MecanumKinematics::limitTranslation(vx_korr, vy_korr);
     }
 
     applyMixer(vx_korr, vy_korr, wz_korr);
@@ -138,43 +120,12 @@ void VehicleController::update(uint32_t now)
 
 void VehicleController::applyMixer(float vx_cms, float vy_cms, float wz_rad_s)
 {
-    float v[WHEEL_VEHICLE_COUNT];
-
-    v[VoRe] = vx_cms + vy_cms + MECANUM_K_CM * wz_rad_s;
-    v[VoLi] = vx_cms - vy_cms - MECANUM_K_CM * wz_rad_s;
-    v[HiLi] = vx_cms + vy_cms - MECANUM_K_CM * wz_rad_s;
-    v[HiRe] = vx_cms - vy_cms + MECANUM_K_CM * wz_rad_s;
-
-    float maxVal = 0.0f;
-
-    for (int i = 0; i < WHEEL_VEHICLE_COUNT; i++)
-    {
-        const float a = fabsf(v[i]);
-        if (a > maxVal) maxVal = a;
-    }
-
-    if (maxVal > V_WHEEL_MAX && maxVal > 0.0001f)
-    {
-        const float scale = V_WHEEL_MAX / maxVal;
-
-        for (int i = 0; i < WHEEL_VEHICLE_COUNT; i++)
-        {
-            v[i] *= scale;
-        }
-    }
-
-    for (int i = 0; i < WHEEL_VEHICLE_COUNT; i++)
-    {
-        if (fabsf(v[i]) < V_WHEEL_MIN)
-        {
-            v[i] = 0.0f;
-        }
-    }
-
-    for (int i = 0; i < WHEEL_VEHICLE_COUNT; i++)
-    {
-        _wheelSoll[i] = v[i];
-    }
+    MecanumKinematics::inverse(
+        vx_cms,
+        vy_cms,
+        wz_rad_s,
+        _wheelSoll
+    );
 }
 
 void VehicleController::stop()

@@ -607,11 +607,30 @@ long scaleFloatToInt1000(float value);
 ============================================================
 FILE: C:\Users\Acer\source\repos\robot\2_Hardware\src\Encoder.cpp
 ============================================================
-// Encoder.cpp
+// ============================================================
+// File: Encoder.cpp
+// Zweck:
+//  - Quadratur-Encoder auf Port C / PCINT1 auswerten
+//  - Gemeinsame ISR liest PINC genau einmal
+//  - Dispatcher verteilt den PINC-Snapshot an alle Encoder
+// ============================================================
+
 #include "Encoder.h"
 
-// Quadratur-LUT: prev \ curr: 00 01 10 11  (A=LSB, B=MSB)
-const int8_t Enc::s_qlut[4][4] = {
+// Quadratur-LUT:
+//
+// prev \ curr: 00  01  10  11
+//
+// Zustand:
+//   Bit 0 = A
+//   Bit 1 = B
+//
+// Ergebnis:
+//   +1 = Schritt vorwärts
+//   -1 = Schritt rückwärts
+//    0 = kein gültiger Schritt / kein Wechsel / ungültiger Sprung
+const int8_t Enc::s_qlut[4][4] =
+{
     {  0, +1, -1,  0 },
     { -1,  0,  0, +1 },
     { +1,  0,  0, -1 },
@@ -619,95 +638,139 @@ const int8_t Enc::s_qlut[4][4] = {
 };
 
 Enc::Enc()
-    : _pinA(0), _pinB(0), _counts(0), _prevState(0)
-    , _bitA(0), _bitB(0), _maskA(0), _maskB(0)
+    : _pinA(0),
+    _pinB(0),
+    _bitA(0),
+    _bitB(0),
+    _maskA(0),
+    _maskB(0),
+    _counts(0),
+    _prevState(0)
 {
 }
 
-void Enc::begin(uint8_t pinA, uint8_t pinB, bool resetCounts)
+void Enc::begin(uint8_t pinA, uint8_t pinB, bool doResetCounts)
 {
     _pinA = pinA;
     _pinB = pinB;
+
     _bitA = uint8_t(_pinA - A0);
     _bitB = uint8_t(_pinB - A0);
+
     _maskA = uint8_t(1u << _bitA);
     _maskB = uint8_t(1u << _bitB);
 
-    // ab hier identisch mit dem bisherigen begin():
     pinMode(_pinA, INPUT_PULLUP);
     pinMode(_pinB, INPUT_PULLUP);
-    uint8_t pinc = PINC;
-    uint8_t a = (pinc & _maskA) ? 1 : 0;
-    uint8_t b = (pinc & _maskB) ? 1 : 0;
-    _prevState = (b << 1) | a;
-    if (resetCounts) this->resetCounts();
+
+    const uint8_t pinc = PINC;
+
+    const uint8_t a = (pinc & _maskA) ? 1 : 0;
+    const uint8_t b = (pinc & _maskB) ? 1 : 0;
+
+    _prevState = uint8_t((b << 1) | a);
+
+    if (doResetCounts)
+    {
+        this->resetCounts();
+    }
+
     PCIFR |= _BV(PCIF1);
+
     PCINT1_Dispatcher::add(this);
+
     enablePcintGroup1_SelectedPins();
 }
 
-void Enc::resetCounts() { setCounts(0); }
-
+void Enc::resetCounts()
+{
+    setCounts(0);
+}
 
 int32_t Enc::getCounts() const
 {
     int32_t v;
-    uint8_t s = SREG; noInterrupts();
+
+    const uint8_t s = SREG;
+    noInterrupts();
+
     v = _counts;
+
     SREG = s;
+
     return v;
 }
 
 void Enc::setCounts(int32_t v)
 {
-    uint8_t s = SREG; noInterrupts();
+    const uint8_t s = SREG;
+    noInterrupts();
+
     _counts = v;
+
     SREG = s;
 }
 
 void Enc::handleIsr(uint8_t pinc_snapshot)
 {
-    // A/B-Bits aus dem EINMAL gelesenen Snapshot ziehen
-    uint8_t a = (pinc_snapshot & _maskA) ? 1 : 0;
-    uint8_t b = (pinc_snapshot & _maskB) ? 1 : 0;
-    uint8_t curr = (b << 1) | a;   // 0..3
+    const uint8_t a = (pinc_snapshot & _maskA) ? 1 : 0;
+    const uint8_t b = (pinc_snapshot & _maskB) ? 1 : 0;
 
-    int8_t d = s_qlut[_prevState][curr];
+    const uint8_t curr = uint8_t((b << 1) | a);
+
+    const int8_t d = s_qlut[_prevState][curr];
+
     _prevState = curr;
-    if (d) _counts += d;
+
+    if (d != 0)
+    {
+        _counts += d;
+    }
 }
 
 void Enc::enablePcintGroup1_SelectedPins()
 {
-    // PCINT-Gruppe 1 (Port C) aktivieren und genau diese Pins maskieren
     PCICR |= _BV(PCIE1);
     PCMSK1 |= (_maskA | _maskB);
 }
 
-// ------------ Dispatcher-Implementierung ------------
-namespace {
+// ============================================================
+// PCINT1_Dispatcher
+// ============================================================
+
+namespace
+{
     Enc* s_list[2] = { nullptr, nullptr };
     uint8_t s_count = 0;
 }
 
-namespace PCINT1_Dispatcher {
+namespace PCINT1_Dispatcher
+{
     void add(Enc* enc)
     {
-        if (s_count < 2) s_list[s_count++] = enc;
+        if (s_count < 2)
+        {
+            s_list[s_count] = enc;
+            s_count++;
+        }
     }
 
     void isr(uint8_t pinc_snapshot)
     {
-        for (uint8_t i = 0; i < s_count; ++i)
-            if (s_list[i]) s_list[i]->handleIsr(pinc_snapshot);
+        for (uint8_t i = 0; i < s_count; i++)
+        {
+            if (s_list[i] != nullptr)
+            {
+                s_list[i]->handleIsr(pinc_snapshot);
+            }
+        }
     }
 }
 
-// ------------ ISR selbst (hier mit drin) ------------
 ISR(PCINT1_vect)
 {
-    uint8_t pinc = PINC;                  // EIN Port-Read
-    PCINT1_Dispatcher::isr(pinc);         // an alle Encoder verteilen
+    const uint8_t pinc = PINC;
+    PCINT1_Dispatcher::isr(pinc);
 }
 
 ============================================================
@@ -722,18 +785,19 @@ FILE: C:\Users\Acer\source\repos\robot\2_Hardware\src\Encoder.h
  * Abhängigkeiten: Arduino.h, <avr/io.h>, <avr/interrupt.h>
  */
  // ============================================================
+
 #pragma once
+
 #include <Arduino.h>
 #include <avr/io.h>
 #include <avr/interrupt.h>
 
-class Enc {
+class Enc
+{
 public:
-    Enc();                                              // leerer Konstruktor
+    Enc();
 
-    void begin(uint8_t pinA, uint8_t pinB,              // NEU: Pins als Parameter
-        bool resetCounts = true);
-    void begin(bool resetCounts = true);                // bleibt (alter Aufruf)
+    void begin(uint8_t pinA, uint8_t pinB, bool doResetCounts = true);
 
     void    resetCounts();
     int32_t getCounts() const;
@@ -743,19 +807,21 @@ public:
 private:
     static const int8_t s_qlut[4][4];
 
-    uint8_t  _pinA;
-    uint8_t  _pinB;
-    uint8_t  _bitA;
-    uint8_t  _bitB;
-    uint8_t  _maskA;
-    uint8_t  _maskB;
+    uint8_t _pinA;
+    uint8_t _pinB;
+    uint8_t _bitA;
+    uint8_t _bitB;
+    uint8_t _maskA;
+    uint8_t _maskB;
+
     volatile int32_t _counts;
     volatile uint8_t _prevState;
 
     void enablePcintGroup1_SelectedPins();
 };
 
-namespace PCINT1_Dispatcher {
+namespace PCINT1_Dispatcher
+{
     void add(Enc* enc);
     void isr(uint8_t pinc_snapshot);
 }
@@ -763,15 +829,24 @@ namespace PCINT1_Dispatcher {
 ============================================================
 FILE: C:\Users\Acer\source\repos\robot\2_Hardware\src\Hardware.cpp
 ============================================================
+// ============================================================
+// File: Hardware.cpp
+// Zweck:
+//  - Globale Hardware-Objekte bereitstellen
+//  - Encoder und Motoren initialisieren
+//  - STBY-/Sync-Pin steuern
+// ============================================================
+
 #include <Arduino.h>
-#include "src/RobotConfig.h"
+
+#include "Hardware.h"
 #include "Encoder.h"
 #include "Motor.h"
-#include "Hardware.h"
 #include "HardwarePins.h"
 
-Enc   enc[WHEEL_COUNT];
+Enc enc[WHEEL_COUNT];
 Motor motor[WHEEL_COUNT];
+
 // Dieser Pin ist board-abhaengig:
 // vorne: Sync-Ausgang fuer VIST-Anforderung
 // hinten: STBY-Ausgang fuer beide Motortreiber
@@ -780,11 +855,15 @@ static uint8_t s_stby_sync = 0;
 void hardware_begin(const HardwarePinSet& pins, bool resetEnc)
 {
     s_stby_sync = pins.stby_sync;
+
     enc[Li].begin(pins.encLiA, pins.encLiB, resetEnc);
     enc[Re].begin(pins.encReA, pins.encReB, resetEnc);
+
     motor[Li].begin(pins.motorLi1, pins.motorLi2, enc[Li]);
     motor[Re].begin(pins.motorRe1, pins.motorRe2, enc[Re]);
+
     pinMode(s_stby_sync, OUTPUT);
+
     motor[Li].init();
     motor[Re].init();
 }
@@ -808,110 +887,169 @@ void hardware_requestVist()
 ============================================================
 FILE: C:\Users\Acer\source\repos\robot\2_Hardware\src\Hardware.h
 ============================================================
+// ============================================================
+// File: Hardware.h
+// Zweck:
+//  - Zentrale Hardware-Schnittstelle fuer vorne und hinten
+//  - Globale Motor- und Encoder-Objekte bereitstellen
+//  - Hardware-Pins initialisieren
+// ============================================================
+
 #ifndef HARDWARE_H
 #define HARDWARE_H
+
 #include <Arduino.h>
+
 #include "src/RobotConfig.h"
 #include "src/HardwarePins.h"
 
 class Enc;
 class Motor;
-extern Enc   enc[WHEEL_COUNT];
+
+extern Enc enc[WHEEL_COUNT];
 extern Motor motor[WHEEL_COUNT];
 
 void hardware_begin(const HardwarePinSet& pins, bool resetEnc = true);
+
 void hardware_enableMotors();
 void hardware_disableMotors();
+
 void hardware_requestVist();
+
 #endif // HARDWARE_H
 
 ============================================================
 FILE: C:\Users\Acer\source\repos\robot\2_Hardware\src\HardwarePins.h
 ============================================================
-// hardware_pins.h
+// ============================================================
+// File: HardwarePins.h
+// Zweck:
+//  - Hardware-Pins fuer vorne und hinten zentral definieren
+//  - Pin-Konfiguration als HardwarePinSet fuer hardware_begin()
+// ============================================================
+
 #ifndef HARDWARE_PINS_H
 #define HARDWARE_PINS_H
+
 #include <Arduino.h>
+
 // ============================================================
-// HardwarePinSet — fasst alle Pins für hardware_begin() zusammen
+// HardwarePinSet
 // ============================================================
+
 struct HardwarePinSet
 {
     uint8_t encLiA;
     uint8_t encLiB;
+
     uint8_t encReA;
     uint8_t encReB;
+
     uint8_t motorLi1;
     uint8_t motorLi2;
+
     uint8_t motorRe1;
     uint8_t motorRe2;
+
     uint8_t stby_sync;
 };
+
 // ============================================================
-// namespace PinsFront
+// PinsFront
 // ============================================================
+
 namespace PinsFront
 {
-    constexpr uint8_t M_Li_BIN1 = 9;   // D9  BIN1 → physisch LINKS
-    constexpr uint8_t M_Li_BIN2 = 10;  // D10 BIN2 → physisch LINKS
-    constexpr uint8_t M_Re_AIN1 = 6;   // D6  AIN1 → physisch RECHTS
-    constexpr uint8_t M_Re_AIN2 = 5;   // D5  AIN2 → physisch RECHTS
+    constexpr uint8_t M_Li_BIN1 = 9;
+    constexpr uint8_t M_Li_BIN2 = 10;
+
+    constexpr uint8_t M_Re_AIN1 = 6;
+    constexpr uint8_t M_Re_AIN2 = 5;
+
     constexpr uint8_t STBY_SYNC_PIN = 8;
 
-    constexpr uint8_t ENC_Li_PIN_A = A2;  // A2 → Encoder LINKS,  Kanal A
-    constexpr uint8_t ENC_Li_PIN_B = A3;  // A3 → Encoder LINKS,  Kanal B
-    constexpr uint8_t ENC_Re_PIN_A = A0;  // A0 → Encoder RECHTS, Kanal A
-    constexpr uint8_t ENC_Re_PIN_B = A1;  // A1 → Encoder RECHTS, Kanal B
+    constexpr uint8_t ENC_Li_PIN_A = A2;
+    constexpr uint8_t ENC_Li_PIN_B = A3;
 
-    constexpr HardwarePinSet PINS = {
-        ENC_Li_PIN_A, ENC_Li_PIN_B,
-        ENC_Re_PIN_A, ENC_Re_PIN_B,
-        M_Li_BIN1,    M_Li_BIN2,
-        M_Re_AIN1,    M_Re_AIN2,
+    constexpr uint8_t ENC_Re_PIN_A = A0;
+    constexpr uint8_t ENC_Re_PIN_B = A1;
+
+    constexpr HardwarePinSet PINS =
+    {
+        ENC_Li_PIN_A,
+        ENC_Li_PIN_B,
+
+        ENC_Re_PIN_A,
+        ENC_Re_PIN_B,
+
+        M_Li_BIN1,
+        M_Li_BIN2,
+
+        M_Re_AIN1,
+        M_Re_AIN2,
+
         STBY_SYNC_PIN
     };
 }
+
 // ============================================================
-// namespace PinsRear
+// PinsRear
 // ============================================================
+
 namespace PinsRear
 {
     constexpr uint8_t M_Re_AIN1 = 9;
     constexpr uint8_t M_Re_AIN2 = 10;
+
     constexpr uint8_t M_Li_BIN1 = 6;
     constexpr uint8_t M_Li_BIN2 = 5;
+
     constexpr uint8_t STBY_SYNC_PIN = 8;
 
     constexpr uint8_t ENC_Re_PIN_A = A2;
     constexpr uint8_t ENC_Re_PIN_B = A3;
+
     constexpr uint8_t ENC_Li_PIN_A = A0;
     constexpr uint8_t ENC_Li_PIN_B = A1;
 
-    constexpr HardwarePinSet PINS = {
-        ENC_Li_PIN_A, ENC_Li_PIN_B,
-        ENC_Re_PIN_A, ENC_Re_PIN_B,
-        M_Li_BIN1,    M_Li_BIN2,
-        M_Re_AIN1,    M_Re_AIN2,
+    constexpr HardwarePinSet PINS =
+    {
+        ENC_Li_PIN_A,
+        ENC_Li_PIN_B,
+
+        ENC_Re_PIN_A,
+        ENC_Re_PIN_B,
+
+        M_Li_BIN1,
+        M_Li_BIN2,
+
+        M_Re_AIN1,
+        M_Re_AIN2,
+
         STBY_SYNC_PIN
     };
 }
+
 #endif // HARDWARE_PINS_H
 
 ============================================================
 FILE: C:\Users\Acer\source\repos\robot\2_Hardware\src\Motor.cpp
 ============================================================
-// Motor.cpp
+// ============================================================
+// File: Motor.cpp
+// Zweck:
+//  - Steuerung eines einzelnen Motors im 2-Pin-Modus
+//  - Richtung, PWM-Leistung, Bremse
+//  - Optionale Encoder-Anbindung
+// ============================================================
+
 #include "Motor.h"
 
-// ===== Motor =====
-Motor::Motor() : _pin1(0), _pin2(0), _enc(nullptr)
+Motor::Motor()
+    : _pin1(0),
+    _pin2(0),
+    _enc(nullptr)
 {
-}
-
-void Motor::init() {
-    pinMode(_pin1, OUTPUT);
-    pinMode(_pin2, OUTPUT);
-    bremse(false); // Coast
 }
 
 void Motor::begin(uint8_t pin1, uint8_t pin2, Enc& enc)
@@ -921,16 +1059,49 @@ void Motor::begin(uint8_t pin1, uint8_t pin2, Enc& enc)
     _enc = &enc;
 }
 
-void Motor::vor(uint8_t pwm) { analogWrite(_pin1, pwm); digitalWrite(_pin2, LOW); }
-void Motor::rueck(uint8_t pwm) { analogWrite(_pin2, pwm); digitalWrite(_pin1, LOW); }
+void Motor::init()
+{
+    pinMode(_pin1, OUTPUT);
+    pinMode(_pin2, OUTPUT);
 
-void Motor::bremse(bool art) {
-    if (art) { digitalWrite(_pin1, HIGH); digitalWrite(_pin2, HIGH); }   // aktiv bremsen
-    else { digitalWrite(_pin1, LOW);  digitalWrite(_pin2, LOW); }   // auslaufen
+    bremse(false);
 }
 
-void Motor::attachEnc(Enc& enc) { _enc = &enc; }
-Enc* Motor::enc() const { return _enc; }
+void Motor::vor(uint8_t pwm)
+{
+    analogWrite(_pin1, pwm);
+    digitalWrite(_pin2, LOW);
+}
+
+void Motor::rueck(uint8_t pwm)
+{
+    analogWrite(_pin2, pwm);
+    digitalWrite(_pin1, LOW);
+}
+
+void Motor::bremse(bool art)
+{
+    if (art)
+    {
+        digitalWrite(_pin1, HIGH);
+        digitalWrite(_pin2, HIGH);
+    }
+    else
+    {
+        digitalWrite(_pin1, LOW);
+        digitalWrite(_pin2, LOW);
+    }
+}
+
+void Motor::attachEnc(Enc& enc)
+{
+    _enc = &enc;
+}
+
+Enc* Motor::enc() const
+{
+    return _enc;
+}
 
 ============================================================
 FILE: C:\Users\Acer\source\repos\robot\2_Hardware\src\Motor.h
@@ -938,10 +1109,9 @@ FILE: C:\Users\Acer\source\repos\robot\2_Hardware\src\Motor.h
 // ============================================================
 // File: Motor.h
 // Zweck:
-//  - Steuerung eines einzelnen Motors (DRV8833/TB6612, 2-Pin-Modus)
+//  - Steuerung eines einzelnen Motors im 2-Pin-Modus
 //  - Richtung, PWM-Leistung, Bremse
 //  - Optionale Encoder-Anbindung
-// Abhängigkeiten: Arduino.h, Enc forward-deklariert
 // ============================================================
 
 #ifndef MOTOR_H
@@ -951,40 +1121,28 @@ FILE: C:\Users\Acer\source\repos\robot\2_Hardware\src\Motor.h
 
 class Enc;
 
-/**
- * @class Motor
- * @brief Steuert einen Motor mit 2-Pin-Ansteuerung (z. B. DRV8833).
- *
- * Unterstützt:
- *  - Vorwärts- und Rückwärtsfahrt über PWM
- *  - Bremse (Brake oder Coast)
- *  - Optionale Verbindung zu einem Encoder (Enc)
- *
- * Beispiel:
- * @code
- * Motor motor[Re](5, 6);
- * motor[Re].vor(180);
- * delay(1000);
- * motor[Re].bremse(true);
- * @endcode
- */
-class Motor {
+class Motor
+{
 public:
-    Motor();                                            // NEU: leerer Konstruktor
+    Motor();
 
-    void begin(uint8_t pin1, uint8_t pin2, Enc& enc);   // NEU
+    void begin(uint8_t pin1, uint8_t pin2, Enc& enc);
 
     void init();
+
     void vor(uint8_t pwm);
     void rueck(uint8_t pwm);
+
     void bremse(bool art);
+
     void attachEnc(Enc& enc);
     Enc* enc() const;
 
 private:
     uint8_t _pin1;
     uint8_t _pin2;
-    Enc* _enc = nullptr;
+
+    Enc* _enc;
 };
 
 #endif // MOTOR_H
@@ -1159,7 +1317,6 @@ private:
     // Timing
     unsigned long _lastPing;
     unsigned long _lastSeen;
-    unsigned long _lastActivity;
 
     // Buffer fuer eingehende Zeichen
     char _buf[64];
@@ -1170,7 +1327,6 @@ private:
     bool _lineAvailable;
 
     static constexpr unsigned long PING_INTERVAL = 500;
-    static constexpr unsigned long KEEPALIVE_INTERVAL = 500;
     static constexpr unsigned long TIMEOUT = 2000;
 };
 
@@ -1639,20 +1795,20 @@ private:
 FILE: C:\Users\Acer\source\repos\robot\3_Control\src\RadControl.cpp
 ============================================================
 // ============================================================
-// File: RadControl.cpp (3_Control)
+// File: RadControl.cpp
 // Zweck:
 //  - Gemeinsame Radregelungs-Implementierung fuer vorne und hinten
 //  - Konfiguration kommt von der App via radControl_begin(cfg)
 // ============================================================
 
 #include "RadControl.h"
-#include "src/Encoder.h"   // Klasse Enc (aus 2_Hardware)
-#include "src/Motor.h"     // Klasse Motor (aus 2_Hardware)
+
+#include "src/Encoder.h"
+#include "src/Motor.h"
 
 // ============================================================
-// enc[] und motor[] werden in der App definiert
-// (vorne/src/Hardware.cpp bzw. hinten/src/Hardware.cpp).
-// Hier nur als extern bekannt machen.
+// enc[] und motor[] werden im Hardware-Layer definiert.
+// Hier werden sie nur bekannt gemacht.
 // ============================================================
 
 extern Enc enc[WHEEL_COUNT];
@@ -1661,9 +1817,9 @@ extern Motor motor[WHEEL_COUNT];
 // ============================================================
 // Globale Objekte
 //
-// Die Regler werden hier mit Default-Parametern (0.0f, 0.0f)
-// angelegt. Die echten Parameter setzt radControl_begin() spaeter
-// per setParams() / setDeadPwm().
+// Die Regler werden hier mit Default-Parametern angelegt.
+// Die echten Parameter setzt radControl_begin() spaeter
+// per setParams() und setDeadPwm().
 // ============================================================
 
 WheelMeasurement wheelMeasurements[WHEEL_COUNT] =
@@ -1687,9 +1843,7 @@ Rad rad[WHEEL_COUNT] =
 // ============================================================
 // radControl_begin
 //
-// Wird von der App im setup() aufgerufen mit der gewuenschten
-// Konfiguration. Setzt PI-Parameter und DeadPWM in Reglern und
-// Raedern.
+// Setzt PI-Parameter und DeadPWM fuer beide lokalen Raeder.
 // ============================================================
 
 void radControl_begin(const RadControlConfig& cfg)
@@ -1703,6 +1857,10 @@ void radControl_begin(const RadControlConfig& cfg)
 
 // ============================================================
 // wheelMeasurement_reset_all
+//
+// Setzt nur die Radmessung zurueck.
+// Encoder-Rohzaehler werden dabei nicht zwingend geloescht;
+// WheelMeasurement setzt seinen internen Bezug neu.
 // ============================================================
 
 void wheelMeasurement_reset_all()
@@ -1714,17 +1872,18 @@ void wheelMeasurement_reset_all()
 }
 
 // ============================================================
-// control_resetPiStates
+// radControl_resetPiStates
 //
 // Setzt nur die inneren PI-Zustaende zurueck:
 //  - Integralanteil
 //  - vorherige PWM
+//  - Debugwerte
 //
 // Wichtig:
 //  - Sollwerte bleiben erhalten.
 //  - Motoren werden nicht gestoppt.
 //  - WheelMeasurement wird nicht zurueckgesetzt.
-//  - Kein kuenstlicher Null-Sollwert zwischen zwei Fahrabschnitten.
+//  - Kein kuenstlicher Null-Sollwert zwischen zwei Fahrbefehlen.
 // ============================================================
 
 void radControl_resetPiStates()
@@ -1735,21 +1894,33 @@ void radControl_resetPiStates()
     }
 }
 
-void radControl_update(uint32_t now)
+// ============================================================
+// radControl_update
+// ============================================================
+
+void radControl_update(uint32_t nowMs)
 {
     for (uint8_t i = 0; i < WHEEL_COUNT; i++)
     {
-        rad[i].update(now);
+        rad[i].update(nowMs);
     }
 }
 
-void radControl_setSoll(uint8_t w, float v)
+// ============================================================
+// radControl_setSoll
+// ============================================================
+
+void radControl_setSoll(uint8_t wheel, float v_cms)
 {
-    if (w < WHEEL_COUNT)
+    if (wheel < WHEEL_COUNT)
     {
-        rad[w].setSoll(v);
+        rad[wheel].setSoll(v_cms);
     }
 }
+
+// ============================================================
+// radControl_stopAll
+// ============================================================
 
 void radControl_stopAll()
 {
@@ -1763,29 +1934,43 @@ void radControl_stopAll()
 FILE: C:\Users\Acer\source\repos\robot\3_Control\src\RadControl.h
 ============================================================
 // ============================================================
-// File: RadControl.h (3_Control)
+// File: RadControl.h
 // Zweck:
 //  - Gemeinsame Radregelungs-Schnittstelle fuer vorne und hinten
-//  - Einheit fuer Radgeschwindigkeit: cm/s
+//  - Lokale Radmessung, PI-Regler und Radobjekte bereitstellen
+//  - Apps geben ihre Konfiguration via radControl_begin(cfg) mit
 // ============================================================
 
 #ifndef RAD_CONTROL_H
 #define RAD_CONTROL_H
 
 #include <Arduino.h>
+
 #include "src/RobotConfig.h"
 #include "src/WheelMeasurement.h"
 #include "src/PIRegler.h"
 #include "src/Rad.h"
 #include "RadControlConfig.h"
 
+// ------------------------------------------------------------
+// Radmessung pro lokalem Nano-Rad
+// ------------------------------------------------------------
 extern WheelMeasurement wheelMeasurements[WHEEL_COUNT];
 
+// ------------------------------------------------------------
+// PI-Regler und Radobjekte pro lokalem Nano-Rad
+// ------------------------------------------------------------
 extern PIRegler regler[WHEEL_COUNT];
 extern Rad rad[WHEEL_COUNT];
 
+// ------------------------------------------------------------
+// Initialisierung
+// ------------------------------------------------------------
 void radControl_begin(const RadControlConfig& cfg);
 
+// ------------------------------------------------------------
+// Messung / Regler / Radsteuerung
+// ------------------------------------------------------------
 void wheelMeasurement_reset_all();
 
 void radControl_resetPiStates();
@@ -1864,11 +2049,16 @@ FILE: C:\Users\Acer\source\repos\robot\3_Control\src\WheelMeasurement.cpp
 ============================================================
 // ============================================================
 // File: WheelMeasurement.cpp
+// Zweck:
+//  - Geschwindigkeit in cm/s aus Encoder-Ticks berechnen
+//  - Geschwindigkeit ueber Tickfenster bestimmen
+//  - Stillstand ueber Timeout erkennen
 // ============================================================
 
 #include "WheelMeasurement.h"
-#include "src/RobotConfig.h"
+
 #include "src/Encoder.h"
+#include "src/RobotConfig.h"
 #include "src/ScaleUtils.h"
 
 namespace
@@ -1884,20 +2074,22 @@ WheelMeasurement::WheelMeasurement(Enc& enc)
 
     _acc_counts = 0;
     _rps_filt = 0.0f;
+
     _last_time_ms = 0;
     _last_tick_ms = 0;
 }
 
 void WheelMeasurement::reset()
 {
+    _last_counts = _enc.getCounts();
+
     _counts_total = 0;
 
     _acc_counts = 0;
     _rps_filt = 0.0f;
+
     _last_time_ms = 0;
     _last_tick_ms = 0;
-
-    _last_counts = _enc.getCounts();
 }
 
 void WheelMeasurement::update(uint32_t now_ms)
@@ -1907,8 +2099,15 @@ void WheelMeasurement::update(uint32_t now_ms)
 
     if (d != 0)
     {
-        if (d > 32767) d = 32767;
-        if (d < -32768) d = -32768;
+        if (d > 32767)
+        {
+            d = 32767;
+        }
+
+        if (d < -32768)
+        {
+            d = -32768;
+        }
 
         updateFromTicks((int16_t)d, now_ms);
 
@@ -1930,7 +2129,7 @@ void WheelMeasurement::updateFromTicks(int16_t dcounts, uint32_t now_ms)
         return;
     }
 
-    uint32_t dt_ms = now_ms - _last_time_ms;
+    const uint32_t dt_ms = now_ms - _last_time_ms;
 
     if (dt_ms < SPEED_MIN_DT_MS)
     {
@@ -1975,10 +2174,10 @@ int16_t WheelMeasurement::cmsInt() const
 FILE: C:\Users\Acer\source\repos\robot\3_Control\src\WheelMeasurement.h
 ============================================================
 // ============================================================
-// File: RadMessung.h
+// File: WheelMeasurement.h
 // Zweck:
-//  - Geschwindigkeit in cm/s aus Encoder-Ticks
-//  - Encoder-Gesamtcounts fuer Odometrie/Plot
+//  - Geschwindigkeit in cm/s aus Encoder-Ticks berechnen
+//  - Encoder-Gesamtcounts fuer Odometrie/Plot bereitstellen
 //  - Tiefpass-Filter fuer stabile v_Ist-Werte
 //  - Zeitbasis: Millisekunden
 // ============================================================
@@ -2016,7 +2215,8 @@ private:
 
     int32_t _acc_counts = 0;
 
-    float    _rps_filt = 0.0f;
+    float _rps_filt = 0.0f;
+
     uint32_t _last_time_ms = 0;
     uint32_t _last_tick_ms = 0;
 };
@@ -3314,8 +3514,7 @@ FILE: C:\Users\Acer\source\repos\robot\5_System\src\Connection\ConnectionMonitor
 ConnectionMonitor::ConnectionMonitor(UartLink& uart, uint8_t ledPin)
     : _uart(uart),
     _ledPin(ledPin),
-    _lastState(false),
-    _lastOk(0)
+    _lastState(false)
 {
 }
 
@@ -3338,9 +3537,11 @@ void ConnectionMonitor::begin(bool wait)
     digitalWrite(_ledPin, HIGH);
 
     _lastState = false;
-    _lastOk = millis();
 
-    if (wait) waitForConnection();
+    if (wait)
+    {
+        waitForConnection();
+    }
 }
 
 void ConnectionMonitor::update()
@@ -3385,7 +3586,6 @@ private:
     uint8_t _ledPin;
 
     bool _lastState;
-    uint32_t _lastOk;
 };
 
 ============================================================
@@ -4252,46 +4452,44 @@ void TelemetryPrinter::printCompletedFrame(
     int16_t hiLi_pwm,
     int16_t hiRe_pwm)
 {
-    const int16_t voLi_s_cms = scaleRoundToInt16(vehicle.getWheelSoll(VoLi));
-    const int16_t voLi_i_cms = wheelMeasurements[Li].cmsInt();
-
-    const int16_t voRe_s_cms = scaleRoundToInt16(vehicle.getWheelSoll(VoRe));
-    const int16_t voRe_i_cms = wheelMeasurements[Re].cmsInt();
-
-    const int16_t hiLi_s_cms = scaleRoundToInt16(vehicle.getWheelSoll(HiLi));
-    const int16_t hiRe_s_cms = scaleRoundToInt16(vehicle.getWheelSoll(HiRe));
-
-#ifdef PRINTER_MODE_CHASSIS
+#if defined(PRINTER_MODE_CHASSIS) && PRINTER_ENABLE_CHASSIS
     printFrame(
         vehicle,
         frame.t,
-        voLi_i_cms,
-        voRe_i_cms,
+        frame.voLi_i_cms,
+        frame.voRe_i_cms,
         hiLi_i_cms,
         hiRe_i_cms
     );
+#else
+    (void)vehicle;
 #endif
 
-#ifdef PRINTER_MODE_RAEDER
+#if defined(PRINTER_MODE_RAEDER) && PRINTER_ENABLE_WHEELS
     printFrame(
         frame.t,
 
-        voLi_s_cms,
-        voLi_i_cms,
+        frame.voLi_s_cms,
+        frame.voLi_i_cms,
         frame.voLi_pwm,
 
-        voRe_s_cms,
-        voRe_i_cms,
+        frame.voRe_s_cms,
+        frame.voRe_i_cms,
         frame.voRe_pwm,
 
-        hiLi_s_cms,
+        frame.hiLi_s_cms,
         hiLi_i_cms,
         hiLi_pwm,
 
-        hiRe_s_cms,
+        frame.hiRe_s_cms,
         hiRe_i_cms,
         hiRe_pwm
     );
+#else
+    (void)hiLi_i_cms;
+    (void)hiRe_i_cms;
+    (void)hiLi_pwm;
+    (void)hiRe_pwm;
 #endif
 
     printCountsFrame(
@@ -4402,22 +4600,22 @@ void TelemetryPrinter::printWheels(
 {
 #if PRINTER_ENABLE_WHEELS
     Serial.print(F("#WHEELS,"));
-    Serial.print(t_ms);                                      Serial.print(',');
+    Serial.print(t_ms);                                             Serial.print(',');
 
-    printSpeedCms(scaleRoundToInt16(vehicle.getWheelSoll(VoLi))); Serial.print(',');
-    printSpeedCms(wheelMeasurements[Li].cmsInt());                 Serial.print(',');
-    Serial.print(rad[Li].lastPwm());                              Serial.print(',');
+    printSpeedCms(scaleRoundToInt16(vehicle.getWheelSoll(VoLi)));   Serial.print(',');
+    printSpeedCms(wheelMeasurements[Li].cmsInt());                  Serial.print(',');
+    Serial.print(rad[Li].lastPwm());                                Serial.print(',');
 
-    printSpeedCms(scaleRoundToInt16(vehicle.getWheelSoll(VoRe))); Serial.print(',');
-    printSpeedCms(wheelMeasurements[Re].cmsInt());                 Serial.print(',');
-    Serial.print(rad[Re].lastPwm());                              Serial.print(',');
+    printSpeedCms(scaleRoundToInt16(vehicle.getWheelSoll(VoRe)));   Serial.print(',');
+    printSpeedCms(wheelMeasurements[Re].cmsInt());                  Serial.print(',');
+    Serial.print(rad[Re].lastPwm());                                Serial.print(',');
 
-    printSpeedCms(scaleRoundToInt16(vehicle.getWheelSoll(HiLi))); Serial.print(',');
-    printSpeedCms(v2_ist_cms);                                    Serial.print(',');
-    Serial.print(pwm2);                                           Serial.print(',');
+    printSpeedCms(scaleRoundToInt16(vehicle.getWheelSoll(HiLi)));   Serial.print(',');
+    printSpeedCms(v2_ist_cms);                                      Serial.print(',');
+    Serial.print(pwm2);                                             Serial.print(',');
 
-    printSpeedCms(scaleRoundToInt16(vehicle.getWheelSoll(HiRe))); Serial.print(',');
-    printSpeedCms(v3_ist_cms);                                    Serial.print(',');
+    printSpeedCms(scaleRoundToInt16(vehicle.getWheelSoll(HiRe)));   Serial.print(',');
+    printSpeedCms(v3_ist_cms);                                      Serial.print(',');
     Serial.println(pwm3);
 #else
     (void)vehicle;
@@ -4584,10 +4782,10 @@ FILE: C:\Users\Acer\source\repos\robot\5_System\src\TelemetryPrinterConfig.h
 #define PRINTER_ENABLE_INFO     0
 #define PRINTER_ENABLE_ERRORS   0
 #define PRINTER_ENABLE_EVENTS   0
-#define PRINTER_ENABLE_ODOM     0
-#define PRINTER_ENABLE_COUNTS   1
+#define PRINTER_ENABLE_ODOM     1
+#define PRINTER_ENABLE_COUNTS   0
 
-#define PRINTER_ENABLE_WHEELS   0
+#define PRINTER_ENABLE_WHEELS   1
 #define PRINTER_ENABLE_CHASSIS  0
 
 #endif // PRINTER_CONFIG_H
@@ -5236,12 +5434,12 @@ RearFrameRequest FrontApp::makeRearFrameRequest(uint32_t frameTime, bool resetPi
     request.resetPi = resetPi;
 
     request.voLi_s_cms = scaleRoundToInt16(commandRunner.getWheelSoll(VoLi));
-    request.voLi_i_cms = scaleRoundToInt16(wheelMeasurements[Li].cms());
+    request.voLi_i_cms = wheelMeasurements[Li].cmsInt();
     request.voLi_pwm = rad[Li].lastPwm();
     request.voLiCnt = (int32_t)wheelMeasurements[Li].counts_total();
 
     request.voRe_s_cms = scaleRoundToInt16(commandRunner.getWheelSoll(VoRe));
-    request.voRe_i_cms = scaleRoundToInt16(wheelMeasurements[Re].cms());
+    request.voRe_i_cms = wheelMeasurements[Re].cmsInt();
     request.voRe_pwm = rad[Re].lastPwm();
     request.voReCnt = (int32_t)wheelMeasurements[Re].counts_total();
 

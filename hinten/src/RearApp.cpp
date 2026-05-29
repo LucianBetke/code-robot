@@ -1,9 +1,15 @@
 // RearApp.cpp
 #include "RearApp.h"
 
+#include <avr/wdt.h>
+
 #include "src/CommProtocol.h"
+#include "src/Hardware.h"
+#include "src/HardwarePins.h"
 #include "src/RadControl.h"
 #include "src/RadControlConfig.h"
+
+static const uint8_t REAR_SYNC_INPUT_PIN = 3;
 
 RearApp::RearApp()
     : uart(Serial, false),
@@ -15,10 +21,35 @@ RearApp::RearApp()
 {
 }
 
-void RearApp::begin()
+void RearApp::begin(void (*syncCallback)())
 {
+    wdt_disable();
+
+    Serial.begin(115200);
+
+    hardware_begin(PinsRear::PINS);
+    radControl_begin(ConfigRear::CONFIG);
+    wheelMeasurement_reset_all();
+
     uart.begin();
     conn.begin(false);
+
+    hardware_enableMotors();
+
+    pinMode(REAR_SYNC_INPUT_PIN, INPUT);
+    attachInterrupt(digitalPinToInterrupt(REAR_SYNC_INPUT_PIN), syncCallback, RISING);
+}
+
+void RearApp::update(uint32_t now)
+{
+    updateCommunication();
+    updateConnectionSafety(now);
+    updateVsolTimeout(now);
+    handleIncomingVsol(now);
+
+    radControl_update(now);
+
+    handleSyncVist();
 }
 
 void RearApp::updateCommunication()

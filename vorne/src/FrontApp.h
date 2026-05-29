@@ -20,13 +20,16 @@
 //
 // Konkrete Anwendung fuer den Front-Nano.
 //
-// Wichtig:
-//  - Kein Regler.
-//  - Keine allgemeine Systemklasse.
-//  - Front-spezifische Ablaufsteuerung.
+// Aufgabe:
+//  - Initialisierung des Front-Nanos kapseln.
+//  - Loop-Ablauf des Front-Nanos kapseln.
+//  - Verbindung, Fahrbefehle, lokale Radregelung, Rear-Frames,
+//    Odometrie und Telemetrie koordinieren.
 //
-// Die .ino darf den Ablauf sichtbar behalten.
-// Deshalb sind die Hauptmodule hier bewusst oeffentlich.
+// Wichtig:
+//  - Keine Radregelung.
+//  - Keine Motor-/Encoder-Implementierung.
+//  - Keine Chassisregelung in diesem Paket.
 // ============================================================
 
 class FrontApp
@@ -34,10 +37,12 @@ class FrontApp
 public:
     FrontApp();
 
-    // --------------------------------------------------------
-    // Sichtbare Hauptmodule fuer setup()
-    // --------------------------------------------------------
+    void begin();
+    void update(uint32_t now);
 
+    bool isConnected() const;
+
+private:
     VehicleController vehicle;
     MecanumOdometer odometer;
 
@@ -49,9 +54,7 @@ public:
     FrameScheduler frameScheduler;
     TelemetryPrinter printer;
 
-    // --------------------------------------------------------
-    // Sichtbare loop()-Schritte fuer vorne.ino
-    // --------------------------------------------------------
+    bool _odomResetPending;
 
     void updateCommunication();
     void updateConnectionSafety(uint32_t now);
@@ -62,11 +65,6 @@ public:
     void updateLogRaster(uint32_t now);
     void updateVehicleAndFrontControl(uint32_t now);
     void updateRearStopSequence(uint32_t now);
-
-    bool isConnected() const;
-
-private:
-    bool _odomResetPending;
 
     void resetByWatchdog();
 

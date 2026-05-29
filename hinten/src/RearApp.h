@@ -12,17 +12,10 @@ class RearApp
 public:
     RearApp();
 
-    void begin();
-    void updateCommunication();
-
-    void stopRearWheels();
-    void updateConnectionSafety(uint32_t now);
-    void updateVsolTimeout(uint32_t now);
-
-    void handleIncomingVsol(uint32_t now);
+    void begin(void (*syncCallback)());
+    void update(uint32_t now);
 
     void onSyncPulseFromIsr();
-    void handleSyncVist();
 
 private:
     UartLink uart;
@@ -33,6 +26,15 @@ private:
 
     bool rearSollActive;
     volatile bool syncFlag;
+
+    void updateCommunication();
+
+    void stopRearWheels();
+    void updateConnectionSafety(uint32_t now);
+    void updateVsolTimeout(uint32_t now);
+
+    void handleIncomingVsol(uint32_t now);
+    void handleSyncVist();
 };
 
 #endif // REAR_APP_H
