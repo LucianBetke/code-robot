@@ -4,7 +4,7 @@
 
 #include "CommandRunner.h"
 
-#include "src/PrinterConfig.h"
+#include "src/TelemetryPrinterConfig.h"
 #include "src/RobotConfig.h"
 #include "src/ScaleUtils.h"
 

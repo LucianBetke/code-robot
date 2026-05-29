@@ -2,7 +2,7 @@
 #define HARDWARE_H
 #include <Arduino.h>
 #include "src/RobotConfig.h"
-#include "src/hardware_pins.h"
+#include "src/HardwarePins.h"
 
 class Enc;
 class Motor;

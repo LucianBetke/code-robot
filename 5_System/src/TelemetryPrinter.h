@@ -1,5 +1,5 @@
-#ifndef PRINTER_H
-#define PRINTER_H
+#ifndef TELEMETRY_PRINTER_H
+#define TELEMETRY_PRINTER_H
 
 #include <Arduino.h>
 #include "src/RobotConfig.h"
@@ -7,7 +7,7 @@
 #include "src/RadControl.h"
 #include "src/RadControlConfig.h"
 #include "src/RearFrameClient.h"
-#include "PrinterConfig.h"
+#include "TelemetryPrinterConfig.h"
 
 class MecanumOdometer;
 
