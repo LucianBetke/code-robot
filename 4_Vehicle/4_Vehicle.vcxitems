@@ -14,12 +14,14 @@
     <ProjectCapability Include="SourceItemsFromImports" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="$(MSBuildThisFileDirectory)src\ChassisController.cpp" />
     <ClCompile Include="$(MSBuildThisFileDirectory)src\MecanumKinematics.cpp" />
     <ClCompile Include="$(MSBuildThisFileDirectory)src\MecanumOdometer.cpp" />
     <ClCompile Include="$(MSBuildThisFileDirectory)src\VehicleController.cpp" />
     <ClCompile Include="$(MSBuildThisFileDirectory)src\VehiclePIController.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="$(MSBuildThisFileDirectory)src\ChassisController.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)src\MecanumKinematics.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)src\MecanumOdometer.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)src\VehicleControlConfig.h" />

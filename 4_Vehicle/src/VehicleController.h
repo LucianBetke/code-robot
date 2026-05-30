@@ -12,6 +12,7 @@
 #include "src/ControlTypes.h"
 #include "src/VehicleControlConfig.h"
 #include "VehiclePIController.h"
+#include "ChassisController.h"
 
 class VehicleController
 {
@@ -60,6 +61,8 @@ private:
     float _wheelSoll[WHEEL_VEHICLE_COUNT] = { 0 };
 
     VehiclePIController _regler;
+    ChassisController _chassis;
+
     uint32_t _lastUpdateMs = 0;
 
     bool _turnOnly = false;

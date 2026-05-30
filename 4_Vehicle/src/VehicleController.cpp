@@ -24,6 +24,9 @@ void VehicleController::begin(float Kp_vx, float Ki_vx,
 {
     _regler.setParams(Kp_vx, Ki_vx, Kp_vy, Ki_vy, Kp_wz, Ki_wz);
     _regler.reset();
+
+    _chassis.reset();
+
     _lastUpdateMs = 0;
     _turnOnly = false;
 }
@@ -55,7 +58,25 @@ void VehicleController::cmd(float vx_cms, float vy_cms, float wz_rad_s)
     _vy = vy_cms;
     _wz = wz_rad_s;
 
-    applyMixer(_vx, _vy, _wz);
+    float vx_chassis = 0.0f;
+    float vy_chassis = 0.0f;
+    float wz_chassis = 0.0f;
+
+    _chassis.update(
+        _vx,
+        _vy,
+        _wz,
+        vx_chassis,
+        vy_chassis,
+        wz_chassis
+    );
+
+    if (!_turnOnly)
+    {
+        MecanumKinematics::limitTranslation(vx_chassis, vy_chassis);
+    }
+
+    applyMixer(vx_chassis, vy_chassis, wz_chassis);
 }
 
 void VehicleController::applyDriveMode(float& vx_cms, float& vy_cms, float wz_rad_s)
@@ -87,7 +108,26 @@ void VehicleController::update(uint32_t now)
     if (_lastUpdateMs == 0)
     {
         _lastUpdateMs = now;
-        applyMixer(_vx, _vy, _wz);
+
+        float vx_chassis = 0.0f;
+        float vy_chassis = 0.0f;
+        float wz_chassis = 0.0f;
+
+        _chassis.update(
+            _vx,
+            _vy,
+            _wz,
+            vx_chassis,
+            vy_chassis,
+            wz_chassis
+        );
+
+        if (!_turnOnly)
+        {
+            MecanumKinematics::limitTranslation(vx_chassis, vy_chassis);
+        }
+
+        applyMixer(vx_chassis, vy_chassis, wz_chassis);
         return;
     }
 
@@ -95,6 +135,19 @@ void VehicleController::update(uint32_t now)
 
     uint16_t dt_ms = (uint16_t)(now - _lastUpdateMs);
     _lastUpdateMs = now;
+
+    float vx_chassis = 0.0f;
+    float vy_chassis = 0.0f;
+    float wz_chassis = 0.0f;
+
+    _chassis.update(
+        _vx,
+        _vy,
+        _wz,
+        vx_chassis,
+        vy_chassis,
+        wz_chassis
+    );
 
     float vx_korr = 0.0f;
     float vy_korr = 0.0f;
@@ -104,13 +157,15 @@ void VehicleController::update(uint32_t now)
     {
         vx_korr = 0.0f;
         vy_korr = 0.0f;
-        wz_korr = _regler.updateWz(_wz, _wz_ist, dt_ms);
+        wz_korr = _regler.updateWz(wz_chassis, _wz_ist, dt_ms);
     }
     else
     {
-        vx_korr = _regler.updateVx(_vx, _vx_ist, dt_ms);
-        vy_korr = _regler.updateVy(_vy, _vy_ist, dt_ms);
-        wz_korr = _regler.updateWz(_wz, _wz_ist, dt_ms);
+        MecanumKinematics::limitTranslation(vx_chassis, vy_chassis);
+
+        vx_korr = _regler.updateVx(vx_chassis, _vx_ist, dt_ms);
+        vy_korr = _regler.updateVy(vy_chassis, _vy_ist, dt_ms);
+        wz_korr = _regler.updateWz(wz_chassis, _wz_ist, dt_ms);
 
         MecanumKinematics::limitTranslation(vx_korr, vy_korr);
     }
@@ -137,6 +192,7 @@ void VehicleController::stop()
     _turnOnly = false;
 
     _regler.reset();
+    _chassis.reset();
 
     for (int i = 0; i < WHEEL_VEHICLE_COUNT; i++)
     {
