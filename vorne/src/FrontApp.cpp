@@ -339,25 +339,27 @@ void FrontApp::updateOdometerFromCompletedFrame()
 {
     const RearPendingFrame& frame = rearFrameClient.frame();
 
+    WheelCounts counts = {};
+
+    // Uebersetzung Frame-Counts -> Fahrzeug-Radordnung:
+    //   v[VoRe] = vorne rechts
+    //   v[VoLi] = vorne links
+    //   v[HiLi] = hinten links
+    //   v[HiRe] = hinten rechts
+    counts.v[VoRe] = frame.voReCnt;
+    counts.v[VoLi] = frame.voLiCnt;
+    counts.v[HiLi] = frame.hiLiCnt;
+    counts.v[HiRe] = frame.hiReCnt;
+
     if (_odomResetPending || !odometer.isPrimed())
     {
-        odometer.reset(
-            frame.voReCnt,
-            frame.voLiCnt,
-            frame.hiLiCnt,
-            frame.hiReCnt
-        );
+        odometer.reset(counts);
 
         _odomResetPending = false;
         return;
     }
 
-    odometer.update(
-        frame.voReCnt,
-        frame.voLiCnt,
-        frame.hiLiCnt,
-        frame.hiReCnt
-    );
+    odometer.update(counts);
 }
 
 RearFrameRequest FrontApp::makeRearFrameRequest(uint32_t frameTime, bool resetPi)

@@ -5,14 +5,10 @@
 #include "MecanumOdometer.h"
 
 #include <math.h>
-#include "src/RobotConfig.h"
 
 MecanumOdometer::MecanumOdometer()
     : _primed(false),
-    _lastVoReCnt(0),
-    _lastVoLiCnt(0),
-    _lastHiLiCnt(0),
-    _lastHiReCnt(0),
+    _lastCounts{ 0, 0, 0, 0 },
     _x_mm(0.0f),
     _y_mm(0.0f),
     _abs_mm(0.0f),
@@ -20,18 +16,14 @@ MecanumOdometer::MecanumOdometer()
 {
 }
 
-void MecanumOdometer::reset(
-    int32_t voReCnt,
-    int32_t voLiCnt,
-    int32_t hiLiCnt,
-    int32_t hiReCnt)
+void MecanumOdometer::reset(const WheelCounts& counts)
 {
     _primed = true;
 
-    _lastVoReCnt = voReCnt;
-    _lastVoLiCnt = voLiCnt;
-    _lastHiLiCnt = hiLiCnt;
-    _lastHiReCnt = hiReCnt;
+    for (uint8_t i = 0; i < WHEEL_VEHICLE_COUNT; i++)
+    {
+        _lastCounts[i] = (int32_t)counts.v[i];
+    }
 
     _x_mm = 0.0f;
     _y_mm = 0.0f;
@@ -39,32 +31,26 @@ void MecanumOdometer::reset(
     _phi_rad = 0.0f;
 }
 
-bool MecanumOdometer::update(
-    int32_t voReCnt,
-    int32_t voLiCnt,
-    int32_t hiLiCnt,
-    int32_t hiReCnt)
+bool MecanumOdometer::update(const WheelCounts& counts)
 {
     if (!_primed)
     {
-        reset(voReCnt, voLiCnt, hiLiCnt, hiReCnt);
+        reset(counts);
         return false;
     }
 
-    const int32_t dVoReCnt = voReCnt - _lastVoReCnt;
-    const int32_t dVoLiCnt = voLiCnt - _lastVoLiCnt;
-    const int32_t dHiLiCnt = hiLiCnt - _lastHiLiCnt;
-    const int32_t dHiReCnt = hiReCnt - _lastHiReCnt;
+    int32_t dCounts[WHEEL_VEHICLE_COUNT];
 
-    _lastVoReCnt = voReCnt;
-    _lastVoLiCnt = voLiCnt;
-    _lastHiLiCnt = hiLiCnt;
-    _lastHiReCnt = hiReCnt;
+    for (uint8_t i = 0; i < WHEEL_VEHICLE_COUNT; i++)
+    {
+        dCounts[i] = (int32_t)counts.v[i] - _lastCounts[i];
+        _lastCounts[i] = (int32_t)counts.v[i];
+    }
 
-    const float dVoRe = countsToMm(dVoReCnt);
-    const float dVoLi = countsToMm(dVoLiCnt);
-    const float dHiLi = countsToMm(dHiLiCnt);
-    const float dHiRe = countsToMm(dHiReCnt);
+    const float dVoRe = countsToMm(dCounts[VoRe]);
+    const float dVoLi = countsToMm(dCounts[VoLi]);
+    const float dHiLi = countsToMm(dCounts[HiLi]);
+    const float dHiRe = countsToMm(dCounts[HiRe]);
 
     // Vorwaertskinematik passend zu VehicleController::applyMixer():
     //

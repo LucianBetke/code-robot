@@ -1,9 +1,11 @@
 // ============================================================
 // File: MecanumOdometer.h
 // Zweck:
-//  - Mecanum-Odometrie aus vier Rad-Encoderständen
+//  - Mecanum-Odometrie aus vier Rad-Encoderstaenden
 //  - Berechnet x/y/phi aus Radwegen
 //  - Grundlage fuer CMDP(vx, vy, wz) p
+//  - Radreihenfolge kommt aus RobotConfig.h / WheelValues.h:
+//      VoRe, VoLi, HiLi, HiRe
 // ============================================================
 
 #ifndef MECANUM_ODOMETER_H
@@ -11,22 +13,17 @@
 
 #include <stdint.h>
 
+#include "src/RobotConfig.h"
+#include "src/WheelValues.h"
+
 class MecanumOdometer
 {
 public:
     MecanumOdometer();
 
-    void reset(
-        int32_t voReCnt,
-        int32_t voLiCnt,
-        int32_t hiLiCnt,
-        int32_t hiReCnt);
+    void reset(const WheelCounts& counts);
 
-    bool update(
-        int32_t voReCnt,
-        int32_t voLiCnt,
-        int32_t hiLiCnt,
-        int32_t hiReCnt);
+    bool update(const WheelCounts& counts);
 
     bool isPrimed() const { return _primed; }
 
@@ -46,10 +43,7 @@ private:
 
     bool _primed;
 
-    int32_t _lastVoReCnt;
-    int32_t _lastVoLiCnt;
-    int32_t _lastHiLiCnt;
-    int32_t _lastHiReCnt;
+    int32_t _lastCounts[WHEEL_VEHICLE_COUNT];
 
     float _x_mm;
     float _y_mm;
