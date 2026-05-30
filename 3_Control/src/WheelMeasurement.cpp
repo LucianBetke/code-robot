@@ -71,14 +71,25 @@ void WheelMeasurement::update(uint32_t now_ms)
 
 void WheelMeasurement::updateFromTicks(int16_t dcounts, uint32_t now_ms)
 {
+    // Gesamtcounts muessen den ersten Tick nach reset() mitzaehlen.
+    // Diese Werte werden fuer Odometrie / Plot gebraucht.
     _counts_total += dcounts;
-    _acc_counts += dcounts;
 
+    // Beim ersten Tick nach reset() oder Timeout existiert noch kein
+    // gueltiges Zeitfenster fuer eine Geschwindigkeitsberechnung.
+    //
+    // Wichtig:
+    //  - Der erste Tick wird fuer counts_total behalten.
+    //  - Der erste Tick wird NICHT in _acc_counts uebernommen.
+    //  - Dadurch entsteht kein kuenstlicher Startsprung in v_ist.
     if (_last_time_ms == 0)
     {
+        _acc_counts = 0;
         _last_time_ms = now_ms;
         return;
     }
+
+    _acc_counts += dcounts;
 
     const uint32_t dt_ms = now_ms - _last_time_ms;
 
@@ -108,6 +119,11 @@ void WheelMeasurement::timeoutCheck(uint32_t now_ms)
     if ((uint32_t)(now_ms - _last_tick_ms) > SPEED_TIMEOUT_MS)
     {
         _rps_filt = 0.0f;
+
+        // Das aktuelle Geschwindigkeitsfenster ist nach Timeout ungueltig.
+        // Beim naechsten Tick wird wieder nur eine neue Zeitreferenz gesetzt.
+        _acc_counts = 0;
+        _last_time_ms = 0;
     }
 }
 
