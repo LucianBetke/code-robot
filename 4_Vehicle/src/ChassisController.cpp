@@ -1,11 +1,22 @@
 // ============================================================
 // File: ChassisController.cpp
 // Zweck:
-//  - Paket 4: Chassis-Istwerte aufnehmen
-//  - Noch keine Chassisregelung aktiv
+//  - Paket 5: erste Chassisregelung
+//  - phi-Fehler erzeugt wz-Korrektur
+//
+// Regelidee:
+//  - Odometrie wird bei CMDP-Start genullt.
+//  - Gewuenschte Verdrehung im Fahrabschnitt: phi_soll = 0 rad
+//  - Fehler: e_phi = phi_soll - phi_ist = -phi_ist
+//  - Korrektur: wz_phi = Kp_phi * e_phi = -Kp_phi * phi_ist
 // ============================================================
 
 #include "ChassisController.h"
+#include "ChassisControlConfig.h"
+
+#include <math.h>
+
+static const float CHASSIS_WZ_COMMAND_EPS = 0.0001f;
 
 void ChassisController::reset()
 {
@@ -28,10 +39,58 @@ void ChassisController::update(
     float& vy_out_cms,
     float& wz_out_rad_s)
 {
-    // Noch neutraler Durchschleifbetrieb.
-    // Die gespeicherten Chassis-Istwerte beeinflussen vx/vy/wz noch nicht.
-
     vx_out_cms = vx_soll_cms;
     vy_out_cms = vy_soll_cms;
-    wz_out_rad_s = wz_soll_rad_s;
+
+    const float wz_phi = calculatePhiCorrection(wz_soll_rad_s);
+
+    wz_out_rad_s = wz_soll_rad_s + wz_phi;
+}
+
+float ChassisController::calculatePhiCorrection(float wz_soll_rad_s) const
+{
+    const ChassisControlConfig& cfg = ConfigChassisFront::CONFIG;
+
+    if (!cfg.phiControlEnabled)
+    {
+        return 0.0f;
+    }
+
+    // Wenn eine Drehung bewusst vorgegeben ist, darf der phi-Regler
+    // diese Drehung nicht auf phi = 0 zurueckregeln.
+    if (fabsf(wz_soll_rad_s) > CHASSIS_WZ_COMMAND_EPS)
+    {
+        return 0.0f;
+    }
+
+    const float phi = _state.phi_rad;
+
+    if (fabsf(phi) < cfg.phiDeadband_rad)
+    {
+        return 0.0f;
+    }
+
+    const float wz_phi = -cfg.Kp_phi * phi;
+
+    return limitSymmetric(wz_phi, cfg.maxWzCorrection_rad_s);
+}
+
+float ChassisController::limitSymmetric(float value, float limitAbs)
+{
+    if (limitAbs <= 0.0f)
+    {
+        return 0.0f;
+    }
+
+    if (value > limitAbs)
+    {
+        return limitAbs;
+    }
+
+    if (value < -limitAbs)
+    {
+        return -limitAbs;
+    }
+
+    return value;
 }

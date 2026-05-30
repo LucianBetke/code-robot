@@ -1,10 +1,9 @@
 // ============================================================
 // File: ChassisController.h
 // Zweck:
-//  - Spaeterer aeusserer Chassis-Regler
-//  - Korrigiert spaeter vx/vy/wz anhand von Chassisfehlern
-//  - In diesem Paket bekommt er zunaechst nur Chassis-Istwerte
-//  - Noch keine Regelwirkung aktiv
+//  - Aeusserer Chassis-Regler
+//  - Korrigiert vx/vy/wz anhand von Chassisfehlern
+//  - Paket 5: erste echte Regelwirkung phi -> wz
 //
 // Einheiten:
 //  - vx/vy: cm/s
@@ -45,6 +44,9 @@ public:
     float phiRad() const { return _state.phi_rad; }
 
 private:
+    float calculatePhiCorrection(float wz_soll_rad_s) const;
+    static float limitSymmetric(float value, float limitAbs);
+
     ChassisState _state;
 };
 
