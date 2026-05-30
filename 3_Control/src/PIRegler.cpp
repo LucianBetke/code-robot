@@ -10,6 +10,21 @@
 #include "PIRegler.h"
 #include <Arduino.h>
 
+static void normalizePwmLimits(int16_t configuredMin, int16_t configuredMax,
+    int16_t& pwmMin, int16_t& pwmMax)
+{
+    if (configuredMin <= configuredMax)
+    {
+        pwmMin = configuredMin;
+        pwmMax = configuredMax;
+    }
+    else
+    {
+        pwmMin = configuredMax;
+        pwmMax = configuredMin;
+    }
+}
+
 PIRegler::PIRegler(float Kp, float Ki,
     int16_t uMin, int16_t uMax,
     int16_t slewLimit)
@@ -22,8 +37,12 @@ PIRegler::PIRegler(float Kp, float Ki,
 {
 }
 
-int16_t PIRegler::update(float v_ist, uint16_t dt_ms) {
-    if (dt_ms == 0) { return _uPrev; }
+int16_t PIRegler::update(float v_ist, uint16_t dt_ms)
+{
+    if (dt_ms == 0)
+    {
+        return _uPrev;
+    }
 
     // --- Fehler ---
     const float e = _v_soll - v_ist;
@@ -39,12 +58,13 @@ int16_t PIRegler::update(float v_ist, uint16_t dt_ms) {
     const float p_part = _Kp * e;
     const float u_pre = p_part + _integral;
 
-    // --- Begrenzen (Sättigung) ---
-    const float u_limited = constrain(u_pre, uMinNorm, uMaxNorm);
-
-    // --- Anti-Windup: Clamping (Integrator nur, wenn nicht gesättigt) ---
+    // --- Anti-Windup: Clamping ---
+    // Integrator nur weiterführen, solange der unbegrenzte Ausgang
+    // noch nicht außerhalb des erlaubten Bereichs liegt.
     const bool saturated = (u_pre <= uMinNorm) || (u_pre >= uMaxNorm);
-    if (!saturated) {
+
+    if (!saturated)
+    {
         _integral += _Ki * e * dt_s;
     }
 
@@ -54,22 +74,26 @@ int16_t PIRegler::update(float v_ist, uint16_t dt_ms) {
 
     // --- PWM signed in [-255..+255] ---
     float pwm_f = u * 255.0f;
-    if (pwm_f >= 0.0f) pwm_f += 0.5f;
-    else               pwm_f -= 0.5f;
+
+    if (pwm_f >= 0.0f)
+    {
+        pwm_f += 0.5f;
+    }
+    else
+    {
+        pwm_f -= 0.5f;
+    }
 
     int16_t pwm = (int16_t)pwm_f;
 
-    // --- Grenzen: signed ---
-    int16_t pwmMax = _uMax;
-    int16_t pwmMin = _uMin;
-
-    if (pwmMax < 0) pwmMax = (int16_t)(-pwmMax);
-    if (pwmMin > 0) pwmMin = (int16_t)(-pwmMax);
-    if (pwmMin >= 0) pwmMin = (int16_t)(-pwmMax);
+    // --- Grenzen: signed, robust gegen vertauschte Parameter ---
+    int16_t pwmMin;
+    int16_t pwmMax;
+    normalizePwmLimits(_uMin, _uMax, pwmMin, pwmMax);
 
     pwm = constrain(pwm, pwmMin, pwmMax);
 
-    // --- Slewrate ---
+    // --- Slew-Rate ---
     pwm = applySlew(pwm);
 
     return pwm;
@@ -79,42 +103,65 @@ int16_t PIRegler::applySlew(int16_t pwm)
 {
     const int16_t du = pwm - _uPrev;
 
-    if (du > _slewLimit)        pwm = _uPrev + _slewLimit;
-    else if (du < -_slewLimit)  pwm = _uPrev - _slewLimit;
+    if (du > _slewLimit)
+    {
+        pwm = _uPrev + _slewLimit;
+    }
+    else if (du < -_slewLimit)
+    {
+        pwm = _uPrev - _slewLimit;
+    }
 
     _uPrev = pwm;
     return pwm;
 }
 
-void PIRegler::presetOutput(float u0_pwm) {
-    int16_t pwmMax = _uMax;
-    int16_t pwmMin = _uMin;
+void PIRegler::presetOutput(float u0_pwm)
+{
+    // --- Grenzen: signed, robust gegen vertauschte Parameter ---
+    int16_t pwmMin;
+    int16_t pwmMax;
+    normalizePwmLimits(_uMin, _uMax, pwmMin, pwmMax);
 
-    if (pwmMax < 0) pwmMax = (int16_t)(-pwmMax);
-    if (pwmMin >= 0) pwmMin = (int16_t)(-pwmMax);
+    if (u0_pwm > (float)pwmMax)
+    {
+        u0_pwm = (float)pwmMax;
+    }
 
-    if (u0_pwm > (float)pwmMax) u0_pwm = (float)pwmMax;
-    if (u0_pwm < (float)pwmMin) u0_pwm = (float)pwmMin;
+    if (u0_pwm < (float)pwmMin)
+    {
+        u0_pwm = (float)pwmMin;
+    }
 
     const float u0_norm = u0_pwm / 255.0f;
     _integral = u0_norm;
 
     float pwm_f = u0_pwm;
-    if (pwm_f >= 0.0f) pwm_f += 0.5f;
-    else               pwm_f -= 0.5f;
+
+    if (pwm_f >= 0.0f)
+    {
+        pwm_f += 0.5f;
+    }
+    else
+    {
+        pwm_f -= 0.5f;
+    }
 
     _uPrev = (int16_t)pwm_f;
 }
 
-void PIRegler::setSoll(float v_soll) {
+void PIRegler::setSoll(float v_soll)
+{
     _v_soll = v_soll;
 }
 
-float PIRegler::soll() const {
+float PIRegler::soll() const
+{
     return _v_soll;
 }
 
-void PIRegler::reset() {
+void PIRegler::reset()
+{
     _integral = 0.0f;
     _uPrev = 0;
 }
