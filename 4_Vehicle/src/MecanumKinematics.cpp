@@ -83,19 +83,21 @@ void MecanumKinematics::inverse(
 }
 
 void MecanumKinematics::forward(
-    float v0_cms,
-    float v1_cms,
-    float v2_cms,
-    float v3_cms,
+    const WheelSpeedCms& wheelIst,
     float& vx_cms,
     float& vy_cms,
     float& wz_rad_s)
 {
-    vx_cms = (v0_cms + v1_cms + v2_cms + v3_cms) / 4.0f;
+    const float voRe_cms = wheelIst.v[VoRe];
+    const float voLi_cms = wheelIst.v[VoLi];
+    const float hiLi_cms = wheelIst.v[HiLi];
+    const float hiRe_cms = wheelIst.v[HiRe];
 
-    vy_cms = (v0_cms - v1_cms + v2_cms - v3_cms) / 4.0f;
+    vx_cms = (voRe_cms + voLi_cms + hiLi_cms + hiRe_cms) / 4.0f;
+
+    vy_cms = (voRe_cms - voLi_cms + hiLi_cms - hiRe_cms) / 4.0f;
 
     wz_rad_s =
-        (v0_cms - v1_cms - v2_cms + v3_cms) /
+        (voRe_cms - voLi_cms - hiLi_cms + hiRe_cms) /
         (4.0f * MECANUM_K_CM);
 }

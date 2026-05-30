@@ -14,9 +14,6 @@
     <ProjectCapability Include="SourceItemsFromImports" />
   </ItemGroup>
   <ItemGroup>
-    <Text Include="$(MSBuildThisFileDirectory)readme.txt" />
-  </ItemGroup>
-  <ItemGroup>
     <ClCompile Include="$(MSBuildThisFileDirectory)src\Encoder.cpp" />
     <ClCompile Include="$(MSBuildThisFileDirectory)src\Hardware.cpp" />
     <ClCompile Include="$(MSBuildThisFileDirectory)src\Motor.cpp" />

@@ -14,6 +14,7 @@
 #define MECANUM_KINEMATICS_H
 
 #include "src/RobotConfig.h"
+#include "src/WheelValues.h"
 
 class MecanumKinematics
 {
@@ -27,14 +28,10 @@ public:
         float wheelSoll[WHEEL_VEHICLE_COUNT]);
 
     static void forward(
-        float v0_cms,
-        float v1_cms,
-        float v2_cms,
-        float v3_cms,
+        const WheelSpeedCms& wheelIst,
         float& vx_cms,
         float& vy_cms,
         float& wz_rad_s);
 };
 
 #endif // MECANUM_KINEMATICS_H
-

@@ -13,6 +13,7 @@
 #include "src/VehicleControlConfig.h"
 #include "src/TelemetryPrinterConfig.h"
 #include "src/ScaleUtils.h"
+#include "src/WheelValues.h"
 
 // ============================================================
 // Konstruktor
@@ -95,8 +96,6 @@ void FrontApp::updateConnectionSafety(uint32_t now)
     static bool prevConnected = false;
     const bool nowConnected = uart.isConnected();
 
-    // Verbindung verloren:
-    // Front sofort sicher stoppen und lokale Wartezustaende loeschen.
     if (prevConnected && !nowConnected)
     {
         vehicle.stop();
@@ -114,10 +113,6 @@ void FrontApp::updateConnectionSafety(uint32_t now)
         _odomResetPending = true;
     }
 
-    // Verbindung wieder da:
-    // Fahrskript bewusst neu starten.
-    // Wichtig: uart.begin() hier NICHT aufrufen, sonst wuerde man die
-    // gerade aufgebaute Verbindung sofort wieder zuruecksetzen.
     if (!prevConnected && nowConnected)
     {
         vehicle.stop();
@@ -191,8 +186,6 @@ void FrontApp::updateFrameTimeout(uint32_t now)
 
 void FrontApp::tryRequestFrame(uint32_t now)
 {
-    // Nur echte CMDP-Fahrabschnitte bekommen Messframes.
-    // Die Settle-Phase zwischen zwei CMDP-Befehlen darf keine WHEELS-Frames erzeugen.
     if (!commandRunner.hasActivePathCommand())
     {
         return;
@@ -213,10 +206,6 @@ void FrontApp::tryRequestFrame(uint32_t now)
 
 void FrontApp::updateCommandRunner(uint32_t now)
 {
-    // Solange noch VSOL_OK oder VIST offen ist, darf der CommandRunner
-    // nicht zum naechsten Befehl springen. Sonst geht der letzte Frame
-    // eines Befehls verloren.
-
     if (!uart.isConnected())
     {
         return;
@@ -235,16 +224,12 @@ void FrontApp::updateCommandRunner(uint32_t now)
     const bool isActive = commandRunner.isActive();
     const bool pathIsActive = commandRunner.hasActivePathCommand();
 
-    // Ein echter CMDP-Fahrabschnitt ist gerade beendet worden.
-    // Dann muss die Hinterachse sofort auf 0 gesetzt werden.
-    // Wichtig: sendStop() erzeugt keinen normalen Messframe.
     if (pathWasActive && !pathIsActive)
     {
         applyFrontWheelSoll();
         rearFrameClient.sendStop(Serial, now);
     }
 
-    // Startframe nur fuer echte CMDP-Fahrabschnitte, nicht fuer Settle.
     if (pathIsActive &&
         commandRunner.consumeStartFramePending())
     {
@@ -277,7 +262,6 @@ void FrontApp::updateLogRaster(uint32_t now)
     {
         rearFrameClient.cancelStopSequence();
 
-        // Fallback, falls ein aktiver Befehl ohne Startframe laufen sollte.
         if (!frameScheduler.isRunning())
         {
             frameScheduler.start(now);
@@ -337,12 +321,18 @@ void FrontApp::applyFrontWheelSoll()
 
 void FrontApp::updateVehicleIst()
 {
-    vehicle.updateIst(
-        wheelMeasurements[Re].cms(),
-        wheelMeasurements[Li].cms(),
-        (float)rearFrameClient.hiLiIstCms(),
-        (float)rearFrameClient.hiReIstCms()
-    );
+    WheelSpeedCms wheelIst = {};
+
+    // Uebersetzung lokale Front-Radordnung -> Fahrzeug-Radordnung:
+    //   Front lokal Re = VoRe
+    //   Front lokal Li = VoLi
+    //   Rear kommt bereits als HiLi / HiRe vom RearFrameClient.
+    wheelIst.v[VoRe] = wheelMeasurements[Re].cms();
+    wheelIst.v[VoLi] = wheelMeasurements[Li].cms();
+    wheelIst.v[HiLi] = (float)rearFrameClient.hiLiIstCms();
+    wheelIst.v[HiRe] = (float)rearFrameClient.hiReIstCms();
+
+    vehicle.updateIst(wheelIst);
 }
 
 void FrontApp::updateOdometerFromCompletedFrame()
@@ -402,8 +392,6 @@ void FrontApp::requestRearFrame(uint32_t now, uint32_t frameTime, bool resetPi)
         now,
         request
     );
-
-    // VIST wird erst nach VSOL_OK,<frameId> angefordert.
 }
 
 void FrontApp::requestStartFrameForNewCommand(uint32_t now)
@@ -418,19 +406,10 @@ void FrontApp::requestStartFrameForNewCommand(uint32_t now)
         return;
     }
 
-    // Neuer Fahrabschnitt:
-    // Odometrie wird beim ersten vollstaendigen Frame dieses Befehls
-    // auf die dann vorhandenen vier Encoderstaende genullt.
     _odomResetPending = true;
 
-    // Neuer echter Fahrabschnitt:
-    // Radmessung muss ebenfalls zurueckgesetzt werden,
-    // damit alte Tiefpasswerte nicht in den neuen CMDP-Abschnitt laufen.
     wheelMeasurement_reset_all();
 
-    // Front-PI einmalig zuruecksetzen.
-    // Rear-PI und Rear-Radmessung werden ueber resetPi=true im VSOL-Startframe
-    // zurueckgesetzt.
     radControl_resetPiStates();
 
     applyFrontWheelSoll();
@@ -440,7 +419,5 @@ void FrontApp::requestStartFrameForNewCommand(uint32_t now)
 
     frameScheduler.start(now);
 
-    // Startframe:
-    // t = 0, neue Sollwerte, resetPi=true fuer Rear.
     requestRearFrame(now, 0, true);
 }

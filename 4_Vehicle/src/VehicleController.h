@@ -10,6 +10,7 @@
 
 #include "src/RobotConfig.h"
 #include "src/ControlTypes.h"
+#include "src/WheelValues.h"
 #include "src/VehicleControlConfig.h"
 #include "VehiclePIController.h"
 #include "ChassisController.h"
@@ -25,7 +26,7 @@ public:
     void begin(const VehicleControlConfig& cfg);
 
     void cmd(float vx_cms, float vy_cms, float wz_rad_s);
-    void updateIst(float v0_cms, float v1_cms, float v2_cms, float v3_cms);
+    void updateIst(const WheelSpeedCms& wheelIst);
     void update(uint32_t now);
     void stop();
 

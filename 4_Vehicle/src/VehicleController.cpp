@@ -90,13 +90,10 @@ void VehicleController::applyDriveMode(float& vx_cms, float& vy_cms, float wz_ra
     }
 }
 
-void VehicleController::updateIst(float v0_cms, float v1_cms, float v2_cms, float v3_cms)
+void VehicleController::updateIst(const WheelSpeedCms& wheelIst)
 {
     MecanumKinematics::forward(
-        v0_cms,
-        v1_cms,
-        v2_cms,
-        v3_cms,
+        wheelIst,
         _vx_ist,
         _vy_ist,
         _wz_ist
