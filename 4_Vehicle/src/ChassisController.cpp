@@ -1,7 +1,7 @@
 // ============================================================
 // File: ChassisController.cpp
 // Zweck:
-//  - Neutraler Durchschleifblock fuer Paket 3
+//  - Paket 4: Chassis-Istwerte aufnehmen
 //  - Noch keine Chassisregelung aktiv
 // ============================================================
 
@@ -9,8 +9,15 @@
 
 void ChassisController::reset()
 {
-    // Noch kein interner Zustand.
-    // Spaeter kommen hier z. B. Integrator-Reset oder Fehlerzustand-Reset hin.
+    _state.x_body_cm = 0.0f;
+    _state.y_body_cm = 0.0f;
+    _state.path_cm = 0.0f;
+    _state.phi_rad = 0.0f;
+}
+
+void ChassisController::updateState(const ChassisState& state)
+{
+    _state = state;
 }
 
 void ChassisController::update(
@@ -21,8 +28,8 @@ void ChassisController::update(
     float& vy_out_cms,
     float& wz_out_rad_s)
 {
-    // Neutraler Durchschleifbetrieb.
-    // Fahrverhalten muss dadurch identisch zu vorher bleiben.
+    // Noch neutraler Durchschleifbetrieb.
+    // Die gespeicherten Chassis-Istwerte beeinflussen vx/vy/wz noch nicht.
 
     vx_out_cms = vx_soll_cms;
     vy_out_cms = vy_soll_cms;

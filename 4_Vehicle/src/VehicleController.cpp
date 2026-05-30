@@ -100,6 +100,11 @@ void VehicleController::updateIst(const WheelSpeedCms& wheelIst)
     );
 }
 
+void VehicleController::updateChassisState(const ChassisState& state)
+{
+    _chassis.updateState(state);
+}
+
 void VehicleController::update(uint32_t now)
 {
     if (_lastUpdateMs == 0)

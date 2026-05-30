@@ -27,6 +27,7 @@ public:
 
     void cmd(float vx_cms, float vy_cms, float wz_rad_s);
     void updateIst(const WheelSpeedCms& wheelIst);
+    void updateChassisState(const ChassisState& state);
     void update(uint32_t now);
     void stop();
 

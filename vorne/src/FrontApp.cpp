@@ -355,11 +355,25 @@ void FrontApp::updateOdometerFromCompletedFrame()
     {
         odometer.reset(counts);
 
+        ChassisState state = {};
+        state.x_body_cm = odometer.xCm();
+        state.y_body_cm = odometer.yCm();
+        state.path_cm = odometer.absCm();
+        state.phi_rad = odometer.phiRad();
+        vehicle.updateChassisState(state);
+
         _odomResetPending = false;
         return;
     }
 
     odometer.update(counts);
+
+    ChassisState state = {};
+    state.x_body_cm = odometer.xCm();
+    state.y_body_cm = odometer.yCm();
+    state.path_cm = odometer.absCm();
+    state.phi_rad = odometer.phiRad();
+    vehicle.updateChassisState(state);
 }
 
 RearFrameRequest FrontApp::makeRearFrameRequest(uint32_t frameTime, bool resetPi)
