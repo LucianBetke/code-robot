@@ -4,7 +4,7 @@
 # ============================================================
 
 # Serial-Verbindung
-DEFAULT_PORT = "COM7"
+DEFAULT_PORT = "COM6"
 DEFAULT_BAUD = 115200
 
 # Datenpuffer und Plot-Aktualisierung

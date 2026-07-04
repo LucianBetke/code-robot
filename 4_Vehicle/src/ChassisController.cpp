@@ -3,6 +3,7 @@
 // Zweck:
 //  - Paket 5: erste Chassisregelung
 //  - phi-Fehler erzeugt wz-Korrektur
+//  - Diagnose: letzter phi-Reglerausgang und Radbeitrag werden gespeichert
 //
 // Regelidee:
 //  - Odometrie wird bei CMDP-Start genullt.
@@ -13,6 +14,7 @@
 
 #include "ChassisController.h"
 #include "ChassisControlConfig.h"
+#include "src/RobotConfig.h"
 
 #include <math.h>
 
@@ -24,6 +26,9 @@ void ChassisController::reset()
     _state.y_body_cm = 0.0f;
     _state.path_cm = 0.0f;
     _state.phi_rad = 0.0f;
+
+    _lastPhiWzCorrectionRadS = 0.0f;
+    _lastPhiWheelDeltaCms = 0.0f;
 }
 
 void ChassisController::updateState(const ChassisState& state)
@@ -43,6 +48,9 @@ void ChassisController::update(
     vy_out_cms = vy_soll_cms;
 
     const float wz_phi = calculatePhiCorrection(wz_soll_rad_s);
+
+    _lastPhiWzCorrectionRadS = wz_phi;
+    _lastPhiWheelDeltaCms = MECANUM_K_CM * wz_phi;
 
     wz_out_rad_s = wz_soll_rad_s + wz_phi;
 }

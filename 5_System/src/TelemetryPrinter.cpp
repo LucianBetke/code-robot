@@ -1,5 +1,30 @@
 // ============================================================
 // File: TelemetryPrinter.cpp
+// Zweck:
+//  - Serielle Diagnoseausgabe fuer Front-Nano
+//  - WHEELS/CHASSIS/ODOM2-Ausgaben
+//  - Paket 5a:
+//      zusaetzliche #CHASSISDBG-Zeile zur Diagnose der
+//      phi -> wz-Korrektur
+//
+// Wichtige Diagnosezeile:
+//
+// #CHASSISDBG,t,phiDeg100,wzPhi1000,dvPhi100,hiLiSoll100,hiReSoll100,hiLiSend,hiReSend
+//
+// Bedeutung:
+//  - t              : Frame-Zeit [ms]
+//  - phiDeg100      : Chassiswinkel phi [deg] * 100
+//  - wzPhi1000      : phi-Reglerausgang [rad/s] * 1000
+//  - dvPhi100       : Radbeitrag der phi-Korrektur [cm/s] * 100
+//  - hiLiSoll100    : ungerundeter Sollwert HiLi [cm/s] * 100
+//  - hiReSoll100    : ungerundeter Sollwert HiRe [cm/s] * 100
+//  - hiLiSend       : tatsaechlich per VSOL gesendeter HiLi-Wert [cm/s]
+//  - hiReSend       : tatsaechlich per VSOL gesendeter HiRe-Wert [cm/s]
+//
+// Hinweis:
+//  - RAD_TO_DEG ist im Arduino-Core bereits als Makro definiert.
+//    Deshalb wird hier bewusst ein eigener Name benutzt:
+//    CHASSISDBG_RAD_TO_DEG
 // ============================================================
 
 #include "TelemetryPrinter.h"
@@ -17,6 +42,16 @@ namespace
     void printValue100(float value)
     {
         Serial.print(scaleFloatToInt100(value));
+    }
+
+    int16_t scaleFloatToInt1000Local(float value)
+    {
+        if (value >= 0.0f)
+        {
+            return (int16_t)(value * 1000.0f + 0.5f);
+        }
+
+        return (int16_t)(value * 1000.0f - 0.5f);
     }
 
     void printCountsFrame(
@@ -149,6 +184,47 @@ void TelemetryPrinter::printOdom2(
 
 #ifdef PRINTER_MODE_CHASSIS
 
+void TelemetryPrinter::printChassisDebug(
+    VehicleController& vehicle,
+    uint32_t t_ms,
+    int16_t hiLi_send_cms,
+    int16_t hiRe_send_cms)
+{
+#if PRINTER_ENABLE_CHASSIS
+    static const float CHASSISDBG_RAD_TO_DEG = 57.29577951308232f;
+
+    const float phi_deg = vehicle.chassisPhiRad() * CHASSISDBG_RAD_TO_DEG;
+    const float wz_phi_rad_s = vehicle.chassisPhiWzCorrectionRadS();
+    const float dv_phi_cms = vehicle.chassisPhiWheelDeltaCms();
+
+    Serial.print(F("#CHASSISDBG,"));
+    Serial.print(t_ms);                                                   Serial.print(',');
+
+    // phiDeg100: phi [deg] * 100
+    Serial.print(scaleFloatToInt100(phi_deg));                            Serial.print(',');
+
+    // wzPhi1000: phi-Reglerausgang [rad/s] * 1000
+    Serial.print(scaleFloatToInt1000Local(wz_phi_rad_s));                 Serial.print(',');
+
+    // dvPhi100: Radbeitrag aus phi-Korrektur [cm/s] * 100
+    Serial.print(scaleFloatToInt100(dv_phi_cms));                         Serial.print(',');
+
+    // ungerundete hintere Rad-Sollwerte [cm/s] * 100
+    Serial.print(scaleFloatToInt100(vehicle.getWheelSoll(HiLi)));         Serial.print(',');
+    Serial.print(scaleFloatToInt100(vehicle.getWheelSoll(HiRe)));         Serial.print(',');
+
+    // tatsaechlich per VSOL gesendete hintere Sollwerte [cm/s]
+    printSpeedCms(hiLi_send_cms);                                         Serial.print(',');
+    printSpeedCms(hiRe_send_cms);
+    Serial.println();
+#else
+    (void)vehicle;
+    (void)t_ms;
+    (void)hiLi_send_cms;
+    (void)hiRe_send_cms;
+#endif
+}
+
 void TelemetryPrinter::printWheels(
     VehicleController& vehicle,
     int16_t v2_ist_cms,
@@ -157,15 +233,15 @@ void TelemetryPrinter::printWheels(
 {
 #if PRINTER_ENABLE_CHASSIS
     Serial.print(F("#CHASSIS,"));
-    Serial.print(t_ms);                                      Serial.print(',');
+    Serial.print(t_ms);                                            Serial.print(',');
 
-    printSpeedCms(wheelMeasurements[Li].cmsInt());           Serial.print(',');
-    printSpeedCms(wheelMeasurements[Re].cmsInt());           Serial.print(',');
-    printSpeedCms(v2_ist_cms);                               Serial.print(',');
-    printSpeedCms(v3_ist_cms);                               Serial.print(',');
+    printSpeedCms(wheelMeasurements[Li].cmsInt());                 Serial.print(',');
+    printSpeedCms(wheelMeasurements[Re].cmsInt());                 Serial.print(',');
+    printSpeedCms(v2_ist_cms);                                     Serial.print(',');
+    printSpeedCms(v3_ist_cms);                                     Serial.print(',');
 
-    printSpeedCms(scaleRoundToInt16(vehicle.vxIst()));       Serial.print(',');
-    printSpeedCms(scaleRoundToInt16(vehicle.vyIst()));       Serial.print(',');
+    printSpeedCms(scaleRoundToInt16(vehicle.vxIst()));             Serial.print(',');
+    printSpeedCms(scaleRoundToInt16(vehicle.vyIst()));             Serial.print(',');
     printValue100(vehicle.wzIst());
     Serial.println();
 #else
@@ -186,15 +262,15 @@ void TelemetryPrinter::printFrame(
 {
 #if PRINTER_ENABLE_CHASSIS
     Serial.print(F("#CHASSIS,"));
-    Serial.print(t_ms);                                      Serial.print(',');
+    Serial.print(t_ms);                                            Serial.print(',');
 
-    printSpeedCms(voLi_i_cms);                               Serial.print(',');
-    printSpeedCms(voRe_i_cms);                               Serial.print(',');
-    printSpeedCms(hiLi_i_cms);                               Serial.print(',');
-    printSpeedCms(hiRe_i_cms);                               Serial.print(',');
+    printSpeedCms(voLi_i_cms);                                     Serial.print(',');
+    printSpeedCms(voRe_i_cms);                                     Serial.print(',');
+    printSpeedCms(hiLi_i_cms);                                     Serial.print(',');
+    printSpeedCms(hiRe_i_cms);                                     Serial.print(',');
 
-    printSpeedCms(scaleRoundToInt16(vehicle.vxIst()));       Serial.print(',');
-    printSpeedCms(scaleRoundToInt16(vehicle.vyIst()));       Serial.print(',');
+    printSpeedCms(scaleRoundToInt16(vehicle.vxIst()));             Serial.print(',');
+    printSpeedCms(scaleRoundToInt16(vehicle.vyIst()));             Serial.print(',');
     printValue100(vehicle.wzIst());
     Serial.println();
 #else
@@ -207,7 +283,7 @@ void TelemetryPrinter::printFrame(
 #endif
 }
 
-#endif
+#endif // PRINTER_MODE_CHASSIS
 
 #ifdef PRINTER_MODE_RAEDER
 
@@ -299,4 +375,4 @@ void TelemetryPrinter::printFrame(
 #endif
 }
 
-#endif
+#endif // PRINTER_MODE_RAEDER

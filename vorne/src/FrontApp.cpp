@@ -403,11 +403,23 @@ void FrontApp::requestRearFrame(uint32_t now, uint32_t frameTime, bool resetPi)
 {
     const RearFrameRequest request = makeRearFrameRequest(frameTime, resetPi);
 
-    rearFrameClient.requestFrame(
+    const bool sent = rearFrameClient.requestFrame(
         Serial,
         now,
         request
     );
+
+#if defined(PRINTER_MODE_CHASSIS) && PRINTER_ENABLE_CHASSIS
+    if (sent)
+    {
+        printer.printChassisDebug(
+            vehicle,
+            frameTime,
+            request.hiLi_s_cms,
+            request.hiRe_s_cms
+        );
+    }
+#endif
 }
 
 void FrontApp::requestStartFrameForNewCommand(uint32_t now)

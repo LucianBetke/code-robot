@@ -30,6 +30,12 @@ public:
         const MecanumOdometer& odom);
 
 #ifdef PRINTER_MODE_CHASSIS
+    void printChassisDebug(
+        VehicleController& vehicle,
+        uint32_t t_ms,
+        int16_t hiLi_send_cms,
+        int16_t hiRe_send_cms);
+
     void printWheels(
         VehicleController& vehicle,
         int16_t v2_ist_cms,

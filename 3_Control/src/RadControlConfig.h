@@ -27,12 +27,12 @@ namespace ConfigFront
     constexpr RadControlConfig CONFIG =
     {
         // deadPwm: Li, Re
-        { 70, 70 },
+        { 55, 70 },
 
         // PI-Parameter: Li, Re
         // Einheit Fehler: cm/s
         {
-            { 0.020f, 0.080f },   // Li: vorher 2.0 / 8.0 bei m/s
+            { 0.015f, 0.060f },   // Li = VoLi
             { 0.020f, 0.100f }    // Re: vorher 2.0 / 10.0 bei m/s
         }
     };
@@ -43,13 +43,13 @@ namespace ConfigRear
     constexpr RadControlConfig CONFIG =
     {
         // deadPwm: Li, Re
-        { 80, 60 },
+        { 80, 50 },
 
         // PI-Parameter: Li, Re
         // Einheit Fehler: cm/s
         {
             { 0.020f, 0.060f },   // Li: vorher 2.0 / 6.0 bei m/s
-            { 0.020f, 0.055f }    // Re: vorher 2.0 / 5.5 bei m/s
+            { 0.015f, 0.055f }   // Re = HiRe etwas sanfter
         }
     };
 }

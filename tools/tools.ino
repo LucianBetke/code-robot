@@ -26,8 +26,8 @@
 // DEADBAND (R,L), PI_SPRUNG (R,L), ENC_HAND(B)
 // REGEL(R,L,B)
 // RE, LI, BOTH
-constexpr TestMode MODE = TestMode::DEADBAND;
-constexpr Side     SIDE = Side::LI;
+constexpr TestMode MODE = TestMode::REGEL;
+constexpr Side     SIDE = Side::BOTH;
 
 // >>> Normierter Fahrbefehl (ux, uy, uOmega)
 // Wertebereich typ. -1 .. +1c

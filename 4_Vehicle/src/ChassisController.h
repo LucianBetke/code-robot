@@ -4,6 +4,7 @@
 //  - Aeusserer Chassis-Regler
 //  - Korrigiert vx/vy/wz anhand von Chassisfehlern
 //  - Paket 5: erste echte Regelwirkung phi -> wz
+//  - Diagnose: letzter phi-Reglerausgang wird gespeichert
 //
 // Einheiten:
 //  - vx/vy: cm/s
@@ -43,11 +44,17 @@ public:
     float pathCm() const { return _state.path_cm; }
     float phiRad() const { return _state.phi_rad; }
 
+    float lastPhiWzCorrectionRadS() const { return _lastPhiWzCorrectionRadS; }
+    float lastPhiWheelDeltaCms() const { return _lastPhiWheelDeltaCms; }
+
 private:
     float calculatePhiCorrection(float wz_soll_rad_s) const;
     static float limitSymmetric(float value, float limitAbs);
 
     ChassisState _state;
+
+    float _lastPhiWzCorrectionRadS = 0.0f;
+    float _lastPhiWheelDeltaCms = 0.0f;
 };
 
 #endif // CHASSIS_CONTROLLER_H

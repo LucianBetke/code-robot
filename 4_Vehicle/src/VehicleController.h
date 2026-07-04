@@ -41,6 +41,10 @@ public:
     float vySoll() const { return _vy; }
     float wzSoll() const { return _wz; }
 
+    float chassisPhiRad() const { return _chassis.phiRad(); }
+    float chassisPhiWzCorrectionRadS() const { return _chassis.lastPhiWzCorrectionRadS(); }
+    float chassisPhiWheelDeltaCms() const { return _chassis.lastPhiWheelDeltaCms(); }
+
     float KpVx() const { return _regler.KpVx(); }
     float KiVx() const { return _regler.KiVx(); }
     float KpVy() const { return _regler.KpVy(); }

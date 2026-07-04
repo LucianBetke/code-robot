@@ -32,7 +32,7 @@ namespace ConfigChassisFront
     constexpr ChassisControlConfig CONFIG =
     {
         true,        // phiControlEnabled
-//        false,        // phiControlDiabled
+ //       false,        // phiControlDiabled
         // Startwert fuer ersten Test:
         // phi = 5 deg = 0.087 rad
         // wz_korr = -0.8 * 0.087 = -0.070 rad/s
