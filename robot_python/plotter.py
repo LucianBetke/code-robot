@@ -51,6 +51,8 @@ from plot_odom import update_odom_plot
 # ============================================================
 
 WHEEL_LINEWIDTH = 2.4
+WHEEL_SETPOINT_LINEWIDTH = 1.8
+
 LEGEND_FONTSIZE = 14
 AXIS_LABEL_FONTSIZE = 17
 TICK_LABEL_FONTSIZE = 14
@@ -188,6 +190,15 @@ def _make_base_figure(title: str):
 # Pro Rad: Soll, Ist, PWM
 WHEEL_NAMES = ("VoLi", "VoRe", "HiLi", "HiRe")
 WHEEL_VALUE_COUNT = 12
+
+# Feste Farben pro Motor.
+# Diese Farben gelten oben fuer Soll/Ist und unten fuer PWM gleich.
+WHEEL_COLORS = {
+    "VoLi": "tab:blue",
+    "VoRe": "tab:orange",
+    "HiLi": "tab:green",
+    "HiRe": "tab:red",
+}
 
 
 def _build_wheels_time_plot_arrays(
@@ -330,9 +341,39 @@ def _update_wheels_plot(axes, store) -> None:
         ist  = values_by_index[base + 1]
         pwm  = values_by_index[base + 2]
 
-        ax_speed.plot(t_s, soll, label=f"{name}_s", linewidth=WHEEL_LINEWIDTH)
-        ax_speed.plot(t_s, ist,  label=f"{name}_i", linewidth=WHEEL_LINEWIDTH)
-        ax_pwm.plot(t_s,   pwm,  label=f"{name}_pwm", linewidth=WHEEL_LINEWIDTH)
+        color = WHEEL_COLORS[name]
+
+        # Gleicher Motor = gleiche Farbe.
+        # Sollwert: gestrichelt und etwas transparenter.
+        # Istwert: durchgezogen.
+        # PWM: unten gleiche Farbe wie oben.
+        ax_speed.plot(
+            t_s,
+            soll,
+            label=f"{name}_s",
+            color=color,
+            linestyle="--",
+            alpha=0.55,
+            linewidth=WHEEL_SETPOINT_LINEWIDTH,
+        )
+
+        ax_speed.plot(
+            t_s,
+            ist,
+            label=f"{name}_i",
+            color=color,
+            linestyle="-",
+            linewidth=WHEEL_LINEWIDTH,
+        )
+
+        ax_pwm.plot(
+            t_s,
+            pwm,
+            label=f"{name}_pwm",
+            color=color,
+            linestyle="-",
+            linewidth=WHEEL_LINEWIDTH,
+        )
 
     _format_wheels_axis(ax_speed, "v [cm/s]")
     _format_wheels_axis(ax_pwm, "PWM", "Zeit [s]")
