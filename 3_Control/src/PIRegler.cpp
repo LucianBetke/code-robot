@@ -3,7 +3,7 @@
 // Beschreibung:
 //  - Bidirektionaler PI-Regler für Drehzahlregelung
 //  - Ausgang: signed PWM [-uMax .. +uMax]
-//  - Anti-Windup (Clamping)
+//  - Anti-Windup (richtungsabhängiges Clamping)
 //  - Slew-Rate Begrenzung
 // ============================================================
 
@@ -34,8 +34,7 @@ PIRegler::PIRegler(float Kp, float Ki,
     _v_soll(0.0f),
     _integral(0.0f),
     _uPrev(0)
-{
-}
+{}
 
 int16_t PIRegler::update(float v_ist, uint16_t dt_ms)
 {
@@ -58,12 +57,17 @@ int16_t PIRegler::update(float v_ist, uint16_t dt_ms)
     const float p_part = _Kp * e;
     const float u_pre = p_part + _integral;
 
-    // --- Anti-Windup: Clamping ---
-    // Integrator nur weiterführen, solange der unbegrenzte Ausgang
-    // noch nicht außerhalb des erlaubten Bereichs liegt.
-    const bool saturated = (u_pre <= uMinNorm) || (u_pre >= uMaxNorm);
+    // --- Anti-Windup: richtungsabhängiges Clamping ---
+    // Integrator nur blockieren, wenn er die bestehende
+    // Sättigung weiter verschlimmern würde.
+    const bool satHigh = (u_pre >= uMaxNorm);
+    const bool satLow = (u_pre <= uMinNorm);
 
-    if (!saturated)
+    const bool blockIntegral =
+        (satHigh && e > 0.0f) ||
+        (satLow && e < 0.0f);
+
+    if (!blockIntegral)
     {
         _integral += _Ki * e * dt_s;
     }
