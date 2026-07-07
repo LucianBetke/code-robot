@@ -3,28 +3,23 @@
 // Zweck:
 //  - Serielle Diagnoseausgabe fuer Front-Nano
 //  - WHEELS/CHASSIS/ODOM2-Ausgaben
-//  - Paket 5a:
-//      zusaetzliche #CHASSISDBG-Zeile zur Diagnose der
-//      phi -> wz-Korrektur
+//  - #CHASSISDBG bleibt aus Kompatibilitaetsgruenden erhalten.
+//    Die frueheren Phi-Regelungsfelder werden jetzt immer als 0 ausgegeben,
+//    weil die Vehicle-/Chassis-Regelung entfernt ist.
 //
 // Wichtige Diagnosezeile:
 //
 // #CHASSISDBG,t,phiDeg100,wzPhi1000,dvPhi100,hiLiSoll100,hiReSoll100,hiLiSend,hiReSend
 //
-// Bedeutung:
+// Bedeutung jetzt:
 //  - t              : Frame-Zeit [ms]
-//  - phiDeg100      : Chassiswinkel phi [deg] * 100
-//  - wzPhi1000      : phi-Reglerausgang [rad/s] * 1000
-//  - dvPhi100       : Radbeitrag der phi-Korrektur [cm/s] * 100
+//  - phiDeg100      : immer 0, keine Phi-Regelung mehr
+//  - wzPhi1000      : immer 0, kein Phi-Reglerausgang mehr
+//  - dvPhi100       : immer 0, kein Radbeitrag der Phi-Korrektur mehr
 //  - hiLiSoll100    : ungerundeter Sollwert HiLi [cm/s] * 100
 //  - hiReSoll100    : ungerundeter Sollwert HiRe [cm/s] * 100
 //  - hiLiSend       : tatsaechlich per VSOL gesendeter HiLi-Wert [cm/s]
 //  - hiReSend       : tatsaechlich per VSOL gesendeter HiRe-Wert [cm/s]
-//
-// Hinweis:
-//  - RAD_TO_DEG ist im Arduino-Core bereits als Makro definiert.
-//    Deshalb wird hier bewusst ein eigener Name benutzt:
-//    CHASSISDBG_RAD_TO_DEG
 // ============================================================
 
 #include "TelemetryPrinter.h"
@@ -42,16 +37,6 @@ namespace
     void printValue100(float value)
     {
         Serial.print(scaleFloatToInt100(value));
-    }
-
-    int16_t scaleFloatToInt1000Local(float value)
-    {
-        if (value >= 0.0f)
-        {
-            return (int16_t)(value * 1000.0f + 0.5f);
-        }
-
-        return (int16_t)(value * 1000.0f - 0.5f);
     }
 
     void printCountsFrame(
@@ -88,12 +73,9 @@ void TelemetryPrinter::printInfo(VehicleController& vehicle, const RadControlCon
     Serial.print(F(",Ki100="));                 Serial.print(scaleFloatToInt100(cfg.pi[Re].Ki));
     Serial.print(F(",dead="));                  Serial.println(cfg.deadPwm[Re]);
 
-    Serial.print(F("#INFO,Chassis,vx,Kp100=")); Serial.print(scaleFloatToInt100(vehicle.KpVx()));
-    Serial.print(F(",Ki100="));                 Serial.print(scaleFloatToInt100(vehicle.KiVx()));
-    Serial.print(F(",vy,Kp100="));              Serial.print(scaleFloatToInt100(vehicle.KpVy()));
-    Serial.print(F(",Ki100="));                 Serial.print(scaleFloatToInt100(vehicle.KiVy()));
-    Serial.print(F(",wz,Kp100="));              Serial.print(scaleFloatToInt100(vehicle.KpWz()));
-    Serial.print(F(",Ki100="));                 Serial.println(scaleFloatToInt100(vehicle.KiWz()));
+    (void)vehicle;
+
+    Serial.println(F("#INFO,VehicleRegelung,aus"));
 #else
     (void)vehicle;
     (void)cfg;
@@ -191,23 +173,20 @@ void TelemetryPrinter::printChassisDebug(
     int16_t hiRe_send_cms)
 {
 #if PRINTER_ENABLE_CHASSIS
-    static const float CHASSISDBG_RAD_TO_DEG = 57.29577951308232f;
-
-    const float phi_deg = vehicle.chassisPhiRad() * CHASSISDBG_RAD_TO_DEG;
-    const float wz_phi_rad_s = vehicle.chassisPhiWzCorrectionRadS();
-    const float dv_phi_cms = vehicle.chassisPhiWheelDeltaCms();
-
     Serial.print(F("#CHASSISDBG,"));
     Serial.print(t_ms);                                                   Serial.print(',');
 
-    // phiDeg100: phi [deg] * 100
-    Serial.print(scaleFloatToInt100(phi_deg));                            Serial.print(',');
+    // Feld bleibt wegen Python-/Log-Kompatibilitaet erhalten.
+    // Keine Phi-Regelung mehr, deshalb immer 0.
+    Serial.print(0);                                                      Serial.print(',');
 
-    // wzPhi1000: phi-Reglerausgang [rad/s] * 1000
-    Serial.print(scaleFloatToInt1000Local(wz_phi_rad_s));                 Serial.print(',');
+    // Feld bleibt wegen Python-/Log-Kompatibilitaet erhalten.
+    // Kein Phi-Reglerausgang mehr, deshalb immer 0.
+    Serial.print(0);                                                      Serial.print(',');
 
-    // dvPhi100: Radbeitrag aus phi-Korrektur [cm/s] * 100
-    Serial.print(scaleFloatToInt100(dv_phi_cms));                         Serial.print(',');
+    // Feld bleibt wegen Python-/Log-Kompatibilitaet erhalten.
+    // Kein Radbeitrag aus Phi-Korrektur mehr, deshalb immer 0.
+    Serial.print(0);                                                      Serial.print(',');
 
     // ungerundete hintere Rad-Sollwerte [cm/s] * 100
     Serial.print(scaleFloatToInt100(vehicle.getWheelSoll(HiLi)));         Serial.print(',');

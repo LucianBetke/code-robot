@@ -1,5 +1,11 @@
 // ============================================================
-// VehicleController.h
+// File: VehicleController.h
+// Zweck:
+//  - Direkte CMDP -> Rad-Sollwert-Mischung fuer Mecanum
+//  - KEINE Vehicle-PI-Regelung
+//  - KEINE Phi-/Chassis-Korrektur
+//  - Odometrie bleibt separat in MecanumOdometer erhalten
+//
 // Einheit:
 //  - vx, vy, Radgeschwindigkeiten: cm/s
 //  - wz: rad/s
@@ -8,27 +14,29 @@
 #ifndef VEHICLE_CONTROLLER_H
 #define VEHICLE_CONTROLLER_H
 
+#include <Arduino.h>
+
 #include "src/RobotConfig.h"
-#include "src/ControlTypes.h"
 #include "src/WheelValues.h"
-#include "src/VehicleControlConfig.h"
-#include "VehiclePIController.h"
-#include "ChassisController.h"
 
 class VehicleController
 {
 public:
-    void begin(float Kp_vx, float Ki_vx,
-        float Kp_vy, float Ki_vy,
-        float Kp_wz, float Ki_wz);
+    void begin();
 
-    void begin(const PIParam& vx, const PIParam& vy, const PIParam& wz);
-    void begin(const VehicleControlConfig& cfg);
-
+    // Befehl vom CommandRunner:
+    // Direkte Umrechnung in Rad-Sollgeschwindigkeiten.
+    // Keine geschlossene Fahrzeugregelung.
     void cmd(float vx_cms, float vy_cms, float wz_rad_s);
+
+    // Rueckrechnung der Ist-Radgeschwindigkeiten fuer Diagnose/CHASSIS-Ausgabe.
+    // Diese Werte greifen nicht mehr in die Rad-Sollwerte ein.
     void updateIst(const WheelSpeedCms& wheelIst);
-    void updateChassisState(const ChassisState& state);
+
+    // Keine Vehicle-Regelung mehr.
+    // Bleibt nur als leerer Hook fuer den bestehenden FrontApp-Ablauf.
     void update(uint32_t now);
+
     void stop();
 
     float getWheelSoll(WheelVehicle w) const;
@@ -40,17 +48,6 @@ public:
     float vxSoll() const { return _vx; }
     float vySoll() const { return _vy; }
     float wzSoll() const { return _wz; }
-
-    float chassisPhiRad() const { return _chassis.phiRad(); }
-    float chassisPhiWzCorrectionRadS() const { return _chassis.lastPhiWzCorrectionRadS(); }
-    float chassisPhiWheelDeltaCms() const { return _chassis.lastPhiWheelDeltaCms(); }
-
-    float KpVx() const { return _regler.KpVx(); }
-    float KiVx() const { return _regler.KiVx(); }
-    float KpVy() const { return _regler.KpVy(); }
-    float KiVy() const { return _regler.KiVy(); }
-    float KpWz() const { return _regler.KpWz(); }
-    float KiWz() const { return _regler.KiWz(); }
 
 private:
     void applyDriveMode(float& vx_cms, float& vy_cms, float wz_rad_s);
@@ -64,12 +61,7 @@ private:
     float _vy_ist = 0.0f;
     float _wz_ist = 0.0f;
 
-    float _wheelSoll[WHEEL_VEHICLE_COUNT] = { 0 };
-
-    VehiclePIController _regler;
-    ChassisController _chassis;
-
-    uint32_t _lastUpdateMs = 0;
+    float _wheelSoll[WHEEL_VEHICLE_COUNT] = { 0.0f };
 
     bool _turnOnly = false;
 };
