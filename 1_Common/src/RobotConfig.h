@@ -71,8 +71,8 @@ constexpr float CM_PRO_TICK = RAD_UMFANG_CM / float(COUNTS_PER_REV);
 // ==== Fahrzeug-Geometrie ====
 // ============================================================
 
-constexpr float MECANUM_LX_MM = 45.5f;
-constexpr float MECANUM_LY_MM = 104.5f;
+constexpr float MECANUM_LX_MM = 81.5f;
+constexpr float MECANUM_LY_MM = 102.5f;
 
 constexpr float WHEEL_BASE_MM = MECANUM_LX_MM * 2.0f;
 constexpr float TRACK_WIDTH_MM = MECANUM_LY_MM * 2.0f;

@@ -12,12 +12,12 @@
 #   py main.py --mode ODOM
 #   py main.py --mode WHEELS
 #   py main.py --port COM7 --mode ODOM
+#   py main.py --csv mein_test.csv
 #   py main.py --list
 # ============================================================
 
 import argparse
 import threading
-from datetime import datetime
 
 from config import DEFAULT_PORT
 from config import DEFAULT_BAUD
@@ -110,7 +110,7 @@ def main():
         "--csv",
         "-c",
         default=None,
-        help="CSV-Dateiname, sonst automatisch robot_MODE_DATUM_UHRZEIT.csv"
+        help="CSV-Dateiname, sonst robot_last.csv"
     )
 
     parser.add_argument(
@@ -148,11 +148,22 @@ def main():
     if display_mode == "AUTO":
         display_mode = "ODOM"
 
+    # ========================================================
+    # CSV-Datei
+    # ========================================================
+    # Standard:
+    #   Es wird immer dieselbe Datei benutzt.
+    #   Weil unten mit "w" geoeffnet wird, wird sie bei jedem Start
+    #   ueberschrieben. Dadurch bleibt nur der letzte Lauf erhalten.
+    #
+    # Optional:
+    #   Mit --csv dateiname.csv kann weiterhin ein anderer Name angegeben werden.
+    # ========================================================
+
     if args.csv is not None:
         csv_path = args.csv
     else:
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        csv_path = f"robot_{display_mode.lower()}_{timestamp}.csv"
+        csv_path = "robot_last.csv"
 
     store = make_store(MAX_POINTS)
     stop_event = threading.Event()
