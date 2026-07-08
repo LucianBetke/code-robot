@@ -7,18 +7,18 @@
 #
 # Unterstuetzte Diagnosezeilen:
 #  - #CMDP_BEGIN,id,vx,vy,wz,target
-#  - #ODOM2,id,ms,path_cm100,x_body_cm100,y_body_cm100,phi_deg100
+#  - #ODOM,id,ms,path_cm100,x_body_cm100,y_body_cm100,phi_deg100
 #  - #WHEELS,ms,...
 #
 # Wichtig:
-#  - Arduino sendet ODOM2 als Integerwerte mit Faktor 100.
+#  - Arduino sendet ODOM als Integerwerte mit Faktor 100.
 #    Python wandelt diese Werte beim Einlesen wieder in cm bzw. Grad um.
 #  - WHEELS-Frames erhalten die cmd_id des zuletzt empfangenen
 #    CMDP_BEGIN. Damit kann ein WHEELS-Frame eindeutig einem Lauf
-#    zugeordnet und mit dem passenden ODOM2-Eintrag (cmd_id, ms)
+#    zugeordnet und mit dem passenden ODOM-Eintrag (cmd_id, ms)
 #    verknuepft werden. Settle-Frames zwischen zwei CMDP_BEGIN-Bloecken
 #    behalten die cmd_id des vorherigen Laufs; sie haben keinen
-#    passenden ODOM2-Eintrag und werden im Plot weggefiltert.
+#    passenden ODOM-Eintrag und werden im Plot weggefiltert.
 # ============================================================
 
 from __future__ import annotations
@@ -40,7 +40,7 @@ except ImportError:
 # Konstanten
 # ============================================================
 
-ODOM2_SCALE = 100.0
+ODOM_SCALE = 100.0
 
 
 # ============================================================
@@ -57,7 +57,7 @@ class CmdpBegin:
 
 
 @dataclass
-class Odom2Sample:
+class OdomSample:
     cmd_id: int
     ms: float
     path_cm: float
@@ -84,7 +84,7 @@ class Store:
 
         self.cmdp_by_id: dict[int, CmdpBegin] = {}
         self.cmdp_order: list[int] = []
-        self.odom2_rows: list[Odom2Sample] = []
+        self.odom_rows: list[OdomSample] = []
         self.wheels_rows: list[WheelSample] = []
 
         # cmd_id des zuletzt empfangenen CMDP_BEGIN.
@@ -95,13 +95,13 @@ class Store:
         with self.lock:
             self.cmdp_by_id.clear()
             self.cmdp_order.clear()
-            self.odom2_rows.clear()
+            self.odom_rows.clear()
             self.wheels_rows.clear()
             self.current_cmd_id = -1
 
     def _trim(self) -> None:
-        if len(self.odom2_rows) > self.max_rows:
-            self.odom2_rows = self.odom2_rows[-self.max_rows:]
+        if len(self.odom_rows) > self.max_rows:
+            self.odom_rows = self.odom_rows[-self.max_rows:]
         if len(self.wheels_rows) > self.max_rows:
             self.wheels_rows = self.wheels_rows[-self.max_rows:]
 
@@ -112,9 +112,9 @@ class Store:
             self.cmdp_by_id[msg.cmd_id] = msg
             self.current_cmd_id = msg.cmd_id
 
-    def add_odom2(self, row: Odom2Sample) -> None:
+    def add_odom(self, row: OdomSample) -> None:
         with self.lock:
-            self.odom2_rows.append(row)
+            self.odom_rows.append(row)
             self._trim()
 
     def add_wheels(self, ms: float, values: list[float]) -> None:
@@ -131,7 +131,7 @@ class Store:
             return {
                 "cmdp_by_id": dict(self.cmdp_by_id),
                 "cmdp_order": list(self.cmdp_order),
-                "odom2_rows": list(self.odom2_rows),
+                "odom_rows": list(self.odom_rows),
                 "wheels_rows": list(self.wheels_rows),
             }
 
@@ -163,17 +163,17 @@ def parse_line(line: str, store: Store) -> bool:
             ))
             return True
 
-        if line.startswith("#ODOM2,"):
+        if line.startswith("#ODOM,"):
             parts = line.split(",")
             if len(parts) != 7:
                 return False
-            store.add_odom2(Odom2Sample(
+            store.add_odom(OdomSample(
                 cmd_id    = int(parts[1]),
                 ms        = float(parts[2]),
-                path_cm   = int(parts[3]) / ODOM2_SCALE,
-                x_body_cm = int(parts[4]) / ODOM2_SCALE,
-                y_body_cm = int(parts[5]) / ODOM2_SCALE,
-                phi_deg   = int(parts[6]) / ODOM2_SCALE,
+                path_cm   = int(parts[3]) / ODOM_SCALE,
+                x_body_cm = int(parts[4]) / ODOM_SCALE,
+                y_body_cm = int(parts[5]) / ODOM_SCALE,
+                phi_deg   = int(parts[6]) / ODOM_SCALE,
             ))
             return True
 

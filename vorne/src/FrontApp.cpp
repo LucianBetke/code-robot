@@ -163,7 +163,7 @@ void FrontApp::handleIncomingLines(uint32_t now)
 #if PRINTER_ENABLE_ODOM
         if (commandRunner.hasActivePathCommand())
         {
-            printer.printOdom2(
+            printer.printOdom(
                 commandRunner.activeCmdpId(),
                 rearFrameClient.frame().t,
                 odometer

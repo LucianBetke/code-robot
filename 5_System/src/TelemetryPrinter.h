@@ -24,7 +24,7 @@ public:
         int16_t hiLi_pwm,
         int16_t hiRe_pwm);
 
-    void printOdom2(
+    void printOdom(
         uint16_t cmdpId,
         uint32_t t_ms,
         const MecanumOdometer& odom);

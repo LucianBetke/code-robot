@@ -88,7 +88,7 @@ bool MecanumOdometer::update(const WheelCounts& counts)
     _phi_rad += dphi_rad;
 
     // sqrtf bleibt vorerst erhalten.
-    // absMm() / absCm() werden weiterhin fuer CMDP / ODOM2 gebraucht.
+    // absMm() / absCm() werden weiterhin fuer CMDP / ODOM gebraucht.
     _abs_mm = sqrtf(_x_mm * _x_mm + _y_mm * _y_mm);
 
     return true;

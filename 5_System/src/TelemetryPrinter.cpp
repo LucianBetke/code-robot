@@ -2,7 +2,7 @@
 // File: TelemetryPrinter.cpp
 // Zweck:
 //  - Serielle Diagnoseausgabe fuer Front-Nano
-//  - WHEELS/CHASSIS/ODOM2-Ausgaben
+//  - WHEELS/CHASSIS/ODOM-Ausgaben
 //  - #CHASSISDBG bleibt aus Kompatibilitaetsgruenden erhalten.
 //    Die frueheren Phi-Regelungsfelder werden jetzt immer als 0 ausgegeben,
 //    weil die Vehicle-/Chassis-Regelung entfernt ist.
@@ -139,7 +139,7 @@ void TelemetryPrinter::printCompletedFrame(
     );
 }
 
-void TelemetryPrinter::printOdom2(
+void TelemetryPrinter::printOdom(
     uint16_t cmdpId,
     uint32_t t_ms,
     const MecanumOdometer& odom)
@@ -150,7 +150,7 @@ void TelemetryPrinter::printOdom2(
         return;
     }
 
-    Serial.print(F("#ODOM2,"));
+    Serial.print(F("#ODOM,"));
     Serial.print((unsigned int)cmdpId);              Serial.print(',');
     Serial.print((unsigned long)t_ms);               Serial.print(',');
     Serial.print(scaleFloatToInt100(odom.absCm()));  Serial.print(',');

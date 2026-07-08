@@ -8,11 +8,11 @@
 #  - X-Achse: Zeit [s]
 #  - Rad-Soll/Ist bleiben in cm/s
 #  - PWM separat unten
-#  - braucht KEIN #ODOM2
+#  - braucht KEIN #ODOM
 #
 # ODOM:
 #  - X-Achse: Weg [cm]
-#  - nutzt #CMDP_BEGIN + #ODOM2 ueber plot_odom.py
+#  - nutzt #CMDP_BEGIN + #ODOM ueber plot_odom.py
 #
 # Matplotlib-Toolbar unten bleibt aktiv
 # eigener kompakter Button "Kopieren" oben rechts
@@ -211,7 +211,7 @@ def _build_wheels_time_plot_arrays(
         values_by_index: 12 Listen passend zur Arduino-Reihenfolge
 
     Vorteil:
-        Diese Darstellung braucht kein #ODOM2.
+        Diese Darstellung braucht kein #ODOM.
         Sie nutzt nur #WHEELS,ms,...
     """
     t_s: list[float] = []
@@ -405,7 +405,7 @@ def _update_wheels_plot(axes, store) -> None:
 # ============================================================
 
 def _make_odom_figure():
-    fig = _make_base_figure("Robot Monitor - ODOM2")
+    fig = _make_base_figure("Robot Monitor - ODOM")
 
     # [left, bottom, width, height]
     # Etwas groesser und besser verteilt als vorher.

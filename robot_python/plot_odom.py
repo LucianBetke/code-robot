@@ -1,14 +1,14 @@
 # plot_odom.py
 # ============================================================
 # Aufgabe:
-#  - ODOM2-Protokoll auswerten
+#  - ODOM-Protokoll auswerten
 #  - Sollbewegung aus #CMDP_BEGIN berechnen
-#  - Istbewegung aus #ODOM2 zusammensetzen
+#  - Istbewegung aus #ODOM zusammensetzen
 #  - Laengsfehler, Querfehler und Verdrehfehler bestimmen
 #
 # Arduino-Format:
 #   #CMDP_BEGIN,id,vx,vy,wz,target
-#   #ODOM2,id,ms,path_cm,x_body_cm,y_body_cm,phi_deg
+#   #ODOM,id,ms,path_cm,x_body_cm,y_body_cm,phi_deg
 #
 # Darstellung:  1. e_quer   2. e_laengs   3. e_verdrehen
 #
@@ -198,14 +198,14 @@ _MERGE_FIELDS_FLOAT = (
 def build_odom_plot_data(snapshot: dict) -> OdomPlotData:
     cmdp_by_id = snapshot.get("cmdp_by_id", {})
     cmdp_order = snapshot.get("cmdp_order", [])
-    odom2_rows = snapshot.get("odom2_rows", [])
+    odom_rows = snapshot.get("odom_rows", [])
 
-    if not odom2_rows:
-        return OdomPlotData(text="warte auf #ODOM2 ...")
+    if not odom_rows:
+        return OdomPlotData(text="warte auf #ODOM ...")
 
     # Alle Zeilen nach cmd_id gruppieren
     rows_by_id: dict[int, list] = {}
-    for row in odom2_rows:
+    for row in odom_rows:
         rows_by_id.setdefault(row.cmd_id, []).append(row)
 
     # Reihenfolge: erst die aus #CMDP_BEGIN, dann der Rest
