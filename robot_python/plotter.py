@@ -2,7 +2,7 @@
 # ============================================================
 # Aufgabe:
 #  - Matplotlib-Fenster koordinieren
-#  - WHEELS- und ODOM-Ansicht anzeigen
+#  - WHEELS-, ODOM- und SPUR-Ansicht anzeigen
 #
 # WHEELS:
 #  - X-Achse: Zeit [s]
@@ -13,6 +13,12 @@
 # ODOM:
 #  - X-Achse: Weg [cm]
 #  - nutzt #CMDP_BEGIN + #ODOM ueber plot_odom.py
+#  - alte Fehlerauswertung bleibt erhalten
+#
+# SPUR:
+#  - oben: XY-Fahrweg
+#  - mitte: Querfehler
+#  - unten: Verdrehwinkel
 #
 # Matplotlib-Toolbar unten bleibt aktiv
 # eigener kompakter Button "Kopieren" oben rechts
@@ -44,6 +50,7 @@ from matplotlib.animation import FuncAnimation
 from matplotlib.widgets import Button
 
 from plot_odom import update_odom_plot
+from plot_odom import update_spur_plot
 
 
 # ============================================================
@@ -408,12 +415,27 @@ def _make_odom_figure():
     fig = _make_base_figure("Robot Monitor - ODOM")
 
     # [left, bottom, width, height]
-    # Etwas groesser und besser verteilt als vorher.
+    # Alte ODOM-Fehlerauswertung bleibt unveraendert.
     L, W = 0.060, 0.925
     axes = [
         fig.add_axes([L, 0.690, W, 0.235]),
         fig.add_axes([L, 0.395, W, 0.235]),
         fig.add_axes([L, 0.100, W, 0.235]),
+    ]
+    return fig, axes
+
+
+def _make_spur_figure():
+    fig = _make_base_figure("Robot Monitor - SPUR")
+
+    # [left, bottom, width, height]
+    # Oben mehr Platz fuer die XY-Fahrspur.
+    L, W = 0.070, 0.895
+
+    axes = [
+        fig.add_axes([L, 0.565, W, 0.360]),
+        fig.add_axes([L, 0.335, W, 0.165]),
+        fig.add_axes([L, 0.100, W, 0.165]),
     ]
     return fig, axes
 
@@ -443,6 +465,12 @@ def start_plot(store, mode: str = "ODOM", interval_ms: int = 200):
 
         def animate(_frame):
             _update_wheels_plot(axes, store)
+
+    elif mode == "SPUR":
+        fig, axes = _make_spur_figure()
+
+        def animate(_frame):
+            update_spur_plot(axes, store)
 
     else:
         fig, axes = _make_odom_figure()

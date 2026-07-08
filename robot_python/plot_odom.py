@@ -10,7 +10,16 @@
 #   #CMDP_BEGIN,id,vx,vy,wz,target
 #   #ODOM,id,ms,path_cm,x_body_cm,y_body_cm,phi_deg
 #
-# Darstellung:  1. e_quer   2. e_laengs   3. e_verdrehen
+# Ansichten:
+#   ODOM:
+#       1. e_quer
+#       2. e_laengs
+#       3. e_verdrehen / phi
+#
+#   SPUR:
+#       1. XY-Fahrspur
+#       2. e_quer
+#       3. e_verdrehen / phi
 #
 # Mehrfachlauf-Unterstuetzung:
 #   Werden mehrere Laeufe mit gleichen cmd_ids aufgezeichnet, erkennt
@@ -128,7 +137,7 @@ def _build_single_run_data(
             ux, uy, v_abs = _safe_unit(cmd.vx_cms, cmd.vy_cms)
             target = cmd.target
 
-        ideal_x0,  ideal_y0,  _,  _           = ideal_start_by_id[cmd_id]
+        ideal_x0,  ideal_y0,  _,  _ = ideal_start_by_id[cmd_id]
         actual_x0, actual_y0, actual_s0, actual_t0, actual_phi0 = actual_start_by_id[cmd_id]
 
         for row in seg_rows:
@@ -185,7 +194,7 @@ def _build_single_run_data(
 # Oeffentliche Hauptfunktion
 # ============================================================
 
-# Listenfelder von OdomPlotData (ohne `text` und `cmd_id`), fuer den NaN-Merge.
+# Listenfelder von OdomPlotData ohne `text` und `cmd_id`, fuer den NaN-Merge.
 _MERGE_FIELDS_FLOAT = (
     "s_cm", "t_s",
     "x_ist_cm", "y_ist_cm",
@@ -254,6 +263,30 @@ def build_odom_plot_data(snapshot: dict) -> OdomPlotData:
 # ============================================================
 # Plot-Hilfsroutinen
 # ============================================================
+
+def _is_valid_number(x: float) -> bool:
+    return float(x) == float(x)
+
+
+def _last_valid_index(*series: list[float]) -> int | None:
+    if not series:
+        return None
+
+    n = min(len(s) for s in series)
+    if n <= 0:
+        return None
+
+    for index in range(n - 1, -1, -1):
+        ok = True
+        for s in series:
+            if not _is_valid_number(s[index]):
+                ok = False
+                break
+        if ok:
+            return index
+
+    return None
+
 
 def _draw_command_boundaries(ax, s_cm: list[float], cmd_id: list[int]) -> None:
     if not s_cm or not cmd_id:
@@ -327,8 +360,71 @@ def _format_axis(ax, ylabel: str, show_xlabel: bool = True) -> None:
     ax.tick_params(axis="both", labelsize=13, pad=3)
 
 
+def _format_xy_axis(ax) -> None:
+    ax.set_xlabel("x [cm]", fontsize=15, labelpad=6)
+    ax.set_ylabel("y [cm]", fontsize=15, labelpad=6)
+    ax.grid(True)
+    ax.tick_params(axis="both", labelsize=13, pad=3)
+    ax.set_aspect("equal", adjustable="datalim")
+
+
+def _draw_xy_start_end(ax, data: OdomPlotData) -> None:
+    valid_indices: list[int] = []
+
+    n = min(len(data.x_ist_cm), len(data.y_ist_cm))
+    for index in range(n):
+        if _is_valid_number(data.x_ist_cm[index]) and _is_valid_number(data.y_ist_cm[index]):
+            valid_indices.append(index)
+
+    if not valid_indices:
+        return
+
+    start_index = valid_indices[0]
+    end_index = valid_indices[-1]
+
+    ax.plot(
+        [data.x_ist_cm[start_index]],
+        [data.y_ist_cm[start_index]],
+        marker="o",
+        linestyle="None",
+        markersize=9,
+        label="Start",
+    )
+
+    ax.plot(
+        [data.x_ist_cm[end_index]],
+        [data.y_ist_cm[end_index]],
+        marker="x",
+        linestyle="None",
+        markersize=11,
+        markeredgewidth=2.0,
+        label="Ende",
+    )
+
+
+def _spur_status_text(data: OdomPlotData) -> str:
+    index = _last_valid_index(
+        data.x_ist_cm,
+        data.y_ist_cm,
+        data.s_cm,
+        data.e_cross_cm,
+        data.phi_deg,
+    )
+
+    if index is None:
+        return data.text
+
+    return (
+        f"x={data.x_ist_cm[index]:.2f} cm   "
+        f"y={data.y_ist_cm[index]:.2f} cm   "
+        f"s={data.s_cm[index]:.2f} cm   "
+        f"e_quer={data.e_cross_cm[index]:.2f} cm   "
+        f"phi={data.phi_deg[index]:.2f} deg"
+    )
+
+
 # ============================================================
-# Plot-Update
+# Plot-Update: alte ODOM-Fehleransicht
 # ============================================================
 
 def update_odom_plot(axes, store) -> None:
@@ -365,4 +461,77 @@ def update_odom_plot(axes, store) -> None:
 
     ax_cross.plot(data.s_cm, data.e_cross_cm, linewidth=1.8)
     ax_parallel.plot(data.s_cm, data.e_parallel_cm, linewidth=1.8)
+    ax_phi.plot(data.s_cm, data.phi_deg, linewidth=1.8)
+
+
+# ============================================================
+# Plot-Update: neue SPUR-Ansicht
+# ============================================================
+
+def update_spur_plot(axes, store) -> None:
+    if len(axes) < 3:
+        return
+
+    data = build_odom_plot_data(store.snapshot())
+
+    fig = axes[0].figure
+    ax_track, ax_cross, ax_phi = axes[0], axes[1], axes[2]
+
+    for ax in (ax_track, ax_cross, ax_phi):
+        ax.clear()
+
+    _update_status_text(fig, _spur_status_text(data))
+
+    _format_xy_axis(ax_track)
+    _format_axis(ax_cross, "e_quer [cm]",       show_xlabel=False)
+    _format_axis(ax_phi,   "e_verdrehen [deg]", show_xlabel=True)
+
+    if not data.s_cm:
+        ax_track.text(
+            0.5, 0.5, data.text,
+            transform=ax_track.transAxes,
+            ha="center", va="center", fontsize=13,
+        )
+        return
+
+    # Draufsicht: Sollspur und Istspur
+    ax_track.axhline(0.0, linewidth=1.0)
+    ax_track.axvline(0.0, linewidth=1.0)
+
+    ax_track.plot(
+        data.x_soll_cm,
+        data.y_soll_cm,
+        linestyle="--",
+        linewidth=2.4,
+        label="Soll",
+    )
+
+    ax_track.plot(
+        data.x_ist_cm,
+        data.y_ist_cm,
+        linestyle="-",
+        linewidth=4.0,
+        label="Ist",
+    )
+
+    _draw_xy_start_end(ax_track, data)
+
+    ax_track.set_title("XY-Fahrspur", fontsize=15, pad=8)
+    ax_track.legend(
+        loc="upper right",
+        fontsize=12,
+        framealpha=0.90,
+        borderpad=0.5,
+        labelspacing=0.35,
+    )
+    ax_track.margins(x=0.08, y=0.08)
+
+    # Zusatzdiagnose ueber Weg
+    for i, ax in enumerate((ax_cross, ax_phi)):
+        ax.axhline(0.0, linewidth=1.2)
+        _draw_command_boundaries(ax, data.s_cm, data.cmd_id)
+        ax.margins(x=0.01)
+        _add_time_axis(ax, data, show_label=(i == 0))
+
+    ax_cross.plot(data.s_cm, data.e_cross_cm, linewidth=1.8)
     ax_phi.plot(data.s_cm, data.phi_deg, linewidth=1.8)

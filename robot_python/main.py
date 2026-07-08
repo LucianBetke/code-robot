@@ -10,6 +10,7 @@
 # Startbeispiele:
 #   py main.py
 #   py main.py --mode ODOM
+#   py main.py --mode SPUR
 #   py main.py --mode WHEELS
 #   py main.py --port COM7 --mode ODOM
 #   py main.py --csv mein_test.csv
@@ -39,12 +40,13 @@ def ask_display_mode(default_mode: str = DEFAULT_DISPLAY_MODE) -> str:
     print()
     print("Welche Daten willst du anschauen?")
     print("  1 = WHEELS  - Rad-Soll/Ist und PWM")
-    print("  2 = ODOM    - Odometrie / Weg / Verdrehung")
+    print("  2 = ODOM    - Fehlerauswertung: e_quer / e_laengs / phi")
+    print("  3 = SPUR    - XY-Fahrweg + Querfehler + phi")
     print(f"  Enter = Standard [{default_mode}]")
     print()
 
     while True:
-        choice = input("Auswahl [1/2]: ").strip().lower()
+        choice = input("Auswahl [1/2/3]: ").strip().lower()
 
         if choice == "":
             return default_mode
@@ -52,10 +54,13 @@ def ask_display_mode(default_mode: str = DEFAULT_DISPLAY_MODE) -> str:
         if choice in ("1", "w", "wheel", "wheels", "rad", "raeder", "räder"):
             return "WHEELS"
 
-        if choice in ("2", "o", "odom", "odometrie", "weg"):
+        if choice in ("2", "o", "odom", "odometrie", "fehler"):
             return "ODOM"
 
-        print("Ungueltige Auswahl. Bitte 1 fuer WHEELS oder 2 fuer ODOM eingeben.")
+        if choice in ("3", "s", "spur", "track", "xy", "fahrweg"):
+            return "SPUR"
+
+        print("Ungueltige Auswahl. Bitte 1 fuer WHEELS, 2 fuer ODOM oder 3 fuer SPUR eingeben.")
 
 
 def resolve_display_mode(mode_from_args) -> str:
@@ -118,10 +123,10 @@ def main():
         "-m",
         default=None,
         choices=[
-            "ODOM", "WHEELS", "CHASSIS", "AUTO",
-            "odom", "wheels", "chassis", "auto"
+            "ODOM", "WHEELS", "SPUR", "TRACK", "CHASSIS", "AUTO",
+            "odom", "wheels", "spur", "track", "chassis", "auto"
         ],
-        help="Plotmodus direkt vorgeben: ODOM, WHEELS, CHASSIS oder AUTO"
+        help="Plotmodus direkt vorgeben: ODOM, SPUR, WHEELS, CHASSIS oder AUTO"
     )
 
     parser.add_argument(
@@ -147,6 +152,9 @@ def main():
 
     if display_mode == "AUTO":
         display_mode = "ODOM"
+
+    if display_mode == "TRACK":
+        display_mode = "SPUR"
 
     # ========================================================
     # CSV-Datei
