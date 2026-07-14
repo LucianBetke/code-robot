@@ -1,11 +1,22 @@
 ﻿// ConnectionMonitor.cpp
 #include "ConnectionMonitor.h"
 
-ConnectionMonitor::ConnectionMonitor(UartLink& uart, uint8_t ledPin)
+ConnectionMonitor::ConnectionMonitor(
+    UartLink& uart,
+    uint8_t ledPin
+)
     : _uart(uart),
     _ledPin(ledPin),
-    _lastState(false)
+    _lastState(false),
+    _useLed(true)
+{}
+
+void ConnectionMonitor::writeLed(uint8_t level)
 {
+    if (_useLed)
+    {
+        digitalWrite(_ledPin, level);
+    }
 }
 
 void ConnectionMonitor::waitForConnection()
@@ -21,12 +32,19 @@ void ConnectionMonitor::waitForConnection()
     Serial.println(F("#HS1"));
 }
 
-void ConnectionMonitor::begin(bool wait)
+void ConnectionMonitor::begin(
+    bool wait,
+    bool useLed
+)
 {
-    pinMode(_ledPin, OUTPUT);
-    digitalWrite(_ledPin, HIGH);
-
+    _useLed = useLed;
     _lastState = false;
+
+    if (_useLed)
+    {
+        pinMode(_ledPin, OUTPUT);
+        digitalWrite(_ledPin, HIGH);
+    }
 
     if (wait)
     {
@@ -41,13 +59,13 @@ void ConnectionMonitor::update()
     if (!now && _lastState)
     {
         Serial.println(F("#DIS"));
-        digitalWrite(_ledPin, HIGH);
+        writeLed(HIGH);
     }
 
     if (now && !_lastState)
     {
         Serial.println(F("#CON"));
-        digitalWrite(_ledPin, LOW);
+        writeLed(LOW);
     }
 
     _lastState = now;

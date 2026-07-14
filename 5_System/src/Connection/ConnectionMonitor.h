@@ -7,9 +7,16 @@
 class ConnectionMonitor
 {
 public:
-    ConnectionMonitor(UartLink& uart, uint8_t ledPin);
+    ConnectionMonitor(
+        UartLink& uart,
+        uint8_t ledPin
+    );
 
-    void begin(bool wait);
+    void begin(
+        bool wait,
+        bool useLed = true
+    );
+
     void update();
     void waitForConnection();
 
@@ -18,4 +25,7 @@ private:
     uint8_t _ledPin;
 
     bool _lastState;
+    bool _useLed;
+
+    void writeLed(uint8_t level);
 };

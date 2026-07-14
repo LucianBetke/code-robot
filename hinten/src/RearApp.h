@@ -31,6 +31,7 @@ private:
 
     void stopRearWheels();
     void updateConnectionSafety(uint32_t now);
+    void resetByWatchdog();
     void updateVsolTimeout(uint32_t now);
 
     void handleIncomingVsol(uint32_t now);

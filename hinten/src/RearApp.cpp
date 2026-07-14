@@ -11,15 +11,20 @@
 
 static const uint8_t REAR_SYNC_INPUT_PIN = 2;
 
+// D13 wird hinten NICHT als Status-LED verwendet.
+// Der Pin ist fuer den Trigger-Ausgang des rechten HC-SR04 reserviert.
+// Der ConnectionMonitor bekommt den Pin nur als Platzhalter und
+// schaltet ihn wegen useLed=false nie (siehe begin()).
+static const uint8_t REAR_UNUSED_LED_PIN = 13;
+
 RearApp::RearApp()
     : uart(Serial, false),
-    conn(uart, 13),
+    conn(uart, REAR_UNUSED_LED_PIN),
     lastVsolMs(0),
     lastVsolFrameId(0),
     rearSollActive(false),
     syncFlag(false)
-{
-}
+{}
 
 void RearApp::begin(void (*syncCallback)())
 {
@@ -32,12 +37,21 @@ void RearApp::begin(void (*syncCallback)())
     wheelMeasurement_reset_all();
 
     uart.begin();
-    conn.begin(false);
+
+    // Im Setup blockierend auf die Verbindung warten.
+    // useLed=false: der Monitor schaltet D13 nicht (Pin gehoert dem HC-SR04).
+    // #WAIT/#CON/#DIS werden weiterhin auf Serial ausgegeben.
+    conn.begin(true, false);
 
     hardware_enableMotors();
 
     pinMode(REAR_SYNC_INPUT_PIN, INPUT);
-    attachInterrupt(digitalPinToInterrupt(REAR_SYNC_INPUT_PIN), syncCallback, RISING);
+
+    attachInterrupt(
+        digitalPinToInterrupt(REAR_SYNC_INPUT_PIN),
+        syncCallback,
+        RISING
+    );
 }
 
 void RearApp::update(uint32_t now)
@@ -69,9 +83,31 @@ void RearApp::updateConnectionSafety(uint32_t now)
 {
     (void)now;
 
-    if (!uart.isConnected())
+    // Nach dem Setup ist die Verbindung garantiert aufgebaut
+    // (waitForConnection() blockiert), also startet prevConnected=true.
+    static bool prevConnected = true;
+
+    const bool nowConnected = uart.isConnected();
+
+    // Flanke verbunden -> getrennt: Raeder stoppen und den Nano
+    // per Watchdog neu starten. setup() laeuft dann komplett von vorn,
+    // es werden keine alten Zustaende mitgeschleppt.
+    if (prevConnected && !nowConnected)
     {
         stopRearWheels();
+        resetByWatchdog();
+        // kehrt nicht zurueck
+    }
+
+    prevConnected = nowConnected;
+}
+
+void RearApp::resetByWatchdog()
+{
+    wdt_enable(WDTO_15MS);
+
+    while (1)
+    {
     }
 }
 
@@ -87,7 +123,10 @@ void RearApp::updateVsolTimeout(uint32_t now)
 
 void RearApp::handleIncomingVsol(uint32_t now)
 {
-    if (!uart.availableLine()) return;
+    if (!uart.availableLine())
+    {
+        return;
+    }
 
     const char* line = uart.getLine();
 
@@ -110,7 +149,10 @@ void RearApp::handleIncomingVsol(uint32_t now)
         rad[Re].setSoll(vSollReCms);
 
         lastVsolMs = now;
-        rearSollActive = (vsol.hiLiSoll != 0 || vsol.hiReSoll != 0);
+
+        rearSollActive =
+            (vsol.hiLiSoll != 0 ||
+                vsol.hiReSoll != 0);
 
         if (uart.isConnected())
         {
@@ -126,18 +168,30 @@ void RearApp::onSyncPulseFromIsr()
 
 void RearApp::handleSyncVist()
 {
-    if (!syncFlag) return;
+    if (!syncFlag)
+    {
+        return;
+    }
 
     syncFlag = false;
 
-    const int16_t vIstLiCms = wheelMeasurements[Li].cmsInt();
-    const int16_t vIstReCms = wheelMeasurements[Re].cmsInt();
+    const int16_t vIstLiCms =
+        wheelMeasurements[Li].cmsInt();
 
-    const int16_t pwmLi = rad[Li].lastPwm();
-    const int16_t pwmRe = rad[Re].lastPwm();
+    const int16_t vIstReCms =
+        wheelMeasurements[Re].cmsInt();
 
-    const int32_t cntLi = (int32_t)wheelMeasurements[Li].counts_total();
-    const int32_t cntRe = (int32_t)wheelMeasurements[Re].counts_total();
+    const int16_t pwmLi =
+        rad[Li].lastPwm();
+
+    const int16_t pwmRe =
+        rad[Re].lastPwm();
+
+    const int32_t cntLi =
+        (int32_t)wheelMeasurements[Li].counts_total();
+
+    const int32_t cntRe =
+        (int32_t)wheelMeasurements[Re].counts_total();
 
     if (uart.isConnected())
     {
