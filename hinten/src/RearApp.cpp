@@ -9,7 +9,7 @@
 #include "src/RadControl.h"
 #include "src/RadControlConfig.h"
 
-static const uint8_t REAR_SYNC_INPUT_PIN = 3;
+static const uint8_t REAR_SYNC_INPUT_PIN = 2;
 
 RearApp::RearApp()
     : uart(Serial, false),
