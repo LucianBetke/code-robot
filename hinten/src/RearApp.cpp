@@ -11,15 +11,13 @@
 
 static const uint8_t REAR_SYNC_INPUT_PIN = 2;
 
-// D13 wird hinten NICHT als Status-LED verwendet.
+// D13 wird hinten NICHT von der Firmware belegt.
 // Der Pin ist fuer den Trigger-Ausgang des rechten HC-SR04 reserviert.
-// Der ConnectionMonitor bekommt den Pin nur als Platzhalter und
-// schaltet ihn wegen useLed=false nie (siehe begin()).
-static const uint8_t REAR_UNUSED_LED_PIN = 13;
+// Der ConnectionMonitor wird ohne LED konstruiert und fasst keinen Pin an.
 
 RearApp::RearApp()
     : uart(Serial, false),
-    conn(uart, REAR_UNUSED_LED_PIN),
+    conn(uart),
     lastVsolMs(0),
     lastVsolFrameId(0),
     rearSollActive(false),
@@ -39,9 +37,9 @@ void RearApp::begin(void (*syncCallback)())
     uart.begin();
 
     // Im Setup blockierend auf die Verbindung warten.
-    // useLed=false: der Monitor schaltet D13 nicht (Pin gehoert dem HC-SR04).
+    // Der Monitor wurde ohne LED konstruiert (D13 gehoert dem HC-SR04).
     // #WAIT/#CON/#DIS werden weiterhin auf Serial ausgegeben.
-    conn.begin(true, false);
+    conn.begin(true);
 
     hardware_enableMotors();
 

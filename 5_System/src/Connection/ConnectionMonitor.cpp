@@ -1,6 +1,7 @@
 ﻿// ConnectionMonitor.cpp
 #include "ConnectionMonitor.h"
 
+// Konstruktor MIT LED.
 ConnectionMonitor::ConnectionMonitor(
     UartLink& uart,
     uint8_t ledPin
@@ -9,6 +10,16 @@ ConnectionMonitor::ConnectionMonitor(
     _ledPin(ledPin),
     _lastState(false),
     _useLed(true)
+{}
+
+// Konstruktor OHNE LED.
+ConnectionMonitor::ConnectionMonitor(
+    UartLink& uart
+)
+    : _uart(uart),
+    _ledPin(255),
+    _lastState(false),
+    _useLed(false)
 {}
 
 void ConnectionMonitor::writeLed(uint8_t level)
@@ -33,11 +44,9 @@ void ConnectionMonitor::waitForConnection()
 }
 
 void ConnectionMonitor::begin(
-    bool wait,
-    bool useLed
+    bool wait
 )
 {
-    _useLed = useLed;
     _lastState = false;
 
     if (_useLed)

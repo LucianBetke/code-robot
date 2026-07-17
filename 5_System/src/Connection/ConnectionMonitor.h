@@ -7,14 +7,21 @@
 class ConnectionMonitor
 {
 public:
+    // Variante MIT Status-LED (z. B. vorne).
     ConnectionMonitor(
         UartLink& uart,
         uint8_t ledPin
     );
 
+    // Variante OHNE Status-LED (z. B. hinten).
+    // Es wird kein Pin belegt oder geschaltet.
+    explicit ConnectionMonitor(
+        UartLink& uart
+    );
+
+    // Ob die LED benutzt wird, entscheidet allein der Konstruktor.
     void begin(
-        bool wait,
-        bool useLed = true
+        bool wait
     );
 
     void update();
