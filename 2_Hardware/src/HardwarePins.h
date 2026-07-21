@@ -89,6 +89,16 @@ namespace PinsRear
     constexpr uint8_t ENC_Li_PIN_A = A0;
     constexpr uint8_t ENC_Li_PIN_B = A1;
 
+    // Drei HC-SR04 am hinteren Nano.
+    constexpr uint8_t US_FRONT_TRIGGER_PIN = 11;
+    constexpr uint8_t US_FRONT_ECHO_PIN = 3;
+
+    constexpr uint8_t US_LEFT_TRIGGER_PIN = 12;
+    constexpr uint8_t US_LEFT_ECHO_PIN = A5;
+
+    constexpr uint8_t US_RIGHT_TRIGGER_PIN = 13;
+    constexpr uint8_t US_RIGHT_ECHO_PIN = A4;
+
     constexpr HardwarePinSet PINS =
     {
         ENC_Li_PIN_A,

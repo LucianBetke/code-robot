@@ -7,6 +7,7 @@
     <ClCompile Include="$(MSBuildThisFileDirectory)src\TelemetryPrinter.cpp" />
     <ClCompile Include="$(MSBuildThisFileDirectory)src\RearFrameClient.cpp" />
     <ClCompile Include="$(MSBuildThisFileDirectory)src\FrameScheduler.cpp" />
+    <ClCompile Include="$(MSBuildThisFileDirectory)src\UltrasonicManager.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="$(MSBuildThisFileDirectory)src\Connection\ConnectionMonitor.h" />
@@ -16,5 +17,6 @@
     <ClInclude Include="$(MSBuildThisFileDirectory)src\TelemetryPrinterConfig.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)src\RearFrameClient.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)src\FrameScheduler.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)src\UltrasonicManager.h" />
   </ItemGroup>
 </Project>

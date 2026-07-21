@@ -2,7 +2,6 @@
 // File: Encoder.cpp
 // Zweck:
 //  - Quadratur-Encoder auf Port C / PCINT1 auswerten
-//  - Gemeinsame ISR liest PINC genau einmal
 //  - Dispatcher verteilt den PINC-Snapshot an alle Encoder
 // ============================================================
 
@@ -37,8 +36,7 @@ Enc::Enc()
     _maskB(0),
     _counts(0),
     _prevState(0)
-{
-}
+{}
 
 void Enc::begin(uint8_t pinA, uint8_t pinB, bool doResetCounts)
 {
@@ -156,10 +154,4 @@ namespace PCINT1_Dispatcher
             }
         }
     }
-}
-
-ISR(PCINT1_vect)
-{
-    const uint8_t pinc = PINC;
-    PCINT1_Dispatcher::isr(pinc);
 }

@@ -16,9 +16,10 @@ UartLink::UartLink(Stream& link, bool initiator)
     _lastPing(0),
     _lastSeen(0),
     _idx(0),
-    _lineAvailable(false)
-{
-}
+    _lineHead(0),
+    _lineTail(0),
+    _lineCount(0)
+{}
 
 void UartLink::begin()
 {
@@ -26,8 +27,17 @@ void UartLink::begin()
     _lastPing = 0;
     _lastSeen = millis();
     _idx = 0;
-    _lineAvailable = false;
-    _line[0] = '\0';
+
+    _lineHead = 0;
+    _lineTail = 0;
+    _lineCount = 0;
+
+    _buf[0] = '\0';
+
+    for (uint8_t i = 0; i < LINE_QUEUE_DEPTH; i++)
+    {
+        _lineQueue[i][0] = '\0';
+    }
 }
 
 void UartLink::update()
@@ -53,20 +63,22 @@ void UartLink::update()
             {
                 _link.println(F("PONG"));
             }
-            else if (_initiator && equalsProgmem(_buf, PSTR("PONG")) && !_connected)
+            else if (_initiator &&
+                equalsProgmem(_buf, PSTR("PONG")) &&
+                !_connected)
             {
                 _link.println(F("ACK"));
                 _connected = true;
             }
-            else if (!_initiator && equalsProgmem(_buf, PSTR("ACK")))
+            else if (!_initiator &&
+                equalsProgmem(_buf, PSTR("ACK")))
             {
                 _connected = true;
             }
-            else if (!equalsProgmem(_buf, PSTR("KA")) && _buf[0] != '#')
+            else if (!equalsProgmem(_buf, PSTR("KA")) &&
+                _buf[0] != '#')
             {
-                strncpy(_line, _buf, sizeof(_line) - 1);
-                _line[sizeof(_line) - 1] = '\0';
-                _lineAvailable = true;
+                enqueueLine(_buf);
             }
 
             _idx = 0;
@@ -77,6 +89,7 @@ void UartLink::update()
         }
         else
         {
+            // Ueberlange oder beschaedigte Zeile verwerfen.
             _idx = 0;
         }
     }
@@ -95,16 +108,14 @@ void UartLink::update()
         }
         else
         {
-            // Wichtig:
-            // KA darf NICHT entfernt werden.
-            // Nach Ende eines Fahrprogramms gibt es sonst keine VSOL/VIST-Zeilen mehr.
-            // Dann läuft der Timeout ab, Front meldet #DIS und startet per Watchdog neu.
+            // KA darf nicht entfernt werden.
             _link.println(F("KA"));
         }
     }
 
     // ===== Timeout =====
-    if (_connected && (uint32_t)(now - _lastSeen) > TIMEOUT)
+    if (_connected &&
+        (uint32_t)(now - _lastSeen) > TIMEOUT)
     {
         _connected = false;
     }
@@ -120,16 +131,58 @@ void UartLink::sendLine(const char* msg)
 
 bool UartLink::availableLine() const
 {
-    return _lineAvailable;
+    return _lineCount > 0;
 }
 
 const char* UartLink::getLine()
 {
-    _lineAvailable = false;
-    return _line;
+    if (_lineCount == 0)
+    {
+        return "";
+    }
+
+    const char* line = _lineQueue[_lineHead];
+
+    _lineHead++;
+
+    if (_lineHead >= LINE_QUEUE_DEPTH)
+    {
+        _lineHead = 0;
+    }
+
+    _lineCount--;
+
+    return line;
 }
 
 bool UartLink::isConnected() const
 {
     return _connected;
+}
+
+void UartLink::enqueueLine(const char* line)
+{
+    if (_lineCount >= LINE_QUEUE_DEPTH)
+    {
+        // Bereits gepufferte Protokollzeilen bleiben erhalten.
+        // Die neue Zeile wird verworfen.
+        return;
+    }
+
+    strncpy(
+        _lineQueue[_lineTail],
+        line,
+        LINE_LENGTH - 1
+    );
+
+    _lineQueue[_lineTail][LINE_LENGTH - 1] = '\0';
+
+    _lineTail++;
+
+    if (_lineTail >= LINE_QUEUE_DEPTH)
+    {
+        _lineTail = 0;
+    }
+
+    _lineCount++;
 }

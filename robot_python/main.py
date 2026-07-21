@@ -42,11 +42,12 @@ def ask_display_mode(default_mode: str = DEFAULT_DISPLAY_MODE) -> str:
     print("  1 = WHEELS  - Rad-Soll/Ist und PWM")
     print("  2 = ODOM    - Fehlerauswertung: e_quer / e_laengs / phi")
     print("  3 = SPUR    - XY-Fahrweg + Querfehler + phi")
+    print("  4 = US      - Abstaende Front / Links / Rechts")
     print(f"  Enter = Standard [{default_mode}]")
     print()
 
     while True:
-        choice = input("Auswahl [1/2/3]: ").strip().lower()
+        choice = input("Auswahl [1/2/3/4]: ").strip().lower()
 
         if choice == "":
             return default_mode
@@ -60,7 +61,10 @@ def ask_display_mode(default_mode: str = DEFAULT_DISPLAY_MODE) -> str:
         if choice in ("3", "s", "spur", "track", "xy", "fahrweg"):
             return "SPUR"
 
-        print("Ungueltige Auswahl. Bitte 1 fuer WHEELS, 2 fuer ODOM oder 3 fuer SPUR eingeben.")
+        if choice in ("4", "u", "us", "ultraschall", "abstand", "abstaende", "abstände"):
+            return "US"
+
+        print("Ungueltige Auswahl. Bitte 1 fuer WHEELS, 2 fuer ODOM, 3 fuer SPUR oder 4 fuer US eingeben.")
 
 
 def resolve_display_mode(mode_from_args) -> str:
@@ -123,10 +127,10 @@ def main():
         "-m",
         default=None,
         choices=[
-            "ODOM", "WHEELS", "SPUR", "TRACK", "CHASSIS", "AUTO",
-            "odom", "wheels", "spur", "track", "chassis", "auto"
+            "ODOM", "WHEELS", "SPUR", "TRACK", "CHASSIS", "AUTO", "US",
+            "odom", "wheels", "spur", "track", "chassis", "auto", "us"
         ],
-        help="Plotmodus direkt vorgeben: ODOM, SPUR, WHEELS, CHASSIS oder AUTO"
+        help="Plotmodus direkt vorgeben: ODOM, SPUR, WHEELS, US, CHASSIS oder AUTO"
     )
 
     parser.add_argument(

@@ -11,42 +11,69 @@
 
 static const uint8_t REAR_SYNC_INPUT_PIN = 2;
 
-// D13 wird hinten NICHT von der Firmware belegt.
-// Der Pin ist fuer den Trigger-Ausgang des rechten HC-SR04 reserviert.
-// Der ConnectionMonitor wird ohne LED konstruiert und fasst keinen Pin an.
+static const uint16_t
+ULTRASONIC_SEND_INTERVAL_MS = 100;
+
+// D13 wird hinten ausschließlich als Trigger-Ausgang
+// des rechten HC-SR04 verwendet.
+// Der ConnectionMonitor wird ohne LED konstruiert.
 
 RearApp::RearApp()
     : uart(Serial, false),
     conn(uart),
+    ultrasonic(),
     lastVsolMs(0),
     lastVsolFrameId(0),
+    lastUsSendMs(0),
     rearSollActive(false),
     syncFlag(false)
 {}
 
-void RearApp::begin(void (*syncCallback)())
+void RearApp::begin(
+    void (*syncCallback)())
 {
     wdt_disable();
 
     Serial.begin(115200);
 
-    hardware_begin(PinsRear::PINS);
-    radControl_begin(ConfigRear::CONFIG);
+    hardware_begin(
+        PinsRear::PINS
+    );
+
+    radControl_begin(
+        ConfigRear::CONFIG
+    );
+
     wheelMeasurement_reset_all();
 
     uart.begin();
 
     // Im Setup blockierend auf die Verbindung warten.
-    // Der Monitor wurde ohne LED konstruiert (D13 gehoert dem HC-SR04).
-    // #WAIT/#CON/#DIS werden weiterhin auf Serial ausgegeben.
     conn.begin(true);
+
+    ultrasonic.begin(
+        PinsRear::US_FRONT_TRIGGER_PIN,
+        PinsRear::US_FRONT_ECHO_PIN,
+
+        PinsRear::US_LEFT_TRIGGER_PIN,
+        PinsRear::US_LEFT_ECHO_PIN,
+
+        PinsRear::US_RIGHT_TRIGGER_PIN,
+        PinsRear::US_RIGHT_ECHO_PIN
+    );
 
     hardware_enableMotors();
 
-    pinMode(REAR_SYNC_INPUT_PIN, INPUT);
+    // D2 = INT0 bleibt der vorhandene Sync-Eingang.
+    pinMode(
+        REAR_SYNC_INPUT_PIN,
+        INPUT
+    );
 
     attachInterrupt(
-        digitalPinToInterrupt(REAR_SYNC_INPUT_PIN),
+        digitalPinToInterrupt(
+            REAR_SYNC_INPUT_PIN
+        ),
         syncCallback,
         RISING
     );
@@ -61,7 +88,11 @@ void RearApp::update(uint32_t now)
 
     radControl_update(now);
 
+    updateUltrasonic(now);
+
     handleSyncVist();
+
+    sendUltrasonicSnapshot(now);
 }
 
 void RearApp::updateCommunication()
@@ -74,27 +105,25 @@ void RearApp::stopRearWheels()
 {
     rad[Li].setSoll(0.0f);
     rad[Re].setSoll(0.0f);
+
     rearSollActive = false;
 }
 
-void RearApp::updateConnectionSafety(uint32_t now)
+void RearApp::updateConnectionSafety(
+    uint32_t now)
 {
     (void)now;
 
-    // Nach dem Setup ist die Verbindung garantiert aufgebaut
-    // (waitForConnection() blockiert), also startet prevConnected=true.
     static bool prevConnected = true;
 
-    const bool nowConnected = uart.isConnected();
+    const bool nowConnected =
+        uart.isConnected();
 
-    // Flanke verbunden -> getrennt: Raeder stoppen und den Nano
-    // per Watchdog neu starten. setup() laeuft dann komplett von vorn,
-    // es werden keine alten Zustaende mitgeschleppt.
-    if (prevConnected && !nowConnected)
+    if (prevConnected &&
+        !nowConnected)
     {
         stopRearWheels();
         resetByWatchdog();
-        // kehrt nicht zurueck
     }
 
     prevConnected = nowConnected;
@@ -109,53 +138,84 @@ void RearApp::resetByWatchdog()
     }
 }
 
-void RearApp::updateVsolTimeout(uint32_t now)
+void RearApp::updateVsolTimeout(
+    uint32_t now)
 {
     if (rearSollActive &&
         lastVsolMs > 0 &&
-        now - lastVsolMs > 2 * VEHICLE_DT_MS)
+        now - lastVsolMs >
+        2 * VEHICLE_DT_MS)
     {
         stopRearWheels();
     }
 }
 
-void RearApp::handleIncomingVsol(uint32_t now)
+void RearApp::handleIncomingVsol(
+    uint32_t now)
 {
     if (!uart.availableLine())
     {
         return;
     }
 
-    const char* line = uart.getLine();
+    const char* line =
+        uart.getLine();
 
     VsolMessage vsol = {};
 
-    if (parseVsolLine(line, vsol))
+    if (!parseVsolLine(
+        line,
+        vsol))
     {
-        lastVsolFrameId = vsol.frameId;
+        return;
+    }
 
-        const float vSollLiCms = (float)vsol.hiLiSoll;
-        const float vSollReCms = (float)vsol.hiReSoll;
+    lastVsolFrameId =
+        vsol.frameId;
 
-        if (vsol.resetPi)
-        {
-            radControl_resetPiStates();
-            wheelMeasurement_reset_all();
-        }
+    const float vSollLiCms =
+        (float)vsol.hiLiSoll;
 
-        rad[Li].setSoll(vSollLiCms);
-        rad[Re].setSoll(vSollReCms);
+    const float vSollReCms =
+        (float)vsol.hiReSoll;
 
-        lastVsolMs = now;
+    if (vsol.resetPi)
+    {
+        radControl_resetPiStates();
+        wheelMeasurement_reset_all();
+    }
 
-        rearSollActive =
-            (vsol.hiLiSoll != 0 ||
-                vsol.hiReSoll != 0);
+    rad[Li].setSoll(vSollLiCms);
+    rad[Re].setSoll(vSollReCms);
 
-        if (uart.isConnected())
-        {
-            printVsolOk(Serial, lastVsolFrameId);
-        }
+    lastVsolMs = now;
+
+    const bool wasRearSollActive =
+        rearSollActive;
+
+    // Bei den derzeit erlaubten CMDP-Befehlen hat
+    // mindestens eines der beiden Hinterräder einen
+    // Sollwert ungleich null.
+    rearSollActive =
+        vsol.hiLiSoll != 0 ||
+        vsol.hiReSoll != 0;
+
+    if (rearSollActive &&
+        !wasRearSollActive)
+    {
+        // Das 100-ms-Ausgaberaster startet mit
+        // dem neuen Fahrbefehl ebenfalls neu.
+        // Dadurch wird nicht sofort ein leerer
+        // Start-Snapshot übertragen.
+        lastUsSendMs = now;
+    }
+
+    if (uart.isConnected())
+    {
+        printVsolOk(
+            Serial,
+            lastVsolFrameId
+        );
     }
 }
 
@@ -186,10 +246,14 @@ void RearApp::handleSyncVist()
         rad[Re].lastPwm();
 
     const int32_t cntLi =
-        (int32_t)wheelMeasurements[Li].counts_total();
+        (int32_t)
+        wheelMeasurements[Li]
+        .counts_total();
 
     const int32_t cntRe =
-        (int32_t)wheelMeasurements[Re].counts_total();
+        (int32_t)
+        wheelMeasurements[Re]
+        .counts_total();
 
     if (uart.isConnected())
     {
@@ -204,4 +268,61 @@ void RearApp::handleSyncVist()
             cntRe
         );
     }
+}
+
+void RearApp::updateUltrasonic(
+    uint32_t now)
+{
+    // Ultraschall folgt dem Fahrzustand des
+    // hinteren Nanos.
+    ultrasonic.setEnabled(
+        rearSollActive
+    );
+
+    ultrasonic.update(now);
+}
+
+void RearApp::sendUltrasonicSnapshot(
+    uint32_t now)
+{
+    // Keine Messung aktiv:
+    // kein US-Telegramm senden.
+    if (!ultrasonic.isEnabled())
+    {
+        return;
+    }
+
+    if (!uart.isConnected())
+    {
+        return;
+    }
+
+    if ((uint32_t)(
+        now -
+        lastUsSendMs
+        ) < ULTRASONIC_SEND_INTERVAL_MS)
+    {
+        return;
+    }
+
+    lastUsSendMs = now;
+
+    UltrasonicSnapshot snapshot = {};
+
+    ultrasonic.makeSnapshot(
+        now,
+        snapshot
+    );
+
+    printUs(
+        Serial,
+        snapshot.sequence,
+        snapshot.frontMm,
+        snapshot.leftMm,
+        snapshot.rightMm,
+        snapshot.validMask,
+        snapshot.frontAgeMs,
+        snapshot.leftAgeMs,
+        snapshot.rightAgeMs
+    );
 }

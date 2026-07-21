@@ -21,17 +21,19 @@ class Stream;
 //   Rear -> Front
 //   VIST,<frameId>,<hiLiIst>,<hiReIst>,<hiLiPwm>,<hiRePwm>,<hiLiCnt>,<hiReCnt>
 //
+// US:
+//   Rear -> Front
+//   US,<sequence>,<frontMm>,<leftMm>,<rightMm>,<validMask>,
+//      <frontAgeMs>,<leftAgeMs>,<rightAgeMs>
+//
+// US-Gueltigkeitsmaske:
+//   Bit 0 = Front
+//   Bit 1 = Links
+//   Bit 2 = Rechts
+//
 // Geschwindigkeiten werden als int16_t in cm/s uebertragen.
-// Beispiel:
-//    30 cm/s  ->  30
-//   -20 cm/s  -> -20
-//
-// Wichtig:
-// Die Feldnamen hiLiSoll, hiReSoll, hiLiIst, hiReIst bleiben vorerst gleich,
-// aber ihre Bedeutung ist jetzt direkt cm/s.
-// Es ist nicht mehr "m/s * 100" als Denkmodell.
-//
 // Encoder-Counts werden als int32_t Rohwerte uebertragen.
+// Ultraschallentfernungen und Alter werden als uint16_t uebertragen.
 // ============================================================
 
 struct VsolMessage
@@ -58,6 +60,21 @@ struct VistMessage
     int32_t hiReCnt;
 };
 
+struct UsMessage
+{
+    uint16_t sequence;
+
+    uint16_t frontMm;
+    uint16_t leftMm;
+    uint16_t rightMm;
+
+    uint8_t validMask;
+
+    uint16_t frontAgeMs;
+    uint16_t leftAgeMs;
+    uint16_t rightAgeMs;
+};
+
 // ============================================================
 // Parserfunktionen
 // ============================================================
@@ -65,12 +82,19 @@ struct VistMessage
 bool parseVsolLine(const char* line, VsolMessage& msg);
 bool parseVsolOkLine(const char* line, VsolOkMessage& msg);
 bool parseVistLine(const char* line, VistMessage& msg);
+bool parseUsLine(const char* line, UsMessage& msg);
 
 // ============================================================
 // Ausgabe-Funktionen
 // ============================================================
 
-void printVsol(Stream& out, uint16_t frameId, bool resetPi, int16_t hiLiSoll, int16_t hiReSoll);
+void printVsol(
+    Stream& out,
+    uint16_t frameId,
+    bool resetPi,
+    int16_t hiLiSoll,
+    int16_t hiReSoll);
+
 void printVsolOk(Stream& out, uint16_t frameId);
 
 void printVist(
@@ -82,3 +106,14 @@ void printVist(
     int16_t hiRePwm,
     int32_t hiLiCnt,
     int32_t hiReCnt);
+
+void printUs(
+    Stream& out,
+    uint16_t sequence,
+    uint16_t frontMm,
+    uint16_t leftMm,
+    uint16_t rightMm,
+    uint8_t validMask,
+    uint16_t frontAgeMs,
+    uint16_t leftAgeMs,
+    uint16_t rightAgeMs);

@@ -132,8 +132,6 @@ static bool parseInt32(const char*& p, int32_t& out)
 
 // ============================================================
 // VSOL Parser
-// Format:
-//   VSOL,<frameId>,<resetPi>,<hiLiSoll>,<hiReSoll>
 // ============================================================
 
 bool parseVsolLine(const char* line, VsolMessage& msg)
@@ -179,8 +177,6 @@ bool parseVsolLine(const char* line, VsolMessage& msg)
 
 // ============================================================
 // VSOL_OK Parser
-// Format:
-//   VSOL_OK,<frameId>
 // ============================================================
 
 bool parseVsolOkLine(const char* line, VsolOkMessage& msg)
@@ -203,8 +199,6 @@ bool parseVsolOkLine(const char* line, VsolOkMessage& msg)
 
 // ============================================================
 // VIST Parser
-// Format:
-//   VIST,<frameId>,<hiLiIst>,<hiReIst>,<hiLiPwm>,<hiRePwm>,<hiLiCnt>,<hiReCnt>
 // ============================================================
 
 bool parseVistLine(const char* line, VistMessage& msg)
@@ -226,32 +220,26 @@ bool parseVistLine(const char* line, VistMessage& msg)
 
     skipSpaces(p);
     if (!expectChar(p, ',')) return false;
-
     if (!parseInt16(p, hiLiIstTmp)) return false;
 
     skipSpaces(p);
     if (!expectChar(p, ',')) return false;
-
     if (!parseInt16(p, hiReIstTmp)) return false;
 
     skipSpaces(p);
     if (!expectChar(p, ',')) return false;
-
     if (!parseInt16(p, hiLiPwmTmp)) return false;
 
     skipSpaces(p);
     if (!expectChar(p, ',')) return false;
-
     if (!parseInt16(p, hiRePwmTmp)) return false;
 
     skipSpaces(p);
     if (!expectChar(p, ',')) return false;
-
     if (!parseInt32(p, hiLiCntTmp)) return false;
 
     skipSpaces(p);
     if (!expectChar(p, ',')) return false;
-
     if (!parseInt32(p, hiReCntTmp)) return false;
 
     skipSpaces(p);
@@ -269,12 +257,81 @@ bool parseVistLine(const char* line, VistMessage& msg)
 }
 
 // ============================================================
-// Ausgabe: VSOL
-// Format:
-//   VSOL,<frameId>,<resetPi>,<hiLiSoll>,<hiReSoll>
+// US Parser
 // ============================================================
 
-void printVsol(Stream& out, uint16_t frameId, bool resetPi, int16_t hiLiSoll, int16_t hiReSoll)
+bool parseUsLine(const char* line, UsMessage& msg)
+{
+    if (!line) return false;
+
+    const char* p = line;
+
+    uint16_t sequenceTmp = 0;
+    uint16_t frontMmTmp = 0;
+    uint16_t leftMmTmp = 0;
+    uint16_t rightMmTmp = 0;
+    uint16_t validMaskTmp = 0;
+    uint16_t frontAgeTmp = 0;
+    uint16_t leftAgeTmp = 0;
+    uint16_t rightAgeTmp = 0;
+
+    if (!expectText(p, "US,")) return false;
+    if (!parseUInt16(p, sequenceTmp)) return false;
+
+    skipSpaces(p);
+    if (!expectChar(p, ',')) return false;
+    if (!parseUInt16(p, frontMmTmp)) return false;
+
+    skipSpaces(p);
+    if (!expectChar(p, ',')) return false;
+    if (!parseUInt16(p, leftMmTmp)) return false;
+
+    skipSpaces(p);
+    if (!expectChar(p, ',')) return false;
+    if (!parseUInt16(p, rightMmTmp)) return false;
+
+    skipSpaces(p);
+    if (!expectChar(p, ',')) return false;
+    if (!parseUInt16(p, validMaskTmp)) return false;
+    if (validMaskTmp > 7) return false;
+
+    skipSpaces(p);
+    if (!expectChar(p, ',')) return false;
+    if (!parseUInt16(p, frontAgeTmp)) return false;
+
+    skipSpaces(p);
+    if (!expectChar(p, ',')) return false;
+    if (!parseUInt16(p, leftAgeTmp)) return false;
+
+    skipSpaces(p);
+    if (!expectChar(p, ',')) return false;
+    if (!parseUInt16(p, rightAgeTmp)) return false;
+
+    skipSpaces(p);
+    if (*p != '\0') return false;
+
+    msg.sequence = sequenceTmp;
+    msg.frontMm = frontMmTmp;
+    msg.leftMm = leftMmTmp;
+    msg.rightMm = rightMmTmp;
+    msg.validMask = (uint8_t)validMaskTmp;
+    msg.frontAgeMs = frontAgeTmp;
+    msg.leftAgeMs = leftAgeTmp;
+    msg.rightAgeMs = rightAgeTmp;
+
+    return true;
+}
+
+// ============================================================
+// Ausgabe: VSOL
+// ============================================================
+
+void printVsol(
+    Stream& out,
+    uint16_t frameId,
+    bool resetPi,
+    int16_t hiLiSoll,
+    int16_t hiReSoll)
 {
     out.print(F("VSOL,"));
     out.print((unsigned int)frameId);
@@ -288,8 +345,6 @@ void printVsol(Stream& out, uint16_t frameId, bool resetPi, int16_t hiLiSoll, in
 
 // ============================================================
 // Ausgabe: VSOL_OK
-// Format:
-//   VSOL_OK,<frameId>
 // ============================================================
 
 void printVsolOk(Stream& out, uint16_t frameId)
@@ -300,8 +355,6 @@ void printVsolOk(Stream& out, uint16_t frameId)
 
 // ============================================================
 // Ausgabe: VIST
-// Format:
-//   VIST,<frameId>,<hiLiIst>,<hiReIst>,<hiLiPwm>,<hiRePwm>,<hiLiCnt>,<hiReCnt>
 // ============================================================
 
 void printVist(
@@ -328,4 +381,37 @@ void printVist(
     out.print((long)hiLiCnt);
     out.print(',');
     out.println((long)hiReCnt);
+}
+
+// ============================================================
+// Ausgabe: US
+// ============================================================
+
+void printUs(
+    Stream& out,
+    uint16_t sequence,
+    uint16_t frontMm,
+    uint16_t leftMm,
+    uint16_t rightMm,
+    uint8_t validMask,
+    uint16_t frontAgeMs,
+    uint16_t leftAgeMs,
+    uint16_t rightAgeMs)
+{
+    out.print(F("US,"));
+    out.print((unsigned int)sequence);
+    out.print(',');
+    out.print((unsigned int)frontMm);
+    out.print(',');
+    out.print((unsigned int)leftMm);
+    out.print(',');
+    out.print((unsigned int)rightMm);
+    out.print(',');
+    out.print((unsigned int)validMask);
+    out.print(',');
+    out.print((unsigned int)frontAgeMs);
+    out.print(',');
+    out.print((unsigned int)leftAgeMs);
+    out.print(',');
+    out.println((unsigned int)rightAgeMs);
 }

@@ -6,6 +6,7 @@
 
 #include "src/UartLink.h"
 #include "src/Connection/ConnectionMonitor.h"
+#include "src/UltrasonicManager.h"
 
 class RearApp
 {
@@ -20,9 +21,11 @@ public:
 private:
     UartLink uart;
     ConnectionMonitor conn;
+    UltrasonicManager ultrasonic;
 
     uint32_t lastVsolMs;
     uint16_t lastVsolFrameId;
+    uint32_t lastUsSendMs;
 
     bool rearSollActive;
     volatile bool syncFlag;
@@ -36,6 +39,9 @@ private:
 
     void handleIncomingVsol(uint32_t now);
     void handleSyncVist();
+
+    void updateUltrasonic(uint32_t now);
+    void sendUltrasonicSnapshot(uint32_t now);
 };
 
 #endif // REAR_APP_H

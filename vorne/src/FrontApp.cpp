@@ -23,11 +23,18 @@ FrontApp::FrontApp()
     odometer(),
     uart(Serial, true),
     conn(uart, 13),
-    commandRunner(vehicle, odometer, CommandScript::get, CommandScript::size),
+    commandRunner(
+        vehicle,
+        odometer,
+        CommandScript::get,
+        CommandScript::size),
     rearFrameClient(),
     frameScheduler(),
     printer(),
-    _odomResetPending(true)
+    _odomResetPending(true),
+    _lastUs(),
+    _lastUsReceivedMs(0),
+    _hasUs(false)
 {}
 
 // ============================================================
@@ -53,7 +60,10 @@ void FrontApp::begin()
     uart.begin();
     conn.begin(true);
 
-    printer.printInfo(vehicle, ConfigFront::CONFIG);
+    printer.printInfo(
+        vehicle,
+        ConfigFront::CONFIG
+    );
 }
 
 void FrontApp::update(uint32_t now)
@@ -67,8 +77,6 @@ void FrontApp::update(uint32_t now)
     {
         updateVehicleAndFrontControl(now);
 
-        // Erst Messframe pruefen.
-        // Danach darf der CommandRunner den aktiven Befehl beenden.
         tryRequestFrame(now);
 
         updateCommandRunner(now);
@@ -92,7 +100,9 @@ void FrontApp::updateConnectionSafety(uint32_t now)
     (void)now;
 
     static bool prevConnected = false;
-    const bool nowConnected = uart.isConnected();
+
+    const bool nowConnected =
+        uart.isConnected();
 
     if (prevConnected && !nowConnected)
     {
@@ -109,6 +119,10 @@ void FrontApp::updateConnectionSafety(uint32_t now)
         frameScheduler.stop();
 
         _odomResetPending = true;
+
+        _lastUs = {};
+        _lastUsReceivedMs = 0;
+        _hasUs = false;
     }
 
     if (!prevConnected && nowConnected)
@@ -124,6 +138,10 @@ void FrontApp::updateConnectionSafety(uint32_t now)
         frameScheduler.begin(VEHICLE_DT_MS);
 
         _odomResetPending = true;
+
+        _lastUs = {};
+        _lastUsReceivedMs = 0;
+        _hasUs = false;
     }
 
     prevConnected = nowConnected;
@@ -138,6 +156,11 @@ void FrontApp::handleIncomingLines(uint32_t now)
 
     const char* line = uart.getLine();
 
+    if (handleUltrasonicLine(line, now))
+    {
+        return;
+    }
+
     if (rearFrameClient.handleVsolOkLine(line, now))
     {
         hardware_requestVist();
@@ -149,7 +172,10 @@ void FrontApp::handleIncomingLines(uint32_t now)
         updateVehicleIst();
         updateOdometerFromCompletedFrame();
 
-#if PRINTER_ENABLE_WHEELS || PRINTER_ENABLE_CHASSIS || PRINTER_ENABLE_COUNTS
+#if PRINTER_ENABLE_WHEELS || \
+    PRINTER_ENABLE_CHASSIS || \
+    PRINTER_ENABLE_COUNTS
+
         printer.printCompletedFrame(
             vehicle,
             rearFrameClient.frame(),
@@ -173,10 +199,48 @@ void FrontApp::handleIncomingLines(uint32_t now)
     }
 }
 
+bool FrontApp::handleUltrasonicLine(
+    const char* line,
+    uint32_t now)
+{
+    UsMessage message = {};
+
+    if (!parseUsLine(line, message))
+    {
+        return false;
+    }
+
+    _lastUs = message;
+    _lastUsReceivedMs = now;
+    _hasUs = true;
+
+    // Diagnoseausgabe fuer den PC.
+    // Zeilen mit # werden vom hinteren Nano ignoriert.
+    Serial.print(F("#US,"));
+    Serial.print((unsigned int)message.sequence);
+    Serial.print(',');
+    Serial.print((unsigned int)message.frontMm);
+    Serial.print(',');
+    Serial.print((unsigned int)message.leftMm);
+    Serial.print(',');
+    Serial.print((unsigned int)message.rightMm);
+    Serial.print(',');
+    Serial.print((unsigned int)message.validMask);
+    Serial.print(',');
+    Serial.print((unsigned int)message.frontAgeMs);
+    Serial.print(',');
+    Serial.print((unsigned int)message.leftAgeMs);
+    Serial.print(',');
+    Serial.println((unsigned int)message.rightAgeMs);
+
+    return true;
+}
+
 void FrontApp::updateFrameTimeout(uint32_t now)
 {
     if (rearFrameClient.isBusy() &&
-        now - rearFrameClient.requestMs() > 2 * VEHICLE_DT_MS)
+        now - rearFrameClient.requestMs() >
+        2 * VEHICLE_DT_MS)
     {
         resetByWatchdog();
     }
@@ -198,7 +262,11 @@ void FrontApp::tryRequestFrame(uint32_t now)
 
     if (frameScheduler.due(now, frameTime))
     {
-        requestRearFrame(now, frameTime, false);
+        requestRearFrame(
+            now,
+            frameTime,
+            false
+        );
     }
 }
 
@@ -214,18 +282,28 @@ void FrontApp::updateCommandRunner(uint32_t now)
         return;
     }
 
-    const bool wasActive = commandRunner.isActive();
-    const bool pathWasActive = commandRunner.hasActivePathCommand();
+    const bool wasActive =
+        commandRunner.isActive();
+
+    const bool pathWasActive =
+        commandRunner.hasActivePathCommand();
 
     commandRunner.update(now);
 
-    const bool isActive = commandRunner.isActive();
-    const bool pathIsActive = commandRunner.hasActivePathCommand();
+    const bool isActive =
+        commandRunner.isActive();
+
+    const bool pathIsActive =
+        commandRunner.hasActivePathCommand();
 
     if (pathWasActive && !pathIsActive)
     {
         applyFrontWheelSoll();
-        rearFrameClient.sendStop(Serial, now);
+
+        rearFrameClient.sendStop(
+            Serial,
+            now
+        );
     }
 
     if (pathIsActive &&
@@ -234,7 +312,9 @@ void FrontApp::updateCommandRunner(uint32_t now)
         requestStartFrameForNewCommand(now);
     }
 
-    if (wasActive && !isActive && commandRunner.isFinished())
+    if (wasActive &&
+        !isActive &&
+        commandRunner.isFinished())
     {
         rearFrameClient.armStopSequence();
     }
@@ -242,9 +322,11 @@ void FrontApp::updateCommandRunner(uint32_t now)
 
 void FrontApp::updateLogRaster(uint32_t now)
 {
-    RearPendingFrame& frame = rearFrameClient.frame();
+    RearPendingFrame& frame =
+        rearFrameClient.frame();
 
-    const bool pathActive = commandRunner.hasActivePathCommand();
+    const bool pathActive =
+        commandRunner.hasActivePathCommand();
 
     if (!pathActive)
     {
@@ -313,43 +395,48 @@ void FrontApp::resetByWatchdog()
 
 void FrontApp::applyFrontWheelSoll()
 {
-    rad[Li].setSoll(commandRunner.getWheelSoll(VoLi));
-    rad[Re].setSoll(commandRunner.getWheelSoll(VoRe));
+    rad[Li].setSoll(
+        commandRunner.getWheelSoll(VoLi)
+    );
+
+    rad[Re].setSoll(
+        commandRunner.getWheelSoll(VoRe)
+    );
 }
 
 void FrontApp::updateVehicleIst()
 {
     WheelSpeedCms wheelIst = {};
 
-    // Uebersetzung lokale Front-Radordnung -> Fahrzeug-Radordnung:
-    //   Front lokal Re = VoRe
-    //   Front lokal Li = VoLi
-    //   Rear kommt bereits als HiLi / HiRe vom RearFrameClient.
-    wheelIst.v[VoRe] = wheelMeasurements[Re].cms();
-    wheelIst.v[VoLi] = wheelMeasurements[Li].cms();
-    wheelIst.v[HiLi] = (float)rearFrameClient.hiLiIstCms();
-    wheelIst.v[HiRe] = (float)rearFrameClient.hiReIstCms();
+    wheelIst.v[VoRe] =
+        wheelMeasurements[Re].cms();
+
+    wheelIst.v[VoLi] =
+        wheelMeasurements[Li].cms();
+
+    wheelIst.v[HiLi] =
+        (float)rearFrameClient.hiLiIstCms();
+
+    wheelIst.v[HiRe] =
+        (float)rearFrameClient.hiReIstCms();
 
     vehicle.updateIst(wheelIst);
 }
 
 void FrontApp::updateOdometerFromCompletedFrame()
 {
-    const RearPendingFrame& frame = rearFrameClient.frame();
+    const RearPendingFrame& frame =
+        rearFrameClient.frame();
 
     WheelCounts counts = {};
 
-    // Uebersetzung Frame-Counts -> Fahrzeug-Radordnung:
-    //   v[VoRe] = vorne rechts
-    //   v[VoLi] = vorne links
-    //   v[HiLi] = hinten links
-    //   v[HiRe] = hinten rechts
     counts.v[VoRe] = frame.voReCnt;
     counts.v[VoLi] = frame.voLiCnt;
     counts.v[HiLi] = frame.hiLiCnt;
     counts.v[HiRe] = frame.hiReCnt;
 
-    if (_odomResetPending || !odometer.isPrimed())
+    if (_odomResetPending ||
+        !odometer.isPrimed())
     {
         odometer.reset(counts);
 
@@ -360,40 +447,73 @@ void FrontApp::updateOdometerFromCompletedFrame()
     odometer.update(counts);
 }
 
-RearFrameRequest FrontApp::makeRearFrameRequest(uint32_t frameTime, bool resetPi)
+RearFrameRequest FrontApp::makeRearFrameRequest(
+    uint32_t frameTime,
+    bool resetPi)
 {
     RearFrameRequest request = {};
 
     request.frameTimeMs = frameTime;
     request.resetPi = resetPi;
 
-    request.voLi_s_cms = scaleRoundToInt16(commandRunner.getWheelSoll(VoLi));
-    request.voLi_i_cms = wheelMeasurements[Li].cmsInt();
-    request.voLi_pwm = rad[Li].lastPwm();
-    request.voLiCnt = (int32_t)wheelMeasurements[Li].counts_total();
+    request.voLi_s_cms =
+        scaleRoundToInt16(
+            commandRunner.getWheelSoll(VoLi));
 
-    request.voRe_s_cms = scaleRoundToInt16(commandRunner.getWheelSoll(VoRe));
-    request.voRe_i_cms = wheelMeasurements[Re].cmsInt();
-    request.voRe_pwm = rad[Re].lastPwm();
-    request.voReCnt = (int32_t)wheelMeasurements[Re].counts_total();
+    request.voLi_i_cms =
+        wheelMeasurements[Li].cmsInt();
 
-    request.hiLi_s_cms = scaleRoundToInt16(commandRunner.getWheelSoll(HiLi));
-    request.hiRe_s_cms = scaleRoundToInt16(commandRunner.getWheelSoll(HiRe));
+    request.voLi_pwm =
+        rad[Li].lastPwm();
+
+    request.voLiCnt =
+        (int32_t)wheelMeasurements[Li].counts_total();
+
+    request.voRe_s_cms =
+        scaleRoundToInt16(
+            commandRunner.getWheelSoll(VoRe));
+
+    request.voRe_i_cms =
+        wheelMeasurements[Re].cmsInt();
+
+    request.voRe_pwm =
+        rad[Re].lastPwm();
+
+    request.voReCnt =
+        (int32_t)wheelMeasurements[Re].counts_total();
+
+    request.hiLi_s_cms =
+        scaleRoundToInt16(
+            commandRunner.getWheelSoll(HiLi));
+
+    request.hiRe_s_cms =
+        scaleRoundToInt16(
+            commandRunner.getWheelSoll(HiRe));
 
     return request;
 }
 
-void FrontApp::requestRearFrame(uint32_t now, uint32_t frameTime, bool resetPi)
+void FrontApp::requestRearFrame(
+    uint32_t now,
+    uint32_t frameTime,
+    bool resetPi)
 {
-    const RearFrameRequest request = makeRearFrameRequest(frameTime, resetPi);
+    const RearFrameRequest request =
+        makeRearFrameRequest(
+            frameTime,
+            resetPi
+        );
 
-    const bool sent = rearFrameClient.requestFrame(
-        Serial,
-        now,
-        request
-    );
+    const bool sent =
+        rearFrameClient.requestFrame(
+            Serial,
+            now,
+            request
+        );
 
-#if defined(PRINTER_MODE_CHASSIS) && PRINTER_ENABLE_CHASSIS
+#if defined(PRINTER_MODE_CHASSIS) && \
+    PRINTER_ENABLE_CHASSIS
+
     if (sent)
     {
         printer.printChassisDebug(
@@ -403,6 +523,8 @@ void FrontApp::requestRearFrame(uint32_t now, uint32_t frameTime, bool resetPi)
             request.hiRe_s_cms
         );
     }
+#else
+    (void)sent;
 #endif
 }
 
@@ -421,7 +543,6 @@ void FrontApp::requestStartFrameForNewCommand(uint32_t now)
     _odomResetPending = true;
 
     wheelMeasurement_reset_all();
-
     radControl_resetPiStates();
 
     applyFrontWheelSoll();
@@ -431,5 +552,9 @@ void FrontApp::requestStartFrameForNewCommand(uint32_t now)
 
     frameScheduler.start(now);
 
-    requestRearFrame(now, 0, true);
+    requestRearFrame(
+        now,
+        0,
+        true
+    );
 }

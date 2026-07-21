@@ -73,6 +73,22 @@ class WheelSample:
     values: list[float] = field(default_factory=list)
 
 
+@dataclass
+class UsSample:
+    # Ein Ultraschall-Frame vom vorderen Nano.
+    # Ungueltige Kanaele (validMask-Bit nicht gesetzt) werden als
+    # None gefuehrt, damit im Plot eine Luecke entsteht statt eines
+    # veralteten Werts.
+    seq: int
+    front_mm: Optional[float]
+    left_mm: Optional[float]
+    right_mm: Optional[float]
+    # Weg [cm] aus dem zuletzt empfangenen #ODOM. None, solange noch
+    # kein ODOM kam. cmd_id erlaubt spaeter das Trennen mehrerer Laeufe.
+    path_cm: Optional[float] = None
+    cmd_id: int = -1
+
+
 # ============================================================
 # Store
 # ============================================================
@@ -86,10 +102,16 @@ class Store:
         self.cmdp_order: list[int] = []
         self.odom_rows: list[OdomSample] = []
         self.wheels_rows: list[WheelSample] = []
+        self.us_rows: list[UsSample] = []
 
         # cmd_id des zuletzt empfangenen CMDP_BEGIN.
         # Wird WHEELS-Frames mitgegeben, damit Settle/Lauf unterscheidbar sind.
         self.current_cmd_id: int = -1
+
+        # Weg [cm] aus dem zuletzt empfangenen #ODOM. Wird jedem
+        # US-Frame mitgegeben, damit die US-Ansicht ueber den Weg
+        # geplottet werden kann.
+        self.current_path_cm: Optional[float] = None
 
     def clear(self) -> None:
         with self.lock:
@@ -97,13 +119,17 @@ class Store:
             self.cmdp_order.clear()
             self.odom_rows.clear()
             self.wheels_rows.clear()
+            self.us_rows.clear()
             self.current_cmd_id = -1
+            self.current_path_cm = None
 
     def _trim(self) -> None:
         if len(self.odom_rows) > self.max_rows:
             self.odom_rows = self.odom_rows[-self.max_rows:]
         if len(self.wheels_rows) > self.max_rows:
             self.wheels_rows = self.wheels_rows[-self.max_rows:]
+        if len(self.us_rows) > self.max_rows:
+            self.us_rows = self.us_rows[-self.max_rows:]
 
     def add_cmdp_begin(self, msg: CmdpBegin) -> None:
         with self.lock:
@@ -115,6 +141,7 @@ class Store:
     def add_odom(self, row: OdomSample) -> None:
         with self.lock:
             self.odom_rows.append(row)
+            self.current_path_cm = row.path_cm
             self._trim()
 
     def add_wheels(self, ms: float, values: list[float]) -> None:
@@ -126,6 +153,14 @@ class Store:
             ))
             self._trim()
 
+    def add_us(self, row: UsSample) -> None:
+        with self.lock:
+            # Weg und Lauf-Zuordnung aus dem aktuellen Stand ergaenzen.
+            row.path_cm = self.current_path_cm
+            row.cmd_id = self.current_cmd_id
+            self.us_rows.append(row)
+            self._trim()
+
     def snapshot(self) -> dict:
         with self.lock:
             return {
@@ -133,6 +168,7 @@ class Store:
                 "cmdp_order": list(self.cmdp_order),
                 "odom_rows": list(self.odom_rows),
                 "wheels_rows": list(self.wheels_rows),
+                "us_rows": list(self.us_rows),
             }
 
 
@@ -185,6 +221,27 @@ def parse_line(line: str, store: Store) -> bool:
                 ms     = float(parts[1]),
                 values = [float(p) for p in parts[2:]],
             )
+            return True
+
+        if line.startswith("#US,"):
+            # Format: #US,seq,frontMm,leftMm,rightMm,validMask,fAge,lAge,rAge
+            parts = line.split(",")
+            if len(parts) < 6:
+                return False
+
+            seq  = int(parts[1])
+            fmm  = int(parts[2])
+            lmm  = int(parts[3])
+            rmm  = int(parts[4])
+            mask = int(parts[5])
+
+            # Bit 0 = Front, Bit 1 = Links, Bit 2 = Rechts.
+            store.add_us(UsSample(
+                seq      = seq,
+                front_mm = fmm if (mask & 0x01) else None,
+                left_mm  = lmm if (mask & 0x02) else None,
+                right_mm = rmm if (mask & 0x04) else None,
+            ))
             return True
 
     except (ValueError, IndexError):

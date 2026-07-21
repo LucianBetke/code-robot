@@ -1,0 +1,2 @@
+Dies ist ein Test für die Zusammenarbeit zwischen Chatty und Claudine.
+Claudine hat die Datei gelesen und geprüft.

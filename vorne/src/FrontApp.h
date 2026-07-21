@@ -6,6 +6,7 @@
 
 #include "CommandScript.h"
 
+#include "src/CommProtocol.h"
 #include "src/VehicleController.h"
 #include "src/MecanumOdometer.h"
 #include "src/UartLink.h"
@@ -14,23 +15,6 @@
 #include "src/RearFrameClient.h"
 #include "src/FrameScheduler.h"
 #include "src/TelemetryPrinter.h"
-
-// ============================================================
-// FrontApp
-//
-// Konkrete Anwendung fuer den Front-Nano.
-//
-// Aufgabe:
-//  - Initialisierung des Front-Nanos kapseln.
-//  - Loop-Ablauf des Front-Nanos kapseln.
-//  - Verbindung, Fahrbefehle, lokale Radregelung, Rear-Frames,
-//    Odometrie und Telemetrie koordinieren.
-//
-// Wichtig:
-//  - Keine Radregelung.
-//  - Keine Motor-/Encoder-Implementierung.
-//  - Keine Chassisregelung in diesem Paket.
-// ============================================================
 
 class FrontApp
 {
@@ -56,9 +40,18 @@ private:
 
     bool _odomResetPending;
 
+    UsMessage _lastUs;
+    uint32_t _lastUsReceivedMs;
+    bool _hasUs;
+
     void updateCommunication();
     void updateConnectionSafety(uint32_t now);
+
     void handleIncomingLines(uint32_t now);
+    bool handleUltrasonicLine(
+        const char* line,
+        uint32_t now);
+
     void updateFrameTimeout(uint32_t now);
     void tryRequestFrame(uint32_t now);
     void updateCommandRunner(uint32_t now);
@@ -72,8 +65,15 @@ private:
     void updateVehicleIst();
     void updateOdometerFromCompletedFrame();
 
-    RearFrameRequest makeRearFrameRequest(uint32_t frameTime, bool resetPi);
-    void requestRearFrame(uint32_t now, uint32_t frameTime, bool resetPi);
+    RearFrameRequest makeRearFrameRequest(
+        uint32_t frameTime,
+        bool resetPi);
+
+    void requestRearFrame(
+        uint32_t now,
+        uint32_t frameTime,
+        bool resetPi);
+
     void requestStartFrameForNewCommand(uint32_t now);
 };
 

@@ -408,8 +408,176 @@ def _update_wheels_plot(axes, store) -> None:
 
 
 # ============================================================
+# US - Ultraschall-Abstaende
+# ============================================================
+
+# Feste Farben pro Sensor, damit die Zuordnung immer gleich ist.
+US_COLORS = {
+    "front": "tab:blue",
+    "left":  "tab:orange",
+    "right": "tab:green",
+}
+
+US_LINEWIDTH = 2.2
+
+
+def _build_us_arrays(us_rows: list):
+    """Baut die Plotlisten aus den US-Frames, X-Achse = Weg [cm].
+
+    Jeder US-Frame traegt den Weg (path_cm) des zuletzt empfangenen
+    #ODOM. Frames ohne Weg (noch kein ODOM) werden uebersprungen.
+
+    Der Weg jedes Laufs beginnt am Arduino wieder bei 0. Damit die
+    X-Achse durchlaeuft statt bei jedem Lauf zurueckzuspringen, wird
+    - wie in der WHEELS-Ansicht - ein kumulativer Offset addiert:
+    beim Laufwechsel kommt der letzte Weg des vorherigen Laufs oben
+    drauf. An der Nahtstelle wird zusaetzlich eine NaN-Luecke gesetzt,
+    damit keine Linie ueber den Sprung gezogen wird.
+
+    Ungueltige Kanalwerte sind als None gefuehrt und werden zu NaN.
+    """
+    s_cm  = []
+    front = []
+    left  = []
+    right = []
+
+    last_cmd_id = None
+    last_raw_path = None      # roher path_cm des vorigen Frames
+    cum_offset = 0.0          # aufaddierter Weg abgeschlossener Laeufe
+
+    def as_nan(v):
+        return math.nan if v is None else float(v)
+
+    for row in us_rows:
+        if row.path_cm is None:
+            continue
+
+        raw = float(row.path_cm)
+
+        new_run = False
+        if last_cmd_id is not None and row.cmd_id != last_cmd_id:
+            new_run = True
+        # Weg-Ruecksprung ohne cmd-Wechsel (z. B. Neustart) ebenfalls
+        # als Lauftrenner behandeln.
+        if last_raw_path is not None and raw < last_raw_path - 0.5:
+            new_run = True
+
+        if new_run:
+            # Den bis hierhin gelaufenen Weg des vorigen Laufs
+            # dauerhaft aufaddieren, dann Luecke setzen.
+            if last_raw_path is not None:
+                cum_offset += last_raw_path
+
+            s_cm.append(math.nan)
+            front.append(math.nan)
+            left.append(math.nan)
+            right.append(math.nan)
+
+        s_cm.append(cum_offset + raw)
+        front.append(as_nan(row.front_mm))
+        left.append(as_nan(row.left_mm))
+        right.append(as_nan(row.right_mm))
+
+        last_cmd_id = row.cmd_id
+        last_raw_path = raw
+
+    return s_cm, front, left, right
+
+
+def _count_valid(values) -> int:
+    return sum(1 for v in values if v is not None and not math.isnan(v))
+
+
+def _last_valid(values):
+    for v in reversed(values):
+        if v is not None and not math.isnan(v):
+            return v
+    return None
+
+
+def _update_us_status(fig, s_cm, front, left, right) -> None:
+    status_text = getattr(fig, "_robot_status_text", None)
+    if status_text is None:
+        return
+
+    if not s_cm:
+        status_text.set_text("US: warte auf #US + #ODOM ...")
+        return
+
+    def fmt(v):
+        return "---" if v is None else f"{int(v)}mm"
+
+    valid_s = [x for x in s_cm if not math.isnan(x)]
+    weg = f"{valid_s[-1]:.1f} cm" if valid_s else "-"
+
+    status_text.set_text(
+        f"US   Weg={weg}   "
+        f"Front={fmt(_last_valid(front))}   "
+        f"Links={fmt(_last_valid(left))}   "
+        f"Rechts={fmt(_last_valid(right))}"
+    )
+
+
+def _update_us_plot(axes, store) -> None:
+    ax = axes[0]
+    ax.clear()
+
+    snap = store.snapshot()
+    us_rows = snap.get("us_rows", [])
+
+    fig = ax.figure
+
+    s_cm, front, left, right = _build_us_arrays(us_rows)
+
+    if not s_cm:
+        _update_us_status(fig, [], [], [], [])
+        ax.set_xlabel("Weg [cm]", fontsize=AXIS_LABEL_FONTSIZE, labelpad=8)
+        ax.set_ylabel("Abstand [mm]", fontsize=AXIS_LABEL_FONTSIZE, labelpad=8)
+        ax.grid(True)
+        ax.text(
+            0.5, 0.5, "warte auf #US + #ODOM ...",
+            transform=ax.transAxes,
+            ha="center", va="center", fontsize=16,
+        )
+        return
+
+    _update_us_status(fig, s_cm, front, left, right)
+
+    ax.plot(s_cm, front, label="Front", color=US_COLORS["front"],
+            marker="o", markersize=3, linewidth=US_LINEWIDTH)
+    ax.plot(s_cm, left, label="Links", color=US_COLORS["left"],
+            marker="s", markersize=3, linewidth=US_LINEWIDTH)
+    ax.plot(s_cm, right, label="Rechts", color=US_COLORS["right"],
+            marker="^", markersize=3, linewidth=US_LINEWIDTH)
+
+    ax.set_xlabel("Weg [cm]", fontsize=AXIS_LABEL_FONTSIZE, labelpad=8)
+    ax.set_ylabel("Abstand [mm]", fontsize=AXIS_LABEL_FONTSIZE, labelpad=8)
+    ax.grid(True)
+    ax.tick_params(axis="both", labelsize=TICK_LABEL_FONTSIZE, pad=4)
+    ax.margins(x=0.01)
+
+    ax.legend(
+        loc="upper right",
+        fontsize=LEGEND_FONTSIZE,
+        framealpha=0.90,
+        borderpad=0.6,
+        labelspacing=0.45,
+        handlelength=2.8,
+    )
+
+
+# ============================================================
 # Figure-Erzeugung
 # ============================================================
+
+def _make_us_figure():
+    fig = _make_base_figure("Robot Monitor - US")
+
+    # Ein grosses Diagramm fuer die drei Abstaende.
+    L, W = 0.060, 0.925
+    ax = fig.add_axes([L, 0.100, W, 0.820])
+    return fig, [ax]
+
 
 def _make_odom_figure():
     fig = _make_base_figure("Robot Monitor - ODOM")
@@ -471,6 +639,12 @@ def start_plot(store, mode: str = "ODOM", interval_ms: int = 200):
 
         def animate(_frame):
             update_spur_plot(axes, store)
+
+    elif mode == "US":
+        fig, axes = _make_us_figure()
+
+        def animate(_frame):
+            _update_us_plot(axes, store)
 
     else:
         fig, axes = _make_odom_figure()
