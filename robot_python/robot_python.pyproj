@@ -25,6 +25,8 @@
     <Compile Include="main.py" />
     <Compile Include="plotter.py" />
     <Compile Include="plot_odom.py" />
+    <Compile Include="plot_us.py" />
+    <Compile Include="plot_wheels.py" />
     <Compile Include="serial_io.py" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />
