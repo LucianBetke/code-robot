@@ -3,8 +3,9 @@
 # Zweck:
 #   - Startdatei fuer den Robot Monitor
 #   - Liest Kommandozeilenargumente
+#   - Fragt Datenquelle ab (Live vom Port oder CSV-Replay)
 #   - Fragt Plotmodus ab
-#   - Startet Serial-Thread
+#   - Startet Serial-Thread bzw. Replay-Thread
 #   - Startet Live-Plot
 #
 # Startbeispiele:
@@ -14,10 +15,18 @@
 #   py main.py --mode WHEELS
 #   py main.py --port COM7 --mode ODOM
 #   py main.py --csv mein_test.csv
+#   py main.py --replay robot_last.csv --mode US
+#   py main.py --replay robot_last.csv --loop
 #   py main.py --list
+#
+# Ohne Argumente fragt das Programm nach dem Start zuerst nach der
+# Datenquelle (Live oder CSV) und danach nach dem Plotmodus. Es ist
+# also kein Kommandozeilen-Argument noetig; der gruene Start-Knopf in
+# Visual Studio genuegt.
 # ============================================================
 
 import argparse
+import os
 import threading
 
 from config import DEFAULT_PORT
@@ -28,6 +37,59 @@ from config import UPDATE_MS
 
 from serial_io import make_store
 from serial_io import serial_thread
+from serial_io import replay_thread
+
+
+# ============================================================
+# Standard-CSV-Name
+# ============================================================
+# Diese Datei wird im Live-Betrieb beschrieben und im Replay-Betrieb
+# gelesen, wenn beim Abfragen keine andere angegeben wird.
+
+DEFAULT_CSV_NAME = "robot_last.csv"
+
+
+# ============================================================
+# Startauswahl Datenquelle
+# ============================================================
+
+def ask_data_source(default_csv: str = DEFAULT_CSV_NAME):
+    """Fragt, ob live vom Port oder aus einer CSV gelesen wird.
+
+    Rueckgabe:
+        None                -> Live vom Port
+        "<pfad zur csv>"    -> Replay dieser CSV
+    """
+    print()
+    print("Woher sollen die Daten kommen?")
+    print("  1 = LIVE    - direkt vom Roboter (COM-Port)")
+    print(f"  2 = CSV     - gespeicherte Datei erneut abspielen [{default_csv}]")
+    print("  Enter = Standard [LIVE]")
+    print()
+
+    while True:
+        choice = input("Auswahl [1/2]: ").strip().lower()
+
+        if choice in ("", "1", "l", "live", "port", "com"):
+            return None
+
+        if choice in ("2", "c", "csv", "replay", "datei", "file"):
+            # Optional anderen Dateinamen zulassen. Enter = Standard.
+            name = input(
+                f"CSV-Datei [{default_csv}]: "
+            ).strip()
+
+            if name == "":
+                name = default_csv
+
+            if not os.path.isfile(name):
+                print(f"Datei nicht gefunden: {name}")
+                print("Bitte erneut waehlen.")
+                continue
+
+            return name
+
+        print("Ungueltige Auswahl. Bitte 1 fuer LIVE oder 2 fuer CSV eingeben.")
 
 
 # ============================================================
@@ -119,7 +181,7 @@ def main():
         "--csv",
         "-c",
         default=None,
-        help="CSV-Dateiname, sonst robot_last.csv"
+        help="CSV-Dateiname fuer den Live-Mitschnitt, sonst robot_last.csv"
     )
 
     parser.add_argument(
@@ -146,11 +208,37 @@ def main():
         help="Nur Terminal, kein Live-Plot"
     )
 
+    parser.add_argument(
+        "--replay",
+        "-r",
+        default=None,
+        help="CSV-Datei erneut abspielen statt live vom Port zu lesen"
+    )
+
+    parser.add_argument(
+        "--loop",
+        action="store_true",
+        help="Replay in Endlosschleife (Store wird pro Durchlauf geleert)"
+    )
+
     args = parser.parse_args()
 
     if args.list:
         print_available_ports()
         return
+
+    # ========================================================
+    # Datenquelle bestimmen
+    # ========================================================
+    # Vorrang hat das Kommandozeilen-Argument --replay. Ist es nicht
+    # gesetzt, wird interaktiv gefragt: Live oder CSV. So braucht der
+    # Start ueber den gruenen Knopf in Visual Studio kein Argument.
+    # ========================================================
+
+    if args.replay is not None:
+        replay_path = args.replay
+    else:
+        replay_path = ask_data_source(DEFAULT_CSV_NAME)
 
     display_mode = resolve_display_mode(args.mode)
 
@@ -161,7 +249,7 @@ def main():
         display_mode = "SPUR"
 
     # ========================================================
-    # CSV-Datei
+    # CSV-Datei fuer den Live-Mitschnitt
     # ========================================================
     # Standard:
     #   Es wird immer dieselbe Datei benutzt.
@@ -170,37 +258,57 @@ def main():
     #
     # Optional:
     #   Mit --csv dateiname.csv kann weiterhin ein anderer Name angegeben werden.
+    #
+    # Im Replay-Betrieb wird KEINE CSV zum Schreiben geoeffnet, sonst
+    # wuerde die Quelldatei ueberschrieben.
     # ========================================================
 
     if args.csv is not None:
         csv_path = args.csv
     else:
-        csv_path = "robot_last.csv"
+        csv_path = DEFAULT_CSV_NAME
 
     store = make_store(MAX_POINTS)
     stop_event = threading.Event()
 
-    csv_file = open(csv_path, "w", newline="", encoding="utf-8")
-
-    thread = threading.Thread(
-        target=serial_thread,
-        args=(
-            args.port,
-            args.baud,
-            store,
-            stop_event,
-            csv_file,
-            True
-        ),
-        daemon=True
-    )
+    if replay_path is not None:
+        thread = threading.Thread(
+            target=replay_thread,
+            args=(
+                replay_path,
+                store,
+                stop_event,
+                True,
+                args.loop,
+            ),
+            daemon=True
+        )
+    else:
+        # Live-Betrieb: der Serial-Thread oeffnet die CSV erst nach
+        # erfolgreichem Portoeffnen. So wird eine vorhandene Aufnahme
+        # nicht geleert, wenn der Port belegt ist oder LIVE nur
+        # versehentlich gewaehlt wurde.
+        thread = threading.Thread(
+            target=serial_thread,
+            args=(
+                args.port,
+                args.baud,
+                store,
+                stop_event,
+                None,       # csv_file: nicht vorab oeffnen
+                True,       # echo
+                csv_path,   # csv_path: Thread oeffnet selbst
+            ),
+            daemon=True
+        )
 
     try:
         thread.start()
 
         if args.no_plot:
             print("Kein Plot aktiv. STRG+C zum Beenden.")
-            print(f"CSV-Datei: {csv_path}")
+            if replay_path is None:
+                print(f"CSV-Datei: {csv_path}")
 
             try:
                 thread.join()
@@ -226,8 +334,6 @@ def main():
             thread.join(timeout=1.0)
         except RuntimeError:
             pass
-
-        csv_file.close()
 
 
 if __name__ == "__main__":

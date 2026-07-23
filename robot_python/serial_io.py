@@ -269,19 +269,37 @@ def serial_thread(
     stop_event: Optional[Event] = None,
     csv_file: Optional[TextIO] = None,
     echo: bool = True,
+    csv_path: Optional[str] = None,
 ) -> None:
-    """Liest serielle Zeilen, schreibt sie ins CSV (falls offen) und parst sie in den Store."""
+    """Liest serielle Zeilen, schreibt sie ins CSV und parst sie in den Store.
+
+    CSV-Handhabung:
+        Wird csv_path uebergeben, oeffnet dieser Thread die Datei ERST,
+        nachdem der Port erfolgreich geoeffnet wurde. Dadurch wird eine
+        vorhandene Aufzeichnung nicht mehr geleert, wenn die Verbindung
+        gar nicht zustande kommt (z. B. Port belegt). Die Datei wird am
+        Ende hier wieder geschlossen.
+
+        Der alte Weg ueber ein bereits offenes csv_file bleibt aus
+        Kompatibilitaet erhalten.
+    """
     if stop_event is None:
         stop_event = Event()
+
+    print("Opening port")
+    ser = open_serial(port, baud)
+    print("Port open")
+
+    # CSV erst jetzt oeffnen - nach erfolgreichem Portoeffnen.
+    own_csv_file = None
+    if csv_file is None and csv_path is not None:
+        own_csv_file = open(csv_path, "w", newline="", encoding="utf-8")
+        csv_file = own_csv_file
 
     csv_writer = None
     if csv_file is not None:
         csv_writer = csv.writer(csv_file, lineterminator="\n")
         csv_writer.writerow(["line"])
-
-    print("Opening port")
-    ser = open_serial(port, baud)
-    print("Port open")
 
     try:
         while not stop_event.is_set():
@@ -305,3 +323,74 @@ def serial_thread(
             ser.close()
         finally:
             print("Port closed")
+            if own_csv_file is not None:
+                own_csv_file.close()
+
+# ============================================================
+# CSV-Replay
+# ============================================================
+
+def replay_thread(
+    csv_path: str,
+    store: Store,
+    stop_event: Optional[Event] = None,
+    echo: bool = True,
+    loop: bool = False,
+) -> None:
+    """Spielt eine gespeicherte robot_last.csv erneut in den Store.
+
+    Die CSV wurde von serial_thread geschrieben: eine Kopfzeile "line"
+    und danach je Zeile die rohe Arduino-Zeile (CSV-gequotet). Hier wird
+    sie wieder ausgepackt und - wie beim Live-Betrieb - durch
+    parse_line(...) in denselben Store geschoben. Alle Ansichten
+    (US, ODOM, SPUR, WHEELS) funktionieren damit unveraendert.
+
+    Die Datei wird ohne jede Verzoegerung durchgelesen. Der fertige
+    Plot ist also sofort vollstaendig da.
+
+    Parameter:
+        loop: True = nach Dateiende von vorn beginnen (Store wird
+              vorher geleert).
+    """
+    if stop_event is None:
+        stop_event = Event()
+
+    print(f"Replay: {csv_path}  (loop={loop})")
+
+    while not stop_event.is_set():
+        try:
+            with open(csv_path, "r", newline="", encoding="utf-8") as f:
+                reader = csv.reader(f)
+
+                for row_index, row in enumerate(reader):
+                    if stop_event.is_set():
+                        break
+
+                    if not row:
+                        continue
+
+                    line = row[0].strip()
+
+                    # Kopfzeile ueberspringen.
+                    if row_index == 0 and line == "line":
+                        continue
+                    if not line:
+                        continue
+
+                    if echo:
+                        print(line)
+
+                    parse_line(line, store)
+
+        except FileNotFoundError:
+            print(f"Replay: Datei nicht gefunden: {csv_path}")
+            return
+
+        if not loop:
+            break
+
+        # Vor dem naechsten Durchlauf den Store leeren, damit die
+        # Laeufe nicht endlos aneinandergehaengt werden.
+        store.clear()
+
+    print("Replay beendet.")
