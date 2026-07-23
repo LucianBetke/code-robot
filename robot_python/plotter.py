@@ -65,7 +65,7 @@ WHEEL_SETPOINT_LINEWIDTH = 1.8
 LEGEND_FONTSIZE = 14
 AXIS_LABEL_FONTSIZE = 17
 TICK_LABEL_FONTSIZE = 14
-STATUS_FONTSIZE = 12
+STATUS_FONTSIZE = 15
 
 
 # ============================================================

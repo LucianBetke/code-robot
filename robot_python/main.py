@@ -36,6 +36,7 @@ from config import MAX_POINTS
 from config import UPDATE_MS
 
 from serial_io import make_store
+from serial_io import open_serial
 from serial_io import serial_thread
 from serial_io import replay_thread
 
@@ -74,17 +75,11 @@ def ask_data_source(default_csv: str = DEFAULT_CSV_NAME):
             return None
 
         if choice in ("2", "c", "csv", "replay", "datei", "file"):
-            # Optional anderen Dateinamen zulassen. Enter = Standard.
-            name = input(
-                f"CSV-Datei [{default_csv}]: "
-            ).strip()
-
-            if name == "":
-                name = default_csv
+            # Es wird immer der Standardname verwendet, keine Nachfrage.
+            name = default_csv
 
             if not os.path.isfile(name):
                 print(f"Datei nicht gefunden: {name}")
-                print("Bitte erneut waehlen.")
                 continue
 
             return name
@@ -239,6 +234,24 @@ def main():
         replay_path = args.replay
     else:
         replay_path = ask_data_source(DEFAULT_CSV_NAME)
+
+    # ========================================================
+    # Live-Betrieb: Port sofort pruefen
+    # ========================================================
+    # Direkt nach der Auswahl LIVE wird der COM-Port testweise
+    # geoeffnet. Schlaegt das fehl (Roboter nicht angeschlossen),
+    # kommt nur eine kurze Meldung und das Programm bricht ab -
+    # noch vor der Frage nach dem Plotmodus.
+    # ========================================================
+
+    if replay_path is None:
+        try:
+            test_ser = open_serial(args.port, args.baud)
+            test_ser.close()
+        except Exception:
+            print()
+            print("COM-Port nicht angeschlossen.")
+            return
 
     display_mode = resolve_display_mode(args.mode)
 

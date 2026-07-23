@@ -459,9 +459,9 @@ def update_odom_plot(axes, store) -> None:
         ax.margins(x=0.01)
         _add_time_axis(ax, data, show_label=(i == 0))
 
-    ax_cross.plot(data.s_cm, data.e_cross_cm, linewidth=1.8)
-    ax_parallel.plot(data.s_cm, data.e_parallel_cm, linewidth=1.8)
-    ax_phi.plot(data.s_cm, data.phi_deg, linewidth=1.8)
+    ax_cross.plot(data.s_cm, data.e_cross_cm, linewidth=4.0)
+    ax_parallel.plot(data.s_cm, data.e_parallel_cm, linewidth=4.0)
+    ax_phi.plot(data.s_cm, data.phi_deg, linewidth=4.0)
 
 
 # ============================================================
@@ -533,5 +533,5 @@ def update_spur_plot(axes, store) -> None:
         ax.margins(x=0.01)
         _add_time_axis(ax, data, show_label=(i == 0))
 
-    ax_cross.plot(data.s_cm, data.e_cross_cm, linewidth=1.8)
-    ax_phi.plot(data.s_cm, data.phi_deg, linewidth=1.8)
+    ax_cross.plot(data.s_cm, data.e_cross_cm, linewidth=4.0)
+    ax_phi.plot(data.s_cm, data.phi_deg, linewidth=4.0)
