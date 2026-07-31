@@ -43,7 +43,7 @@ namespace PinsFront
     constexpr uint8_t M_Re_AIN1 = 6;
     constexpr uint8_t M_Re_AIN2 = 5;
 
-    constexpr uint8_t STBY_SYNC_PIN = 8;
+    constexpr uint8_t STBY_SYNC_PIN = 4;
 
     constexpr uint8_t ENC_Li_PIN_A = A2;
     constexpr uint8_t ENC_Li_PIN_B = A3;
