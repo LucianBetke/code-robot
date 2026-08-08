@@ -1,17 +1,24 @@
 // ============================================================
 // File: UltrasonicEchoCapture.h
 // Zweck:
-//  - Echo-Flanken der drei HC-SR04 erfassen
-//  - Front-Echo ueber INT1 / D3
-//  - Links/Rechts ueber den gemeinsamen PCINT1-Vektor / A5,A4
+//  - Echo-Flanken der HC-SR04 erfassen
+//  - Front-Echo ueber einen Hardware-Interrupt (INT1 / D3)
+//  - Links/Rechts ueber den gemeinsamen PCINT1-Vektor (PORTC)
 //  - Zeitstempel nur in der ISR erfassen
 //  - Fertige Rise/Fall-Paare atomar an das Hauptprogramm uebergeben
+//
+// Die Sensoren sind auf beide Nanos verteilt: vorne die beiden
+// seitlichen, hinten der vordere. Nicht vorhandene Kanaele
+// werden mit ULTRASONIC_NO_PIN uebergeben und bleiben inaktiv.
 // ============================================================
 
 #ifndef ULTRASONIC_ECHO_CAPTURE_H
 #define ULTRASONIC_ECHO_CAPTURE_H
 
 #include <Arduino.h>
+
+// Kennzeichnet einen auf diesem Nano nicht vorhandenen Sensor.
+static const uint8_t ULTRASONIC_NO_PIN = 255;
 
 // Der Messmanager aktiviert immer genau einen Kanal.
 enum class UltrasonicEchoChannel : uint8_t

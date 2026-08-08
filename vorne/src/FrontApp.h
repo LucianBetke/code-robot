@@ -15,6 +15,7 @@
 #include "src/RearFrameClient.h"
 #include "src/FrameScheduler.h"
 #include "src/TelemetryPrinter.h"
+#include "src/UltrasonicManager.h"
 
 class FrontApp
 {
@@ -38,6 +39,10 @@ private:
     FrameScheduler frameScheduler;
     TelemetryPrinter printer;
 
+    // Die beiden seitlichen HC-SR04 misst der vordere Nano
+    // selbst. Der Frontwert kommt weiterhin per UART.
+    UltrasonicManager ultrasonic;
+
     bool _odomResetPending;
 
     UsMessage _lastUs;
@@ -46,6 +51,7 @@ private:
 
     void updateCommunication();
     void updateConnectionSafety(uint32_t now);
+    void updateUltrasonic(uint32_t now);
 
     void handleIncomingLines(uint32_t now);
     bool handleUltrasonicLine(

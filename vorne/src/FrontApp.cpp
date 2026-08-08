@@ -22,7 +22,7 @@ FrontApp::FrontApp()
     : vehicle(),
     odometer(),
     uart(Serial, true),
-    conn(uart, 13),
+    conn(uart),
     commandRunner(
         vehicle,
         odometer,
@@ -31,6 +31,7 @@ FrontApp::FrontApp()
     rearFrameClient(),
     frameScheduler(),
     printer(),
+    ultrasonic(),
     _odomResetPending(true),
     _lastUs(),
     _lastUsReceivedMs(0),
@@ -56,6 +57,18 @@ void FrontApp::begin()
     commandRunner.begin();
     rearFrameClient.begin();
     frameScheduler.begin(VEHICLE_DT_MS);
+
+    // Kein Frontsensor an diesem Nano - der sitzt hinten.
+    ultrasonic.begin(
+        ULTRASONIC_NO_PIN,
+        ULTRASONIC_NO_PIN,
+
+        PinsFront::US_LEFT_TRIGGER_PIN,
+        PinsFront::US_LEFT_ECHO_PIN,
+
+        PinsFront::US_RIGHT_TRIGGER_PIN,
+        PinsFront::US_RIGHT_ECHO_PIN
+    );
 
     uart.begin();
     conn.begin(true);
@@ -83,6 +96,19 @@ void FrontApp::update(uint32_t now)
         updateLogRaster(now);
         updateRearStopSequence(now);
     }
+
+    updateUltrasonic(now);
+}
+
+void FrontApp::updateUltrasonic(uint32_t now)
+{
+    // Gleiches Kriterium wie hinten: gemessen wird nur,
+    // solange ein Fahrbefehl laeuft.
+    ultrasonic.setEnabled(
+        commandRunner.hasActivePathCommand()
+    );
+
+    ultrasonic.update(now);
 }
 
 // ============================================================
@@ -176,6 +202,25 @@ bool FrontApp::handleUltrasonicLine(
     {
         return false;
     }
+
+    // Hinten misst nur noch vorne. Links und rechts kommen
+    // aus dem eigenen Manager und werden hier in dieselbe
+    // Zeile gemischt, damit sich das Format fuer Python
+    // nicht aendert.
+    UltrasonicSnapshot own = {};
+    ultrasonic.makeSnapshot(now, own);
+
+    message.leftMm = own.leftMm;
+    message.rightMm = own.rightMm;
+
+    message.leftAgeMs = own.leftAgeMs;
+    message.rightAgeMs = own.rightAgeMs;
+
+    message.validMask =
+        uint8_t(
+            (message.validMask & 0x01) |
+            (own.validMask & 0x06)
+        );
 
     _lastUs = message;
     _lastUsReceivedMs = now;

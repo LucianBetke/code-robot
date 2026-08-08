@@ -4,21 +4,15 @@
 
 #include "UltrasonicManager.h"
 
-namespace
-{
-    const UltrasonicSensor MEASUREMENT_CYCLE[4] =
-    {
-        UltrasonicSensor::Front,
-        UltrasonicSensor::Left,
-        UltrasonicSensor::Front,
-        UltrasonicSensor::Right
-    };
-}
-
 UltrasonicManager::UltrasonicManager()
     : _capture(),
-    _triggerPins{ 0, 0, 0 },
+    _triggerPins{
+        ULTRASONIC_NO_PIN,
+        ULTRASONIC_NO_PIN,
+        ULTRASONIC_NO_PIN },
     _sensorData{},
+    _cycle{},
+    _cycleLength(0),
     _enabled(false),
     _state(State::Idle),
     _activeSensor(UltrasonicSensor::Front),
@@ -47,9 +41,16 @@ void UltrasonicManager::begin(
 
     for (uint8_t i = 0; i < SENSOR_COUNT; i++)
     {
+        if (_triggerPins[i] == ULTRASONIC_NO_PIN)
+        {
+            continue;
+        }
+
         pinMode(_triggerPins[i], OUTPUT);
         digitalWrite(_triggerPins[i], LOW);
     }
+
+    buildMeasurementCycle();
 
     clearMeasurements();
 
@@ -64,6 +65,52 @@ void UltrasonicManager::begin(
     _sequence = 0;
 
     forceIdle();
+}
+
+bool UltrasonicManager::hasSensor(
+    UltrasonicSensor sensor) const
+{
+    return _triggerPins[indexOf(sensor)] !=
+        ULTRASONIC_NO_PIN;
+}
+
+void UltrasonicManager::buildMeasurementCycle()
+{
+    const bool hasFront =
+        hasSensor(UltrasonicSensor::Front);
+
+    const bool hasLeft =
+        hasSensor(UltrasonicSensor::Left);
+
+    const bool hasRight =
+        hasSensor(UltrasonicSensor::Right);
+
+    _cycleLength = 0;
+
+    // Der Frontsensor zeigt in Fahrtrichtung und wird
+    // deshalb doppelt so oft gemessen wie die Seiten -
+    // aber nur, wenn er auf diesem Nano ueberhaupt sitzt.
+    if (hasFront)
+    {
+        _cycle[_cycleLength++] = UltrasonicSensor::Front;
+    }
+
+    if (hasLeft)
+    {
+        _cycle[_cycleLength++] = UltrasonicSensor::Left;
+    }
+
+    if (hasFront && hasRight)
+    {
+        _cycle[_cycleLength++] = UltrasonicSensor::Front;
+    }
+
+    if (hasRight)
+    {
+        _cycle[_cycleLength++] = UltrasonicSensor::Right;
+    }
+
+    _cycleIndex = 0;
 }
 
 void UltrasonicManager::setEnabled(bool enabled)
@@ -95,7 +142,7 @@ bool UltrasonicManager::isEnabled() const
 
 void UltrasonicManager::update(uint32_t nowMs)
 {
-    if (!_enabled)
+    if (!_enabled || _cycleLength == 0)
     {
         return;
     }
@@ -106,7 +153,7 @@ void UltrasonicManager::update(uint32_t nowMs)
     {
     case State::Idle:
         startMeasurement(
-            MEASUREMENT_CYCLE[_cycleIndex]
+            _cycle[_cycleIndex]
         );
         break;
 
@@ -313,6 +360,11 @@ void UltrasonicManager::forceIdle()
         i < SENSOR_COUNT;
         i++)
     {
+        if (_triggerPins[i] == ULTRASONIC_NO_PIN)
+        {
+            continue;
+        }
+
         digitalWrite(
             _triggerPins[i],
             LOW
@@ -321,8 +373,12 @@ void UltrasonicManager::forceIdle()
 
     _state = State::Idle;
 
+    // Der erste Sensor des Zyklus, nicht zwingend Front -
+    // vorne gibt es nur die beiden Seitensensoren.
     _activeSensor =
-        UltrasonicSensor::Front;
+        _cycleLength > 0
+        ? _cycle[0]
+        : UltrasonicSensor::Front;
 
     _cycleIndex = 0;
 
@@ -421,14 +477,17 @@ void UltrasonicManager::finishTimeout()
 
 void UltrasonicManager::enterGuard()
 {
-    digitalWrite(
-        _triggerPins[
-            indexOf(
-                _activeSensor
-            )
-        ],
-        LOW
-    );
+    if (hasSensor(_activeSensor))
+    {
+        digitalWrite(
+            _triggerPins[
+                indexOf(
+                    _activeSensor
+                )
+            ],
+            LOW
+        );
+    }
 
     _state = State::Guard;
 
@@ -437,15 +496,20 @@ void UltrasonicManager::enterGuard()
 
 void UltrasonicManager::startNextMeasurement()
 {
+    if (_cycleLength == 0)
+    {
+        return;
+    }
+
     _cycleIndex++;
 
-    if (_cycleIndex >= CYCLE_LENGTH)
+    if (_cycleIndex >= _cycleLength)
     {
         _cycleIndex = 0;
     }
 
     startMeasurement(
-        MEASUREMENT_CYCLE[
+        _cycle[
             _cycleIndex
         ]
     );

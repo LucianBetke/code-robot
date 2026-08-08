@@ -31,16 +31,49 @@ void UltrasonicEchoCapture::begin(
 {
     s_instance = this;
 
-    pinMode(frontEchoPin, INPUT);
-    pinMode(leftEchoPin, INPUT);
-    pinMode(rightEchoPin, INPUT);
+    const bool hasFront = frontEchoPin != ULTRASONIC_NO_PIN;
+    const bool hasLeft = leftEchoPin != ULTRASONIC_NO_PIN;
+    const bool hasRight = rightEchoPin != ULTRASONIC_NO_PIN;
 
-    const uint8_t frontPort = digitalPinToPort(frontEchoPin);
-    _frontInputRegister = portInputRegister(frontPort);
-    _frontEchoMask = digitalPinToBitMask(frontEchoPin);
+    if (hasFront)
+    {
+        pinMode(frontEchoPin, INPUT);
 
-    _leftEchoMask = digitalPinToBitMask(leftEchoPin);
-    _rightEchoMask = digitalPinToBitMask(rightEchoPin);
+        const uint8_t frontPort =
+            digitalPinToPort(frontEchoPin);
+
+        _frontInputRegister =
+            portInputRegister(frontPort);
+
+        _frontEchoMask =
+            digitalPinToBitMask(frontEchoPin);
+    }
+    else
+    {
+        _frontInputRegister = nullptr;
+        _frontEchoMask = 0;
+    }
+
+    if (hasLeft)
+    {
+        pinMode(leftEchoPin, INPUT);
+        _leftEchoMask = digitalPinToBitMask(leftEchoPin);
+    }
+    else
+    {
+        _leftEchoMask = 0;
+    }
+
+    if (hasRight)
+    {
+        pinMode(rightEchoPin, INPUT);
+        _rightEchoMask = digitalPinToBitMask(rightEchoPin);
+    }
+    else
+    {
+        _rightEchoMask = 0;
+    }
+
     _sideEchoMask = uint8_t(_leftEchoMask | _rightEchoMask);
 
     const uint8_t savedSreg = SREG;
@@ -63,14 +96,23 @@ void UltrasonicEchoCapture::begin(
     // gesetzte PCIF-Flags (PCIF0/PCIF2) mit zurueckgeschrieben und
     // dadurch geloescht werden.
     PCIFR = _BV(PCIF1);
-    PCMSK1 |= _sideEchoMask;
 
-    // D3 = INT1. D2/INT0 bleibt unveraendert der Sync-Eingang.
-    attachInterrupt(
-        digitalPinToInterrupt(frontEchoPin),
-        UltrasonicEchoCapture::isrFrontEcho,
-        CHANGE
-    );
+    if (_sideEchoMask != 0)
+    {
+        PCMSK1 |= _sideEchoMask;
+    }
+
+    // Front-Echo an INT1. Der Sync-Eingang an INT0 bleibt
+    // unveraendert. Ohne Front-Sensor wird kein Interrupt
+    // belegt, der Pin bleibt dann anderweitig nutzbar.
+    if (hasFront)
+    {
+        attachInterrupt(
+            digitalPinToInterrupt(frontEchoPin),
+            UltrasonicEchoCapture::isrFrontEcho,
+            CHANGE
+        );
+    }
 }
 
 void UltrasonicEchoCapture::arm(UltrasonicEchoChannel channel)

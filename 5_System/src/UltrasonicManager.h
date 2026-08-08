@@ -1,11 +1,17 @@
 // ============================================================
 // File: UltrasonicManager.h
 // Zweck:
-//  - Drei HC-SR04 nicht blockierend ansteuern
-//  - Messfolge Front -> Links -> Front -> Rechts
+//  - HC-SR04 nicht blockierend ansteuern
 //  - Timeout, Guard-Time, Plausibilitaet und Medianfilter
 //  - Aktuellen Datensatz fuer den UART-Transfer bereitstellen
 //  - Messbetrieb gezielt ein- und ausschalten
+//
+// Die Sensoren sind auf beide Nanos verteilt. Nicht vorhandene
+// Sensoren werden an begin() mit ULTRASONIC_NO_PIN uebergeben;
+// der Messzyklus entsteht daraus zur Laufzeit:
+//  - alle drei:      Front -> Links -> Front -> Rechts
+//  - nur Front:      Front
+//  - nur die Seiten: Links -> Rechts
 // ============================================================
 
 #ifndef ULTRASONIC_MANAGER_H
@@ -99,6 +105,12 @@ private:
     uint8_t _triggerPins[SENSOR_COUNT];
     SensorData _sensorData[SENSOR_COUNT];
 
+    // Messfolge, zur Laufzeit aus den vorhandenen Sensoren
+    // gebildet. _cycleLength == 0 bedeutet: kein Sensor an
+    // diesem Nano, der Manager bleibt dann untaetig.
+    UltrasonicSensor _cycle[CYCLE_LENGTH];
+    uint8_t _cycleLength;
+
     bool _enabled;
 
     State _state;
@@ -117,6 +129,9 @@ private:
         UltrasonicSensor sensor);
 
     static uint16_t clampAgeMs(uint32_t ageMs);
+
+    bool hasSensor(UltrasonicSensor sensor) const;
+    void buildMeasurementCycle();
 
     void clearMeasurements();
     void forceIdle();

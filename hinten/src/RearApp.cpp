@@ -18,13 +18,14 @@ ULTRASONIC_SEND_INTERVAL_MS = 100;
 static const uint16_t
 SYNC_DIAG_INTERVAL_MS = 1000;
 
-// D13 wird hinten ausschließlich als Trigger-Ausgang
-// des rechten HC-SR04 verwendet.
-// Der ConnectionMonitor wird ohne LED konstruiert.
+// Die seitlichen HC-SR04 sitzen jetzt am vorderen Nano.
+// Dadurch ist D13 hinten frei und traegt die Verbindungs-LED,
+// die vorher vorne lief. Vorne wird D13 fuer den Funk (SCK)
+// gebraucht, sein ConnectionMonitor laeuft deshalb ohne LED.
 
 RearApp::RearApp()
     : uart(Serial, false),
-    conn(uart),
+    conn(uart, 13),
     ultrasonic(),
     lastVsolMs(0),
     lastVsolFrameId(0),
@@ -57,15 +58,17 @@ void RearApp::begin(
     // Im Setup blockierend auf die Verbindung warten.
     conn.begin(true);
 
+    // Nur der vordere Sensor haengt noch hier. Links und
+    // rechts misst der vordere Nano selbst.
     ultrasonic.begin(
         PinsRear::US_FRONT_TRIGGER_PIN,
         PinsRear::US_FRONT_ECHO_PIN,
 
-        PinsRear::US_LEFT_TRIGGER_PIN,
-        PinsRear::US_LEFT_ECHO_PIN,
+        ULTRASONIC_NO_PIN,
+        ULTRASONIC_NO_PIN,
 
-        PinsRear::US_RIGHT_TRIGGER_PIN,
-        PinsRear::US_RIGHT_ECHO_PIN
+        ULTRASONIC_NO_PIN,
+        ULTRASONIC_NO_PIN
     );
 
     hardware_enableMotors();
