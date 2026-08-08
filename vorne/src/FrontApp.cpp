@@ -99,7 +99,7 @@ void FrontApp::updateConnectionSafety(uint32_t now)
 {
     (void)now;
 
-    static bool prevConnected = false;
+    static bool prevConnected = true;
 
     const bool nowConnected =
         uart.isConnected();
@@ -107,41 +107,8 @@ void FrontApp::updateConnectionSafety(uint32_t now)
     if (prevConnected && !nowConnected)
     {
         vehicle.stop();
-
         radControl_stopAll();
-        radControl_resetPiStates();
-        wheelMeasurement_reset_all();
-
-        rearFrameClient.clearWaiting();
-        rearFrameClient.clearFrame();
-        rearFrameClient.cancelStopSequence();
-
-        frameScheduler.stop();
-
-        _odomResetPending = true;
-
-        _lastUs = {};
-        _lastUsReceivedMs = 0;
-        _hasUs = false;
-    }
-
-    if (!prevConnected && nowConnected)
-    {
-        vehicle.stop();
-
-        radControl_stopAll();
-        radControl_resetPiStates();
-        wheelMeasurement_reset_all();
-
-        commandRunner.begin();
-        rearFrameClient.begin();
-        frameScheduler.begin(VEHICLE_DT_MS);
-
-        _odomResetPending = true;
-
-        _lastUs = {};
-        _lastUsReceivedMs = 0;
-        _hasUs = false;
+        resetByWatchdog();
     }
 
     prevConnected = nowConnected;
