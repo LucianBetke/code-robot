@@ -25,7 +25,7 @@ mkdir "%STAGE%"
 
 set /a COUNT=0
 
-for /r "%CD%" %%F in (*.ino *.h *.cpp) do (
+for /r "%CD%" %%F in (*.ino *.h *.cpp *.md) do (
     set "FULL=%%~fF"
     set "SKIP=0"
 
@@ -64,11 +64,11 @@ for /r "%CD%" %%F in (*.ino *.h *.cpp) do (
 )
 
 echo.
-echo Gefundene Quelldateien: %COUNT%
+echo Gefundene Quelldateien und Markdown-Dateien: %COUNT%
 echo.
 
 if "%COUNT%"=="0" (
-    echo Keine .ino, .h oder .cpp Dateien gefunden.
+    echo Keine .ino-, .h-, .cpp- oder .md-Dateien gefunden.
     rd /s /q "%STAGE%"
     pause
     exit /b 1
