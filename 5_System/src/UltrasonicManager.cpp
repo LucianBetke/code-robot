@@ -18,7 +18,6 @@ UltrasonicManager::UltrasonicManager()
     _activeSensor(UltrasonicSensor::Front),
     _cycleIndex(0),
     _stateStartedUs(0),
-    _slotStartedUs(0),
     _sequence(0)
 {}
 
@@ -140,6 +139,22 @@ bool UltrasonicManager::isEnabled() const
     return _enabled;
 }
 
+void UltrasonicManager::requestMeasurement(uint32_t nowMs)
+{
+    (void)nowMs;
+
+    if (!_enabled ||
+        _cycleLength == 0 ||
+        _state != State::Idle)
+    {
+        return;
+    }
+
+    startMeasurement(
+        _cycle[_cycleIndex]
+    );
+}
+
 void UltrasonicManager::update(uint32_t nowMs)
 {
     if (!_enabled || _cycleLength == 0)
@@ -152,9 +167,8 @@ void UltrasonicManager::update(uint32_t nowMs)
     switch (_state)
     {
     case State::Idle:
-        startMeasurement(
-            _cycle[_cycleIndex]
-        );
+        // Es wird nicht von selbst gemessen. Den Startschuss
+        // gibt requestMeasurement() im Frametakt.
         break;
 
     case State::WaitEcho:
@@ -176,8 +190,7 @@ void UltrasonicManager::update(uint32_t nowMs)
                 (pulseUs * 343UL + 1000UL) /
                 2000UL;
 
-            if (distanceMm > MAX_DISTANCE_MM ||
-                pulseUs == 0)
+            if (pulseUs == 0)
             {
                 rejectMeasurement(
                     _activeSensor
@@ -185,11 +198,15 @@ void UltrasonicManager::update(uint32_t nowMs)
             }
             else
             {
+                // Ausserhalb des Interessenbereichs wird
+                // begrenzt statt verworfen: oben auf 1 m,
+                // unten auf 20 mm. Die Begrenzung nach oben
+                // vor dem Verkuerzen auf 16 Bit.
                 uint16_t acceptedMm =
-                    (uint16_t)distanceMm;
+                    distanceMm > MAX_DISTANCE_MM
+                    ? MAX_DISTANCE_MM
+                    : (uint16_t)distanceMm;
 
-                // Werte unterhalb der Mindestdistanz
-                // werden auf 20 mm begrenzt.
                 if (acceptedMm < MIN_DISTANCE_MM)
                 {
                     acceptedMm =
@@ -213,7 +230,7 @@ void UltrasonicManager::update(uint32_t nowMs)
                 _stateStartedUs
                 ) >= ECHO_TIMEOUT_US)
         {
-            finishTimeout();
+            finishTimeout(nowMs);
         }
 
         break;
@@ -227,16 +244,18 @@ void UltrasonicManager::update(uint32_t nowMs)
                 _stateStartedUs
                 ) >= GUARD_TIME_US;
 
-        const bool slotElapsed =
-            (uint32_t)(
-                nowUs -
-                _slotStartedUs
-                ) >= MEASUREMENT_SLOT_US;
-
-        if (guardElapsed &&
-            slotElapsed)
+        if (guardElapsed)
         {
-            startNextMeasurement();
+            // Ruhezeit vorbei: naechsten Sensor vormerken
+            // und auf den naechsten Frametakt warten.
+            _cycleIndex++;
+
+            if (_cycleIndex >= _cycleLength)
+            {
+                _cycleIndex = 0;
+            }
+
+            _state = State::Idle;
         }
 
         break;
@@ -383,7 +402,6 @@ void UltrasonicManager::forceIdle()
     _cycleIndex = 0;
 
     _stateStartedUs = micros();
-    _slotStartedUs = _stateStartedUs;
 }
 
 uint8_t UltrasonicManager::indexOf(
@@ -456,19 +474,37 @@ void UltrasonicManager::startMeasurement(
     _state = State::WaitEcho;
 
     _stateStartedUs = micros();
-
-    // Beginn des festen Messplatzes.
-    _slotStartedUs =
-        _stateStartedUs;
 }
 
-void UltrasonicManager::finishTimeout()
+void UltrasonicManager::finishTimeout(
+    uint32_t nowMs)
 {
+    // Vor dem Verwerfen abfragen, cancel() loescht das Flag.
+    const bool sawRise = _capture.riseSeen();
+
     _capture.cancel();
 
-    rejectMeasurement(
-        _activeSensor
-    );
+    if (sawRise)
+    {
+        // Das Echo hat begonnen, aber innerhalb des Fensters
+        // nicht geendet. Das Objekt liegt also jenseits von
+        // einem Meter - als Maximalwert melden statt als
+        // ungueltig.
+        acceptDistance(
+            _activeSensor,
+            MAX_DISTANCE_MM,
+            nowMs
+        );
+    }
+    else
+    {
+        // Gar keine Flanke: Der Sensor hat nicht geantwortet.
+        // Das bleibt ungueltig, damit ein abgesteckter oder
+        // defekter Sensor sichtbar bleibt.
+        rejectMeasurement(
+            _activeSensor
+        );
+    }
 
     _sequence++;
 
@@ -492,27 +528,6 @@ void UltrasonicManager::enterGuard()
     _state = State::Guard;
 
     _stateStartedUs = micros();
-}
-
-void UltrasonicManager::startNextMeasurement()
-{
-    if (_cycleLength == 0)
-    {
-        return;
-    }
-
-    _cycleIndex++;
-
-    if (_cycleIndex >= _cycleLength)
-    {
-        _cycleIndex = 0;
-    }
-
-    startMeasurement(
-        _cycle[
-            _cycleIndex
-        ]
-    );
 }
 
 void UltrasonicManager::acceptDistance(

@@ -180,6 +180,12 @@ bool UltrasonicEchoCapture::takeCompleted(EchoCaptureResult& result)
     return true;
 }
 
+bool UltrasonicEchoCapture::riseSeen() const
+{
+    // Einzelnes Byte, auf dem AVR atomar lesbar.
+    return _riseSeen;
+}
+
 bool UltrasonicEchoCapture::frontEchoLevel() const
 {
     if (_frontInputRegister == nullptr)

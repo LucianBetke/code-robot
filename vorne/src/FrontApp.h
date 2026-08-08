@@ -45,6 +45,11 @@ private:
 
     bool _odomResetPending;
 
+    // Zeitpunkt des zuletzt an hinten gesendeten Sync-Impulses.
+    // Er dient als gemeinsamer Nullpunkt fuer den Messtakt.
+    uint32_t _lastSyncMs;
+    bool _sideMeasurementPending;
+
     UsMessage _lastUs;
     uint32_t _lastUsReceivedMs;
     bool _hasUs;

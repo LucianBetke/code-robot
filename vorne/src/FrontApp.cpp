@@ -14,6 +14,13 @@
 #include "src/ScaleUtils.h"
 #include "src/WheelValues.h"
 
+// Versatz der eigenen Seitenmessung gegenueber dem Sync-
+// Impuls: die halbe Framelaenge. Hinten misst von 0 bis 40 ms,
+// vorne ab 40 ms. Eine Messung braucht 7 ms Echofenster plus
+// 15 ms Ruhezeit, passt also mit Reserve in ihre Haelfte.
+static const uint16_t SIDE_MEASUREMENT_DELAY_MS =
+    VEHICLE_DT_MS / 2;
+
 // ============================================================
 // Konstruktor
 // ============================================================
@@ -33,6 +40,8 @@ FrontApp::FrontApp()
     printer(),
     ultrasonic(),
     _odomResetPending(true),
+    _lastSyncMs(0),
+    _sideMeasurementPending(false),
     _lastUs(),
     _lastUsReceivedMs(0),
     _hasUs(false)
@@ -104,9 +113,26 @@ void FrontApp::updateUltrasonic(uint32_t now)
 {
     // Gleiches Kriterium wie hinten: gemessen wird nur,
     // solange ein Fahrbefehl laeuft.
-    ultrasonic.setEnabled(
-        commandRunner.hasActivePathCommand()
-    );
+    const bool enabled =
+        commandRunner.hasActivePathCommand();
+
+    ultrasonic.setEnabled(enabled);
+
+    if (!enabled)
+    {
+        _sideMeasurementPending = false;
+    }
+
+    // Zweite Frame-Haelfte: hinten ist mit seiner Front-
+    // messung durch, jetzt sind die Seiten dran.
+    if (_sideMeasurementPending &&
+        (uint32_t)(now - _lastSyncMs) >=
+        SIDE_MEASUREMENT_DELAY_MS)
+    {
+        _sideMeasurementPending = false;
+
+        ultrasonic.requestMeasurement(now);
+    }
 
     ultrasonic.update(now);
 }
@@ -157,6 +183,13 @@ void FrontApp::handleIncomingLines(uint32_t now)
     if (rearFrameClient.handleVsolOkLine(line, now))
     {
         hardware_requestVist();
+
+        // Derselbe Impuls startet hinten die Frontmessung.
+        // Die eigene Seitenmessung folgt eine halbe Frame-
+        // laenge spaeter, damit sich beide nicht stoeren.
+        _lastSyncMs = now;
+        _sideMeasurementPending = true;
+
         return;
     }
 

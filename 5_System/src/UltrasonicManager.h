@@ -60,6 +60,13 @@ public:
     void setEnabled(bool enabled);
     bool isEnabled() const;
 
+    // Startet die naechste Messung des Zyklus. Der Takt kommt
+    // von aussen, damit sich die Messfenster beider Nanos
+    // nicht ueberschneiden: hinten am Frame-Anfang, vorne in
+    // dessen zweiter Haelfte. Aufrufe, die zu frueh kommen -
+    // also waehrend Messung oder Ruhezeit - werden ignoriert.
+    void requestMeasurement(uint32_t nowMs);
+
     void update(uint32_t nowMs);
     void makeSnapshot(
         uint32_t nowMs,
@@ -90,15 +97,19 @@ private:
     static const uint8_t CYCLE_LENGTH = 4;
 
     static const uint16_t MIN_DISTANCE_MM = 20;
-    static const uint16_t MAX_DISTANCE_MM = 4000;
 
-    static const uint32_t ECHO_TIMEOUT_US = 25000UL;
+    // Groessere Abstaende interessieren die Fahrlogik nicht.
+    // Alles darueber wird auf diesen Wert begrenzt gemeldet,
+    // nicht verworfen.
+    static const uint16_t MAX_DISTANCE_MM = 1000;
+
+    // 1 m Hin- und Rueckweg dauert 5,8 ms; 7 ms lassen etwas
+    // Rand. Das kurze Fenster verkuerzt zugleich die Zeit,
+    // in der ein fremder Burst ueberhaupt gehoert werden kann.
+    static const uint32_t ECHO_TIMEOUT_US = 7000UL;
 
     // Mindest-Ruhezeit nach Abschluss einer Messung.
     static const uint32_t GUARD_TIME_US = 15000UL;
-
-    // Fester Messplatz ab Triggerbeginn.
-    static const uint32_t MEASUREMENT_SLOT_US = 40000UL;
 
     UltrasonicEchoCapture _capture;
 
@@ -119,7 +130,6 @@ private:
     uint8_t _cycleIndex;
 
     uint32_t _stateStartedUs;
-    uint32_t _slotStartedUs;
 
     uint16_t _sequence;
 
@@ -137,9 +147,8 @@ private:
     void forceIdle();
 
     void startMeasurement(UltrasonicSensor sensor);
-    void finishTimeout();
+    void finishTimeout(uint32_t nowMs);
     void enterGuard();
-    void startNextMeasurement();
 
     void acceptDistance(
         UltrasonicSensor sensor,

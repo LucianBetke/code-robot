@@ -50,6 +50,12 @@ public:
 
     bool takeCompleted(EchoCaptureResult& result);
 
+    // true, wenn die steigende Echoflanke schon da war.
+    // Unterscheidet beim Timeout zwei Faelle: Echo begonnen
+    // aber nicht beendet (Objekt ausserhalb der Reichweite)
+    // gegen gar keine Flanke (Sensor antwortet nicht).
+    bool riseSeen() const;
+
     // Diagnose: aktueller Pegel des Front-Echopins (D3).
     // true  = Pin steht HIGH
     // false = Pin steht LOW

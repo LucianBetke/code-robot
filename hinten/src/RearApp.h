@@ -43,7 +43,7 @@ private:
     void updateVsolTimeout(uint32_t now);
 
     void handleIncomingVsol(uint32_t now);
-    void handleSyncVist();
+    void handleSyncVist(uint32_t now);
 
     void updateUltrasonic(uint32_t now);
     void sendUltrasonicSnapshot(uint32_t now);

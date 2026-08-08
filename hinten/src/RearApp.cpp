@@ -99,7 +99,7 @@ void RearApp::update(uint32_t now)
 
     updateUltrasonic(now);
 
-    handleSyncVist();
+    handleSyncVist(now);
 
     sendUltrasonicSnapshot(now);
 
@@ -236,7 +236,7 @@ void RearApp::onSyncPulseFromIsr()
     syncFlag = true;
 }
 
-void RearApp::handleSyncVist()
+void RearApp::handleSyncVist(uint32_t now)
 {
     if (!syncFlag)
     {
@@ -244,6 +244,12 @@ void RearApp::handleSyncVist()
     }
 
     syncFlag = false;
+
+    // Der Sync-Impuls ist der gemeinsame Zeitnullpunkt
+    // beider Nanos. Hinten misst in der ersten Haelfte des
+    // Frames, vorne in der zweiten - so ueberschneiden sich
+    // die Echofenster nicht.
+    ultrasonic.requestMeasurement(now);
 
     const int16_t vIstLiCms =
         wheelMeasurements[Li].cmsInt();
