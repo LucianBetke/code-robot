@@ -28,7 +28,7 @@ struct HardwarePinSet
     uint8_t motorRe1;
     uint8_t motorRe2;
 
-    uint8_t stby_sync;
+    uint8_t boardControlPin;
 };
 
 // ============================================================
@@ -43,7 +43,9 @@ namespace PinsFront
     constexpr uint8_t M_Re_AIN1 = 6;
     constexpr uint8_t M_Re_AIN2 = 5;
 
-    constexpr uint8_t STBY_SYNC_PIN = 4;
+    // Sync-Ausgang zum hinteren Nano.
+    // Verbindung: vorne D4 -> hinten D2.
+    constexpr uint8_t SYNC_OUTPUT_PIN = 4;
 
     constexpr uint8_t ENC_Li_PIN_A = A2;
     constexpr uint8_t ENC_Li_PIN_B = A3;
@@ -74,7 +76,7 @@ namespace PinsFront
         M_Re_AIN1,
         M_Re_AIN2,
 
-        STBY_SYNC_PIN
+        SYNC_OUTPUT_PIN
     };
 }
 
@@ -90,7 +92,8 @@ namespace PinsRear
     constexpr uint8_t M_Li_BIN1 = 6;
     constexpr uint8_t M_Li_BIN2 = 5;
 
-    constexpr uint8_t STBY_SYNC_PIN = 8;
+    // STBY-Ausgang fuer die beiden hinteren Motortreiber.
+    constexpr uint8_t MOTOR_STBY_PIN = 8;
 
     constexpr uint8_t ENC_Re_PIN_A = A2;
     constexpr uint8_t ENC_Re_PIN_B = A3;
@@ -99,10 +102,13 @@ namespace PinsRear
     constexpr uint8_t ENC_Li_PIN_B = A1;
 
     // Nur noch der vordere HC-SR04 haengt am hinteren Nano.
-    // Links und rechts sind auf den vorderen Nano umgezogen,
-    // siehe PinsFront. Dadurch sind hinten D12, D13, A4 und A5
-    // frei; D13 traegt jetzt die Verbindungs-LED.
-    constexpr uint8_t US_FRONT_TRIGGER_PIN = 11;
+    // Trigger: D4
+    // Echo:    D3
+    //
+    // D11 ist dadurch frei.
+    // D13 traegt die Verbindungs-LED.
+    // A4 und A5 sind fuer die spaetere IMU vorgesehen.
+    constexpr uint8_t US_FRONT_TRIGGER_PIN = 4;
     constexpr uint8_t US_FRONT_ECHO_PIN = 3;
 
     constexpr HardwarePinSet PINS =
@@ -119,7 +125,7 @@ namespace PinsRear
         M_Re_AIN1,
         M_Re_AIN2,
 
-        STBY_SYNC_PIN
+        MOTOR_STBY_PIN
     };
 }
 
