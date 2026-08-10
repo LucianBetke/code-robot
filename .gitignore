@@ -361,3 +361,8 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# Aus Markdown erzeugte PDFs.
+# CommandScript.pdf ist keine erzeugte Datei und bleibt versioniert.
+*.pdf
+!CommandScript.pdf
