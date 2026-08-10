@@ -5,6 +5,8 @@
     <ClCompile Include="$(MSBuildThisFileDirectory)src\Parser\CommandParser.cpp" />
     <ClCompile Include="$(MSBuildThisFileDirectory)src\CommandRunner\CommandRunner.cpp" />
     <ClCompile Include="$(MSBuildThisFileDirectory)src\TelemetryPrinter.cpp" />
+    <ClCompile Include="$(MSBuildThisFileDirectory)src\TelemetryOutput.cpp" />
+    <ClCompile Include="$(MSBuildThisFileDirectory)src\RadioTelemetrySender.cpp" />
     <ClCompile Include="$(MSBuildThisFileDirectory)src\RearFrameClient.cpp" />
     <ClCompile Include="$(MSBuildThisFileDirectory)src\FrameScheduler.cpp" />
     <ClCompile Include="$(MSBuildThisFileDirectory)src\UltrasonicManager.cpp" />
@@ -15,6 +17,8 @@
     <ClInclude Include="$(MSBuildThisFileDirectory)src\CommandRunner\CommandRunner.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)src\TelemetryPrinter.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)src\TelemetryPrinterConfig.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)src\TelemetryOutput.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)src\RadioTelemetrySender.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)src\RearFrameClient.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)src\FrameScheduler.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)src\UltrasonicManager.h" />

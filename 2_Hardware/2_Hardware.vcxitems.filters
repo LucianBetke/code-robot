@@ -6,6 +6,7 @@
     <ClCompile Include="$(MSBuildThisFileDirectory)src\UartLink.cpp" />
     <ClCompile Include="$(MSBuildThisFileDirectory)src\Hardware.cpp" />
     <ClCompile Include="$(MSBuildThisFileDirectory)src\Pcint1Router.cpp" />
+    <ClCompile Include="$(MSBuildThisFileDirectory)src\Nrf24Radio.cpp" />
     <ClCompile Include="$(MSBuildThisFileDirectory)src\UltrasonicEchoCapture.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -14,6 +15,7 @@
     <ClInclude Include="$(MSBuildThisFileDirectory)src\UartLink.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)src\HardwarePins.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)src\Hardware.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)src\Nrf24Radio.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)src\UltrasonicEchoCapture.h" />
   </ItemGroup>
 </Project>

@@ -16,6 +16,7 @@
   <ItemGroup>
     <ClInclude Include="$(MSBuildThisFileDirectory)src\CommProtocol.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)src\ControlTypes.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)src\RadioProtocol.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)src\RobotConfig.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)src\ScaleUtils.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)src\WheelValues.h" />

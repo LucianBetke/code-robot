@@ -9,6 +9,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "vorne", "vorne\vorne.vcxpro
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "hinten", "hinten\hinten.vcxproj", "{5AC1F5B7-CB40-4E0A-A2A3-8ED4DBEC9376}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "funk_empfaenger", "funk_empfaenger\funk_empfaenger.vcxproj", "{3766FEFD-132F-43A1-88A7-C621CFC69261}"
+EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "1_Common", "1_Common\1_Common.vcxitems", "{084870EA-CA15-4E81-B20E-34CC3B06409B}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "2_Hardware", "2_Hardware\2_Hardware.vcxitems", "{4FE121DF-D8D5-406F-B19B-60AF7564C675}"
@@ -81,6 +83,24 @@ Global
 		{5AC1F5B7-CB40-4E0A-A2A3-8ED4DBEC9376}.Release|x86.ActiveCfg = Release|x86
 		{5AC1F5B7-CB40-4E0A-A2A3-8ED4DBEC9376}.Release|x86.Build.0 = Release|x86
 		{5AC1F5B7-CB40-4E0A-A2A3-8ED4DBEC9376}.Release|x86.Deploy.0 = Release|x86
+		{3766FEFD-132F-43A1-88A7-C621CFC69261}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{3766FEFD-132F-43A1-88A7-C621CFC69261}.Debug|Any CPU.Build.0 = Debug|x64
+		{3766FEFD-132F-43A1-88A7-C621CFC69261}.Debug|Any CPU.Deploy.0 = Debug|x64
+		{3766FEFD-132F-43A1-88A7-C621CFC69261}.Debug|x64.ActiveCfg = Debug|x64
+		{3766FEFD-132F-43A1-88A7-C621CFC69261}.Debug|x64.Build.0 = Debug|x64
+		{3766FEFD-132F-43A1-88A7-C621CFC69261}.Debug|x64.Deploy.0 = Debug|x64
+		{3766FEFD-132F-43A1-88A7-C621CFC69261}.Debug|x86.ActiveCfg = Debug|x86
+		{3766FEFD-132F-43A1-88A7-C621CFC69261}.Debug|x86.Build.0 = Debug|x86
+		{3766FEFD-132F-43A1-88A7-C621CFC69261}.Debug|x86.Deploy.0 = Debug|x86
+		{3766FEFD-132F-43A1-88A7-C621CFC69261}.Release|Any CPU.ActiveCfg = Release|x64
+		{3766FEFD-132F-43A1-88A7-C621CFC69261}.Release|Any CPU.Build.0 = Release|x64
+		{3766FEFD-132F-43A1-88A7-C621CFC69261}.Release|Any CPU.Deploy.0 = Release|x64
+		{3766FEFD-132F-43A1-88A7-C621CFC69261}.Release|x64.ActiveCfg = Release|x64
+		{3766FEFD-132F-43A1-88A7-C621CFC69261}.Release|x64.Build.0 = Release|x64
+		{3766FEFD-132F-43A1-88A7-C621CFC69261}.Release|x64.Deploy.0 = Release|x64
+		{3766FEFD-132F-43A1-88A7-C621CFC69261}.Release|x86.ActiveCfg = Release|x86
+		{3766FEFD-132F-43A1-88A7-C621CFC69261}.Release|x86.Build.0 = Release|x86
+		{3766FEFD-132F-43A1-88A7-C621CFC69261}.Release|x86.Deploy.0 = Release|x86
 		{84D45D42-8501-453C-8C1B-38881408E960}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{84D45D42-8501-453C-8C1B-38881408E960}.Debug|x64.ActiveCfg = Debug|Any CPU
 		{84D45D42-8501-453C-8C1B-38881408E960}.Debug|x86.ActiveCfg = Debug|Any CPU
@@ -96,6 +116,7 @@ Global
 	EndGlobalSection
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
 		1_Common\1_Common.vcxitems*{084870ea-ca15-4e81-b20e-34cc3b06409b}*SharedItemsImports = 9
+		1_Common\1_Common.vcxitems*{3766fefd-132f-43a1-88a7-c621cfc69261}*SharedItemsImports = 4
 		3_Control\3_Control.vcxitems*{1f3e0459-01d8-4f38-99cd-742725e4bdac}*SharedItemsImports = 9
 		2_Hardware\2_Hardware.vcxitems*{4fe121df-d8d5-406f-b19b-60af7564c675}*SharedItemsImports = 9
 		1_Common\1_Common.vcxitems*{5ac1f5b7-cb40-4e0a-a2a3-8ed4dbec9376}*SharedItemsImports = 4
