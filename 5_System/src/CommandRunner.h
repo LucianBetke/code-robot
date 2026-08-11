@@ -6,7 +6,7 @@
 #define COMMAND_RUNNER_H
 
 #include <Arduino.h>
-#include "src/Parser/CommandParser.h"
+#include "src/CommandParser.h"
 #include "src/VehicleController.h"
 #include "src/MecanumOdometer.h"
 
