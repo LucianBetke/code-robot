@@ -8,6 +8,8 @@
     <ClCompile Include="$(MSBuildThisFileDirectory)src\Pcint1Router.cpp" />
     <ClCompile Include="$(MSBuildThisFileDirectory)src\Nrf24Radio.cpp" />
     <ClCompile Include="$(MSBuildThisFileDirectory)src\UltrasonicEchoCapture.cpp" />
+    <ClCompile Include="$(MSBuildThisFileDirectory)src\BatteryGuard.cpp" />
+    <ClCompile Include="$(MSBuildThisFileDirectory)src\StatusLed.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="$(MSBuildThisFileDirectory)src\Encoder.h" />
@@ -17,5 +19,7 @@
     <ClInclude Include="$(MSBuildThisFileDirectory)src\Hardware.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)src\Nrf24Radio.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)src\UltrasonicEchoCapture.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)src\BatteryGuard.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)src\StatusLed.h" />
   </ItemGroup>
 </Project>
